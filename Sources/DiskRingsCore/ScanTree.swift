@@ -12,12 +12,24 @@ public final class ScanTree: Sendable {
     public let rootPath: String
     public let nodes: [Node]
     public let names: [UInt8]
+    /// Dateien mit `nlink > 1`, nach Knotenindex sortiert (für den Teil-Rescan).
+    let hardlinks: [HardlinkEntry]
+    /// `true`, wenn jede Datei ein eigener Knoten ist (fertiger Scan). Bei
+    /// Live-Snapshots und Snapshots mit Mindestgröße stecken Dateien zum Teil
+    /// nur in der Größe und Dateianzahl ihres Ordners.
+    public let isComplete: Bool
+    /// Anzahl toter Knoten (siehe `NodeFlags.dead`).
+    public let deadCount: Int
 
-    init(rootPath: String, nodes: [Node], names: [UInt8]) {
+    init(rootPath: String, nodes: [Node], names: [UInt8], hardlinks: [HardlinkEntry] = [],
+         isComplete: Bool = true, deadCount: Int = 0) {
         precondition(!nodes.isEmpty, "Ein ScanTree hat immer eine Wurzel")
         self.rootPath = rootPath
         self.nodes = nodes
         self.names = names
+        self.hardlinks = hardlinks
+        self.isComplete = isComplete
+        self.deadCount = deadCount
     }
 
     public static let rootIndex: Int32 = 0
@@ -160,12 +172,118 @@ public final class ScanTree: Sendable {
         rootPath == other.rootPath && nodes == other.nodes && names == other.names
     }
 
-    /// Anzahl der Ordner im Baum (inklusive Wurzel, falls Ordner).
-    public var directoryCount: Int { nodes.reduce(0) { $0 + ($1.isDirectory ? 1 : 0) } }
+    /// Anzahl der Ordner im Baum (inklusive Wurzel, falls Ordner; ohne tote Knoten).
+    public var directoryCount: Int {
+        nodes.reduce(0) { $0 + ($1.isDirectory && !$1.flags.contains(.dead) ? 1 : 0) }
+    }
 
-    /// Pfade aller Knoten mit dem gegebenen Flag (z. B. nicht lesbare Ordner).
+    /// Anzahl der lebenden Knoten (`count` minus tote Knoten).
+    public var liveCount: Int { nodes.count - deadCount }
+
+    /// Pfade aller lebenden Knoten mit dem gegebenen Flag (z. B. nicht lesbare Ordner).
     public func paths(withFlag flag: NodeFlags) -> [String] {
-        nodes.indices.filter { nodes[$0].flags.contains(flag) }.map { path(of: Int32($0)) }
+        nodes.indices.filter { nodes[$0].flags.contains(flag) && !nodes[$0].flags.contains(.dead) }
+            .map { path(of: Int32($0)) }
+    }
+
+    /// Prüft die Invarianten des Baums und gibt die gefundenen Verstöße zurück
+    /// (leer = in Ordnung, höchstens `limit` Meldungen):
+    /// - Wurzel an Index 0 ohne Elternknoten; jeder lebende Knoten ist genau
+    ///   einmal von der Wurzel aus erreichbar, tote Knoten nie, und ihre Anzahl
+    ///   stimmt mit `deadCount` überein.
+    /// - Kinder liegen zusammenhängend hinter dem Elternknoten, zeigen auf ihn
+    ///   zurück und sind absteigend sortiert (belegt, logisch, Name).
+    /// - Summen: Die belegte Größe eines Ordners ist mindestens die Summe seiner
+    ///   Kinder (der Rest ist die Eigengröße des Ordners, z. B. auf ExFAT).
+    ///   Logische Größe und Dateianzahl sind bei `isComplete` exakt die Summe,
+    ///   sonst mindestens die Summe. Dateien haben keine Kinder und zählen 1.
+    /// - Hardlink-Tabelle: sortiert, nur lebende Dateien; pro (Gerät, Inode)
+    ///   zählt genau ein Vorkommen mit seiner echten Größe, die anderen mit 0.
+    public func validate(limit: Int = 20) -> [String] {
+        var problems: [String] = []
+        func report(_ s: @autoclosure () -> String) {
+            if problems.count < limit { problems.append(s()) }
+        }
+        let n = nodes.count
+        if nodes[0].parent != -1 { report("Wurzel hat Elternknoten \(nodes[0].parent)") }
+        if nodes[0].flags.contains(.dead) { report("Wurzel ist tot") }
+        var reached = [Bool](repeating: false, count: n)
+        reached[0] = true
+        var reachedCount = 1
+        var stack: [Int32] = [0]
+        let comparator: (Node, Node) -> Bool = { a, b in
+            self.names.withUnsafeBufferPointer { TreeBuilder.precedes(a, b, $0) }
+        }
+        while let i = stack.popLast() {
+            let node = nodes[Int(i)]
+            if !node.isDirectory {
+                if node.childCount != 0 { report("Datei \(i) hat Kinder") }
+                if isComplete, node.fileCount != 1 { report("Datei \(i) hat fileCount \(node.fileCount)") }
+                continue
+            }
+            let r = childIndices(of: i)
+            if node.childCount < 0 || (!r.isEmpty && (r.lowerBound <= i || Int(r.upperBound) > n)) {
+                report("Ungültiger Kinderbereich \(r) bei \(i)")
+                continue
+            }
+            var sumA: UInt64 = 0, sumL: UInt64 = 0, sumF: UInt64 = 0
+            var prev: Node?
+            for c in r {
+                let child = nodes[Int(c)]
+                if reached[Int(c)] { report("Knoten \(c) mehrfach erreichbar"); continue }
+                reached[Int(c)] = true
+                reachedCount += 1
+                if child.flags.contains(.dead) { report("Toter Knoten \(c) ist Kind von \(i)") }
+                if child.parent != i { report("Knoten \(c) zeigt auf Eltern \(child.parent) statt \(i)") }
+                if let p = prev, !comparator(p, child) { report("Kinder von \(i) nicht sortiert bei \(c)") }
+                prev = child
+                sumA &+= child.allocatedSize
+                sumL &+= child.logicalSize
+                sumF &+= UInt64(child.fileCount)
+                stack.append(c)
+            }
+            if node.allocatedSize < sumA { report("Ordner \(i): belegt \(node.allocatedSize) < Summe \(sumA)") }
+            if isComplete {
+                if node.logicalSize != sumL { report("Ordner \(i): logisch \(node.logicalSize) ≠ Summe \(sumL)") }
+                if UInt64(node.fileCount) != sumF { report("Ordner \(i): Dateien \(node.fileCount) ≠ Summe \(sumF)") }
+            } else {
+                if node.logicalSize < sumL { report("Ordner \(i): logisch \(node.logicalSize) < Summe \(sumL)") }
+                if UInt64(node.fileCount) < sumF { report("Ordner \(i): Dateien \(node.fileCount) < Summe \(sumF)") }
+            }
+        }
+        var dead = 0
+        for i in 0 ..< n {
+            let isDead = nodes[i].flags.contains(.dead)
+            if isDead { dead += 1 }
+            if !isDead, !reached[i] { report("Lebender Knoten \(i) nicht erreichbar") }
+        }
+        if dead != deadCount { report("deadCount \(deadCount), tatsächlich \(dead)") }
+        if reachedCount != n - dead { report("Erreichbar \(reachedCount), lebend \(n - dead)") }
+
+        // Hardlink-Tabelle
+        for (a, b) in zip(hardlinks, hardlinks.dropFirst()) where a.index >= b.index {
+            report("Hardlink-Tabelle nicht sortiert bei \(b.index)")
+        }
+        var groups: [[UInt64]: [HardlinkEntry]] = [:]
+        for h in hardlinks {
+            guard h.index >= 0, Int(h.index) < n else { report("Hardlink-Index \(h.index) ungültig"); continue }
+            let node = nodes[Int(h.index)]
+            if node.flags.contains(.dead) || node.isDirectory { report("Hardlink \(h.index) tot oder Ordner") }
+            groups[[UInt64(UInt32(bitPattern: h.dev)), h.ino], default: []].append(h)
+        }
+        for (_, members) in groups {
+            let counted = members.filter { !nodes[Int($0.index)].flags.contains(.hardlinkDuplicate) }
+            if counted.count != 1 { report("Hardlink-Gruppe mit \(counted.count) gezählten Vorkommen") }
+            for m in members {
+                let node = nodes[Int(m.index)]
+                if node.flags.contains(.hardlinkDuplicate) {
+                    if node.allocatedSize != 0 || node.logicalSize != 0 { report("Duplikat \(m.index) mit Größe") }
+                } else if node.allocatedSize != m.allocated || node.logicalSize != m.logical {
+                    report("Hardlink \(m.index): Größe \(node.allocatedSize) statt \(m.allocated)")
+                }
+            }
+        }
+        return problems
     }
 }
 

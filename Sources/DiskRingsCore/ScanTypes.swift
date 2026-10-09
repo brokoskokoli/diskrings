@@ -16,8 +16,9 @@ public struct ScanOptions: Sendable, Equatable {
     public var workerCount: Int? = nil
     /// Abstand der Fortschrittsmeldungen und Live-Snapshots in Sekunden.
     public var progressInterval: Double = 0.25
-    /// Tiefe der vorläufigen Live-Snapshots (Wurzel plus k Ebenen).
-    public var snapshotDepth: Int = 3
+    /// Tiefe der vorläufigen Live-Snapshots (Wurzel plus k Ebenen). Standard 6
+    /// wie die Standard-Ringzahl; gemessener Aufwand in docs/PERFORMANCE.md.
+    public var snapshotDepth: Int = 6
     /// Nach so vielen Einträgen gibt ein Worker offene Unterordner an die
     /// gemeinsame Queue ab, auch wenn gerade kein Worker untätig ist.
     public var splitThreshold: Int = 50_000
@@ -28,7 +29,7 @@ public struct ScanOptions: Sendable, Equatable {
         crossMountPoints: Bool = false,
         workerCount: Int? = nil,
         progressInterval: Double = 0.25,
-        snapshotDepth: Int = 3,
+        snapshotDepth: Int = 6,
         splitThreshold: Int = 50_000
     ) {
         self.includeHidden = includeHidden

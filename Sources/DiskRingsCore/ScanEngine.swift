@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import os
 
 /// Parallele Scan-Engine (SPEC 4.3).
 ///
@@ -109,10 +110,13 @@ public struct ScanEngine: Sendable {
             var flags: NodeFlags = (st.st_mode & S_IFMT) == S_IFLNK ? [.symlink] : []
             let dataless = st.st_flags & FileFlags.dataless != 0
             if dataless { flags.insert(.dataless) }
+            let alloc: UInt64 = dataless ? 0 : UInt64(st.st_blocks) * 512
+            let logical = UInt64(max(st.st_size, 0))
             raw.append(parent: -1, name: Array(rootName.utf8), flags: flags,
-                       allocated: dataless ? 0 : UInt64(st.st_blocks) * 512,
-                       logical: UInt64(max(st.st_size, 0)), ownFiles: 1)
-            let tree = try TreeBuilder.build(raw, rootPath: rootPath)
+                       allocated: alloc, logical: logical, ownFiles: 1)
+            let links = st.st_nlink > 1
+                ? [HardlinkEntry(dev: st.st_dev, ino: st.st_ino, index: 0, allocated: alloc, logical: logical)] : []
+            let tree = try TreeBuilder.build(raw, rootPath: rootPath, hardlinks: links)
             return ScanResult(tree: tree, duration: elapsed(), fileCount: 1, directoryCount: 0,
                               unreadablePaths: [], skippedMountPoints: [], hardlinkDuplicates: 0,
                               options: options)
@@ -124,9 +128,10 @@ public struct ScanEngine: Sendable {
         ctx.hooks = hooks
         var rootFlags: NodeFlags = [.directory]
         if PackageDetector.isPackage(name: rootName) { rootFlags.insert(.package) }
+        // Eigengröße des Wurzelordners zählt mit (wie bei `du`).
         ctx.rootBuffer.append(parent: ScanContext.noParent, name: Array(rootName.utf8), flags: rootFlags,
-                              allocated: 0, logical: 0)
-        ctx.queue.append(ScanJob(ref: 0, path: rootPath, depth: 0, skeleton: 0))
+                              allocated: UInt64(st.st_blocks) * 512, logical: 0)
+        ctx.queue.append(ScanJob(ref: 0, path: rootPath, depth: 0, skeleton: 0, parent: nil, nameOffset: 0))
 
         let workerCount = options.effectiveWorkerCount
         let workers = (0 ..< workerCount).map { ScanWorker(id: UInt64($0 + 1), context: ctx) }
@@ -149,8 +154,14 @@ public struct ScanEngine: Sendable {
                 onProgress(p)
             }
             if let onSnapshot, !cancellation.isCancelled {
+                let t0 = DispatchTime.now().uptimeNanoseconds
                 let raw = ctx.skeletonSnapshot()
-                if let tree = try? TreeBuilder.build(raw, rootPath: rootPath) { onSnapshot(tree) }
+                let t1 = DispatchTime.now().uptimeNanoseconds
+                if let tree = try? TreeBuilder.build(raw, rootPath: rootPath) {
+                    snapshotDebug(nodes: tree.count, copyNanos: t1 - t0,
+                                  buildNanos: DispatchTime.now().uptimeNanoseconds - t1)
+                    onSnapshot(tree)
+                }
             }
         }
 
@@ -180,11 +191,13 @@ public struct ScanEngine: Sendable {
         do {
             memDebug("scan done")
             hooks.phase?(.assembling)
-            let assembled = try Assembler.assemble(ctx: ctx, workers: workers)
+            var assembled = try Assembler.assemble(ctx: ctx, workers: workers)
             memDebug("assembled")
-            let raw = assembled.raw
             hooks.phase?(.building)
-            let tree = try TreeBuilder.build(raw, rootPath: rootPath) { cancellation.isCancelled }
+            let tree = try TreeBuilder.buildInPlace(
+                nodes: &assembled.nodes, names: UnsafeBufferPointer(assembled.names.buffer), rootPath: rootPath,
+                hardlinks: assembled.links) { cancellation.isCancelled }
+            assembled.names = MappedBuffer()
             memDebug("built")
             let root = tree.root
             return ScanResult(
@@ -227,6 +240,60 @@ struct ScanJob {
     var depth: Int32
     /// Index des zuständigen Knotens im Live-Skelett.
     var skeleton: Int32
+    /// Geöffneter Elternordner: Der Ordner wird mit `openat` relativ dazu
+    /// geöffnet (`O_NOFOLLOW`), nicht über den vollen Pfad. `nil` bei der
+    /// Wurzel oder wenn das Deskriptor-Budget erschöpft war.
+    var parent: DirHandle?
+    /// Byte-Offset des eigenen Namens in `path` (UTF-8).
+    var nameOffset: Int32
+}
+
+/// Geöffneter Ordner, den die noch offenen Jobs seiner Unterordner teilen.
+/// Der Deskriptor wird geschlossen, sobald der letzte Job ihn freigibt
+/// (ARC zählt die Referenzen, auch bei Abbruch).
+final class DirHandle: @unchecked Sendable {
+    let fd: Int32
+    private let budget: HandleBudget
+
+    /// `nil`, wenn das Budget erschöpft ist; der Aufrufer schließt `fd` dann selbst.
+    init?(fd: Int32, budget: HandleBudget) {
+        guard budget.tryAcquire() else { return nil }
+        self.fd = fd
+        self.budget = budget
+    }
+
+    deinit {
+        close(fd)
+        budget.release()
+    }
+}
+
+/// Begrenzt die Zahl gleichzeitig offen gehaltener Ordner-Deskriptoren.
+/// Ist es erschöpft, werden Unterordner über den vollen Pfad geöffnet.
+final class HandleBudget: Sendable {
+    let limit: Int
+    private let used = OSAllocatedUnfairLock(initialState: 0)
+
+    init(limit: Int = HandleBudget.defaultLimit) { self.limit = limit }
+
+    /// Die Hälfte des weichen `RLIMIT_NOFILE`, höchstens 1024.
+    static var defaultLimit: Int {
+        var rl = rlimit()
+        guard getrlimit(RLIMIT_NOFILE, &rl) == 0 else { return 64 }
+        let soft = rl.rlim_cur > 1 << 20 ? 2048 : Int(clamping: rl.rlim_cur)
+        return max(0, min(soft / 2, 1024))
+    }
+
+    func tryAcquire() -> Bool {
+        used.withLock { n in
+            guard n < limit else { return false }
+            n += 1
+            return true
+        }
+    }
+
+    func release() { used.withLock { $0 -= 1 } }
+    var inUse: Int { used.withLock { $0 } }
 }
 
 /// Lokaler Rohpuffer eines Workers. Eltern sind gepackte Referenzen, weil
@@ -239,11 +306,14 @@ struct WorkerBuffer: ~Copyable {
     var allocated = MappedBuffer<UInt64>()
     var logical = MappedBuffer<UInt64>()
     var names = MappedBuffer<UInt8>()
-    /// Dateien mit `nlink > 1`: (Gerät, Inode, lokaler Index).
-    var hardlinks: [(dev: Int32, ino: UInt64, index: UInt32)] = []
+    /// Dateien mit `nlink > 1`: Gerät, Inode, lokaler Index und echte Größe.
+    var hardlinks: [HardlinkEntry] = []
     /// Ordner, die nicht gelesen werden konnten (gepackte Referenzen).
     var unreadable: [UInt64] = []
     var unreadablePaths: [String] = []
+    /// Ordner, die zwischen Auflisten und Öffnen verschwunden sind (gepackte
+    /// Referenzen); sie werden still verworfen.
+    var vanished: [UInt64] = []
     var mountPoints: [String] = []
 
     init() {}
@@ -291,6 +361,8 @@ final class ScanContext: @unchecked Sendable {
     let neverEnter: Set<String>
     let excluded: Set<String>
     var hooks = ScanHooks()
+    /// Budget für offen gehaltene Elternordner (siehe `DirHandle`).
+    let handles = HandleBudget()
 
     /// Puffer 0: nur die Wurzel. Wird vor dem Start befüllt und von
     /// Workern ausschließlich unter `cond` für Markierungen genutzt.
@@ -419,6 +491,21 @@ final class ScanWorker: @unchecked Sendable {
         var path: String
     }
 
+    /// Öffnet den Ordner eines Jobs: relativ zum geöffneten Elternordner,
+    /// sonst über den vollen Pfad. Gibt den Deskriptor oder `-errno` zurück.
+    private func open(_ job: inout ScanJob) -> Int32 {
+        if let parent = job.parent {
+            job.parent = nil // Elternordner so früh wie möglich freigeben
+            let fd = job.path.withCString { openat(parent.fd, $0 + Int(job.nameOffset), directoryOpenFlags) }
+            if fd >= 0 { return fd }
+            let err = errno
+            // Keine Deskriptoren mehr frei: über den Pfad versuchen.
+            guard err == EMFILE || err == ENFILE else { return -err }
+        }
+        let fd = openDirectory(job.path)
+        return fd >= 0 ? fd : -errno
+    }
+
     private func runLocal(_ first: ScanJob, reader: inout DirectoryReader) {
         var stack: [ScanJob] = [first]
         var sinceShare = 0
@@ -432,7 +519,7 @@ final class ScanWorker: @unchecked Sendable {
         let snapshotDepth = Int32(max(options.snapshotDepth, 0))
         var pending: [PendingDir] = []
 
-        while let job = stack.popLast() {
+        while var job = stack.popLast() {
             if ctx.cancellation.isCancelled { return }
             pending.removeAll(keepingCapacity: true)
             var nFiles = 0
@@ -440,12 +527,13 @@ final class ScanWorker: @unchecked Sendable {
             var nLogical: UInt64 = 0
             var entries = 0
             let parentPathPrefix = job.path == "/" ? "/" : job.path + "/"
+            let childNameOffset = Int32(parentPathPrefix.utf8.count)
 
             ctx.hooks.beforeOpenDirectory?(job.path)
-            let fd = openDirectory(job.path)
+            let fd = open(&job)
             var readError: Int32 = 0
             if fd < 0 {
-                readError = errno
+                readError = -fd
             } else {
                 readError = reader.read(fd: fd, shouldStop: { ctx.cancellation.isCancelled }) { e in
                     let name = e.name
@@ -474,12 +562,16 @@ final class ScanWorker: @unchecked Sendable {
                         let path = childPath!
                         let isMount = e.mountStatus & UInt32(DIR_MNTSTATUS_MNTPOINT) != 0
                             || !allowed.contains(e.dev)
+                        var own = e.dirAllocatedSize
                         if neverEnter.contains(path) || (isMount && !cross) {
                             flags.insert(.mountPoint)
                             descend = false
+                            own = 0 // gehört zu einem anderen Volume
                             buffer.mountPoints.append(path)
                         }
-                        let idx = buffer.append(parent: job.ref, name: name, flags: flags, allocated: 0, logical: 0)
+                        // Eigengröße des Ordners (Verzeichnisblöcke) zählt mit, wie bei `du`.
+                        let idx = buffer.append(parent: job.ref, name: name, flags: flags, allocated: own, logical: 0)
+                        nAlloc &+= own
                         if descend { pending.append(PendingDir(localIndex: idx, path: path)) }
                         if e.error != 0 { buffer.unreadablePaths.append(path) }
                     } else {
@@ -488,17 +580,32 @@ final class ScanWorker: @unchecked Sendable {
                         let idx = buffer.append(parent: job.ref, name: name, flags: flags,
                                                 allocated: alloc, logical: e.logicalSize)
                         if e.linkCount > 1 {
-                            buffer.hardlinks.append((e.dev, e.fileID, UInt32(idx)))
+                            buffer.hardlinks.append(HardlinkEntry(dev: e.dev, ino: e.fileID, index: Int32(idx),
+                                                                allocated: alloc, logical: e.logicalSize))
                         }
                         nFiles += 1
                         nAlloc &+= alloc
                         nLogical &+= e.logicalSize
                     }
                 }
-                close(fd)
+            }
+            // Den Deskriptor offen halten, solange Unterordner relativ dazu
+            // geöffnet werden sollen (sofern das Budget reicht).
+            var handle: DirHandle?
+            if fd >= 0 {
+                if !pending.isEmpty, !ctx.cancellation.isCancelled {
+                    handle = DirHandle(fd: fd, budget: ctx.handles)
+                }
+                if handle == nil { close(fd) }
             }
             if ctx.cancellation.isCancelled { return }
             if readError != 0 {
+                if fd < 0, readError == ENOENT || readError == ENOTDIR || readError == ELOOP, job.ref != 0 {
+                    // Zwischen Auflisten und Öffnen verschwunden oder ersetzt:
+                    // kein „nicht lesbar“, der Knoten wird verworfen.
+                    buffer.vanished.append(job.ref)
+                    continue
+                }
                 buffer.unreadable.append(job.ref)
                 buffer.unreadablePaths.append(job.path)
             }
@@ -527,7 +634,8 @@ final class ScanWorker: @unchecked Sendable {
                         allocated: 0, logical: 0, ownFiles: 0)
                 }
                 newJobs.append(ScanJob(ref: (id << ScanContext.indexBits) | UInt64(d.localIndex),
-                                       path: d.path, depth: childDepth, skeleton: skel))
+                                       path: d.path, depth: childDepth, skeleton: skel, parent: handle,
+                                       nameOffset: childNameOffset))
             }
             let wantShare = ctx.idle > 0 || (sinceShare > options.splitThreshold && ctx.queue.isEmpty)
             cond.unlock()
@@ -552,12 +660,20 @@ final class ScanWorker: @unchecked Sendable {
 
 enum Assembler {
     struct Output: ~Copyable {
-        var raw: RawTree
+        /// Knoten in Puffer-Reihenfolge: `parent` als Index in dieses Array,
+        /// eigene Größen, `fileCount` 1 bei Dateien, sonst 0.
+        var nodes: [Node]
+        var names: MappedBuffer<UInt8>
+        /// Alle Dateien mit `nlink > 1` (Index in `nodes`, echte Größe).
+        var links: [HardlinkEntry]
         var unreadablePaths: [String]
         var mountPoints: [String]
         var duplicates: Int
     }
 
+    /// Fügt die Worker-Puffer zu einem Knoten-Array zusammen. Jeder Puffer
+    /// wird direkt nach dem Übernehmen freigegeben; das Knoten-Array ist
+    /// schon das endgültige, das der `TreeBuilder` an Ort und Stelle ordnet.
     static func assemble(ctx: ScanContext, workers: [ScanWorker]) throws -> Output {
         // Reihenfolge der Puffer: 0 = Wurzel, dann Worker 1…N.
         var counts = [ctx.rootBuffer.count]
@@ -571,51 +687,65 @@ enum Assembler {
         let total = base.last! + counts.last!
         guard total < Int(Int32.max) - 1, nameBytes < Int(UInt32.max) else { throw ScanError.tooManyNodes }
 
-        var raw = RawTree()
-        raw.reserve(total, nameBytes: nameBytes)
+        var names = MappedBuffer<UInt8>(capacity: nameBytes)
         var lists = Lists()
-        take(&ctx.rootBuffer, bufferIndex: 0, base: base, into: &raw, lists: &lists)
-        for (i, w) in workers.enumerated() {
-            take(&w.buffer, bufferIndex: i + 1, base: base, into: &raw, lists: &lists)
-        }
-
-        for r in lists.unreadableRefs {
-            raw.flags[globalIndex(r, base)] |= NodeFlags.unreadable.rawValue
-        }
-        var links = lists.links
-
-        // Hardlinks: pro (Gerät, Inode) zählt genau ein Vorkommen, und zwar
-        // das mit dem kleinsten Pfad (bytewise). So ist das Ergebnis
-        // unabhängig von der Reihenfolge, in der die Worker sie gefunden haben.
-        var duplicates = 0
-        if links.count > 1 {
-            links.sort { $0.dev != $1.dev ? $0.dev < $1.dev : $0.ino < $1.ino }
-            var s = 0
-            while s < links.count {
-                var e = s + 1
-                while e < links.count, links[e].dev == links[s].dev, links[e].ino == links[s].ino { e += 1 }
-                if e - s > 1 {
-                    let group = links[s ..< e].map { ($0.index, pathBytes(raw, $0.index)) }
-                    let winner = group.min { $0.1.lexicographicallyPrecedes($1.1) }!.0
-                    for (idx, _) in group where idx != winner {
-                        raw.allocated[Int(idx)] = 0
-                        raw.logical[Int(idx)] = 0
-                        raw.flags[Int(idx)] |= NodeFlags.hardlinkDuplicate.rawValue
-                        duplicates += 1
-                    }
-                }
-                s = e
+        let nodes = [Node](unsafeUninitializedCapacity: total) { buf, initialized in
+            take(&ctx.rootBuffer, bufferIndex: 0, base: base, into: buf, names: &names, lists: &lists)
+            for (i, w) in workers.enumerated() {
+                take(&w.buffer, bufferIndex: i + 1, base: base, into: buf, names: &names, lists: &lists)
             }
+            initialized = total
         }
-        return Output(raw: raw, unreadablePaths: lists.unreadablePaths, mountPoints: lists.mountPoints,
-                      duplicates: duplicates)
+        var out = Output(nodes: nodes, names: names, links: lists.links, unreadablePaths: lists.unreadablePaths,
+                         mountPoints: lists.mountPoints, duplicates: 0)
+        out.nodes.withUnsafeMutableBufferPointer { nb in
+            for r in lists.unreadableRefs {
+                nb[globalIndex(r, base)].flags.insert(.unreadable)
+            }
+            // Verschwundene Ordner (Blätter, weil nie gelesen) fallen beim Aufbau weg.
+            for r in lists.vanishedRefs {
+                nb[globalIndex(r, base)].flags.insert(.dead)
+            }
+            out.duplicates = dedupeHardlinks(nb, names: UnsafeBufferPointer(out.names.buffer), links: &out.links)
+        }
+        return out
+    }
+
+    /// Hardlinks: pro (Gerät, Inode) zählt genau ein Vorkommen, und zwar das
+    /// mit dem kleinsten Pfad (bytewise). So ist das Ergebnis unabhängig von
+    /// der Reihenfolge, in der die Worker sie gefunden haben. Die übrigen
+    /// zählen mit 0 Byte und bekommen das Flag `hardlinkDuplicate`.
+    static func dedupeHardlinks(
+        _ nb: UnsafeMutableBufferPointer<Node>, names: UnsafeBufferPointer<UInt8>, links: inout [HardlinkEntry]
+    ) -> Int {
+        guard links.count > 1 else { return 0 }
+        links.sort { $0.dev != $1.dev ? $0.dev < $1.dev : $0.ino < $1.ino }
+        var duplicates = 0
+        var s = 0
+        while s < links.count {
+            var e = s + 1
+            while e < links.count, links[e].dev == links[s].dev, links[e].ino == links[s].ino { e += 1 }
+            if e - s > 1 {
+                let group = links[s ..< e].map { ($0.index, pathBytes(nb, names, $0.index)) }
+                let winner = group.min { $0.1.lexicographicallyPrecedes($1.1) }!.0
+                for (idx, _) in group where idx != winner {
+                    nb[Int(idx)].allocatedSize = 0
+                    nb[Int(idx)].logicalSize = 0
+                    nb[Int(idx)].flags.insert(.hardlinkDuplicate)
+                    duplicates += 1
+                }
+            }
+            s = e
+        }
+        return duplicates
     }
 
     struct Lists {
         var unreadablePaths: [String] = []
         var mountPoints: [String] = []
         var unreadableRefs: [UInt64] = []
-        var links: [(dev: Int32, ino: UInt64, index: Int32)] = []
+        var vanishedRefs: [UInt64] = []
+        var links: [HardlinkEntry] = []
     }
 
     @inline(__always)
@@ -623,41 +753,47 @@ enum Assembler {
         base[Int(ref >> ScanContext.indexBits)] + Int(ref & ScanContext.indexMask)
     }
 
-    /// Hängt einen Worker-Puffer an den Rohbaum an und gibt ihn danach frei.
+    /// Schreibt einen Worker-Puffer in das Knoten-Array und gibt ihn danach frei.
     static func take(
-        _ b: inout WorkerBuffer, bufferIndex: Int, base: [Int], into raw: inout RawTree, lists: inout Lists
+        _ b: inout WorkerBuffer, bufferIndex: Int, base: [Int], into nodes: UnsafeMutableBufferPointer<Node>,
+        names: inout MappedBuffer<UInt8>, lists: inout Lists
     ) {
-        let nameBase = UInt32(raw.names.count)
-        raw.names.append(contentsOf: b.names)
+        let nameBase = UInt32(names.count)
+        names.append(contentsOf: b.names)
+        let offset = base[bufferIndex]
         for i in 0 ..< b.count {
             let pr = b.parentRef[i]
-            raw.parent.append(pr == ScanContext.noParent ? -1 : Int32(globalIndex(pr, base)))
-            raw.nameOffset.append(nameBase + b.nameOffset[i])
-            raw.nameLength.append(b.nameLength[i])
             let f = b.flags[i]
-            raw.flags.append(f)
-            raw.allocated.append(b.allocated[i])
-            raw.logical.append(b.logical[i])
-            raw.ownFiles.append(f & NodeFlags.directory.rawValue != 0 ? 0 : 1)
+            nodes.initializeElement(at: offset + i, to: Node(
+                allocatedSize: b.allocated[i],
+                logicalSize: b.logical[i],
+                parent: pr == ScanContext.noParent ? -1 : Int32(globalIndex(pr, base)),
+                firstChild: 0,
+                childCount: 0,
+                nameOffset: nameBase + b.nameOffset[i],
+                fileCount: f & NodeFlags.directory.rawValue != 0 ? 0 : 1,
+                nameLength: b.nameLength[i],
+                flags: NodeFlags(rawValue: f)))
         }
-        for h in b.hardlinks {
-            lists.links.append((h.dev, h.ino, Int32(base[bufferIndex] + Int(h.index))))
+        for var h in b.hardlinks {
+            h.index = Int32(offset + Int(h.index))
+            lists.links.append(h)
         }
         lists.unreadableRefs += b.unreadable
+        lists.vanishedRefs += b.vanished
         lists.unreadablePaths += b.unreadablePaths
         lists.mountPoints += b.mountPoints
         b = WorkerBuffer() // Speicher sofort freigeben
     }
 
     /// Pfad relativ zur Wurzel als Bytes (Komponenten mit „/“ getrennt).
-    static func pathBytes(_ raw: borrowing RawTree, _ index: Int32) -> [UInt8] {
+    static func pathBytes(_ nb: UnsafeMutableBufferPointer<Node>, _ names: UnsafeBufferPointer<UInt8>, _ index: Int32) -> [UInt8] {
         var comps: [Int32] = []
         var i = index
-        while i > 0 { comps.append(i); i = raw.parent[Int(i)] }
+        while i > 0 { comps.append(i); i = nb[Int(i)].parent }
         var out: [UInt8] = []
-        let names = raw.names.buffer
         for c in comps.reversed() {
-            let off = Int(raw.nameOffset[Int(c)]), len = Int(raw.nameLength[Int(c)])
+            let off = Int(nb[Int(c)].nameOffset), len = Int(nb[Int(c)].nameLength)
             out.append(UInt8(ascii: "/"))
             out.append(contentsOf: names[off ..< off + len])
         }

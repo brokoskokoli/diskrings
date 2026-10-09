@@ -92,6 +92,30 @@ struct ScanTreeTests {
         }
     }
 
+    @Test("validate() erkennt verletzte Invarianten")
+    func validateDetectsProblems() throws {
+        let t = try sample()
+        #expect(t.validate().isEmpty)
+        func broken(_ change: (inout [Node]) -> Void) -> ScanTree {
+            var nodes = t.nodes
+            change(&nodes)
+            return ScanTree(rootPath: t.rootPath, nodes: nodes, names: t.names)
+        }
+        let b = try #require(t.index(ofPath: "b")), a = try #require(t.index(ofPath: "a"))
+        // falsche Summe
+        #expect(!broken { $0[Int(a)].logicalSize += 1 }.validate().isEmpty)
+        // Ordner kleiner als seine Kinder
+        #expect(!broken { $0[0].allocatedSize -= 1 }.validate().isEmpty)
+        // Sortierung verletzt (b und a vertauscht)
+        #expect(!broken { $0.swapAt(Int(a), Int(b)) }.validate().isEmpty)
+        // falscher Elternzeiger
+        #expect(!broken { $0[Int(b)].parent = a }.validate().isEmpty)
+        // toter Knoten im Baum
+        #expect(!broken { $0[Int(b)].flags.insert(.dead) }.validate().isEmpty)
+        // unerreichbarer lebender Knoten
+        #expect(!broken { $0[0].childCount -= 1 }.validate().isEmpty)
+    }
+
     @Test("NodeRef ist hashbar und vergleicht Baum und Index")
     func nodeRefIdentity() throws {
         let t = try sample()

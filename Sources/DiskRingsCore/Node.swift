@@ -19,6 +19,10 @@ public struct NodeFlags: OptionSet, Sendable, Hashable {
     public static let mountPoint = NodeFlags(rawValue: 1 << 6)
     /// Versteckt (Name beginnt mit „.“ oder `UF_HIDDEN`).
     public static let hidden = NodeFlags(rawValue: 1 << 7)
+    /// Toter Knoten: nach einem Teil-Rescan oder Entfernen nicht mehr Teil
+    /// des Baums (von der Wurzel aus nicht erreichbar). Kommt nur in
+    /// `ScanTree.nodes` vor, bis der Baum kompaktiert wird.
+    public static let dead = NodeFlags(rawValue: 1 << 8)
 }
 
 /// Kompakter Knoten, 40 Byte. Indizes verweisen in `ScanTree.nodes`,

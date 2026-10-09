@@ -14,6 +14,9 @@ struct RawEntry {
     var logicalSize: UInt64
     /// `DIR_MNTSTATUS_*` bei Ordnern.
     var mountStatus: UInt32
+    /// Eigene belegte Größe eines Ordners (`ATTR_DIR_ALLOCSIZE`, entspricht
+    /// `st_blocks * 512`). Auf APFS 0, auf ExFAT/FAT ein Cluster und mehr.
+    var dirAllocatedSize: UInt64
     /// Fehlercode für diesen Eintrag (0 = in Ordnung).
     var error: UInt32
 }
@@ -39,7 +42,7 @@ struct DirectoryReader: ~Copyable {
         attrs.commonattr = attrgroup_t(ATTR_CMN_RETURNED_ATTRS)
             | attrgroup_t(ATTR_CMN_ERROR) | attrgroup_t(ATTR_CMN_NAME) | attrgroup_t(ATTR_CMN_DEVID)
             | attrgroup_t(ATTR_CMN_OBJTYPE) | attrgroup_t(ATTR_CMN_FLAGS) | attrgroup_t(ATTR_CMN_FILEID)
-        attrs.dirattr = attrgroup_t(ATTR_DIR_MOUNTSTATUS)
+        attrs.dirattr = attrgroup_t(ATTR_DIR_MOUNTSTATUS) | attrgroup_t(ATTR_DIR_ALLOCSIZE)
         attrs.fileattr = attrgroup_t(ATTR_FILE_LINKCOUNT) | attrgroup_t(ATTR_FILE_ALLOCSIZE)
             | attrgroup_t(ATTR_FILE_DATALENGTH)
     }
@@ -77,7 +80,8 @@ struct DirectoryReader: ~Copyable {
 
         var e = RawEntry(
             name: UnsafeBufferPointer(start: nil, count: 0), objType: 0, dev: 0, fileID: 0,
-            bsdFlags: 0, linkCount: 1, allocatedSize: 0, logicalSize: 0, mountStatus: 0, error: 0
+            bsdFlags: 0, linkCount: 1, allocatedSize: 0, logicalSize: 0, mountStatus: 0, dirAllocatedSize: 0,
+            error: 0
         )
         let common = returned.commonattr
         if common & attrgroup_t(ATTR_CMN_ERROR) != 0 {
@@ -111,6 +115,10 @@ struct DirectoryReader: ~Copyable {
             e.mountStatus = p.loadUnaligned(as: UInt32.self)
             p += 4
         }
+        if returned.dirattr & attrgroup_t(ATTR_DIR_ALLOCSIZE) != 0 {
+            e.dirAllocatedSize = UInt64(clamping: p.loadUnaligned(as: off_t.self))
+            p += 8
+        }
         let file = returned.fileattr
         if file & attrgroup_t(ATTR_FILE_LINKCOUNT) != 0 {
             e.linkCount = p.loadUnaligned(as: UInt32.self)
@@ -127,6 +135,9 @@ struct DirectoryReader: ~Copyable {
         body(e)
     }
 }
+
+/// Flags zum Öffnen eines Verzeichnisses zum Lesen, ohne Symlinks zu folgen.
+let directoryOpenFlags = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC
 
 /// Öffnet ein Verzeichnis ohne Symlinks zu folgen. Pfade über `PATH_MAX`
 /// werden stückweise mit `openat` geöffnet.

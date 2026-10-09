@@ -5,7 +5,7 @@ let usage = """
 Verwendung:
   diskrings-cli scan <pfad> [--top N] [--depth D] [--json] [--logical]
                             [--no-hidden] [--exclude PFAD]... [--workers N]
-                            [--cross-mounts] [--progress]
+                            [--cross-mounts] [--progress] [--live [--live-depth K]]
   diskrings-cli volumes [--json]
 
   scan     Scannt <pfad> und gibt Gesamtsumme, Dateianzahl, Dauer und die
@@ -29,6 +29,7 @@ struct ScanArgs {
     var json = false
     var logical = false
     var progress = false
+    var live = false
     var options = ScanOptions()
 }
 
@@ -50,6 +51,8 @@ func parseScan(_ args: ArraySlice<String>) -> ScanArgs {
         case "--json": a.json = true
         case "--logical": a.logical = true
         case "--progress": a.progress = true
+        case "--live": a.live = true
+        case "--live-depth": a.options.snapshotDepth = int(arg)
         case "--no-hidden": a.options.includeHidden = false
         case "--cross-mounts": a.options.crossMountPoints = true
         case "--exclude": a.options.excludedPaths.append(value(arg))
@@ -159,10 +162,16 @@ func runScan(_ a: ScanArgs) -> Int32 {
     sigSource.resume()
 
     let result: ScanResult
+    // --live: Live-Snapshots wie in der App anfordern (zum Messen des Aufwands).
+    final class LiveStats: @unchecked Sendable { var count = 0; var lastNodes = 0 }
+    let live = LiveStats()
     do {
         result = try engine.scanBlocking(path, cancellation: cancel, onProgress: a.progress ? { p in
             let line = "\r\(ByteFormat.count(p.filesScanned)) Dateien · \(ByteFormat.string(p.allocatedBytes)) · \(ByteFormat.duration(p.elapsed))   "
             FileHandle.standardError.write(Data(line.utf8))
+        } : nil, onSnapshot: a.live ? { t in
+            live.count += 1
+            live.lastNodes = t.count
         } : nil)
     } catch is CancellationError {
         FileHandle.standardError.write(Data("\nAbgebrochen.\n".utf8))
@@ -202,6 +211,9 @@ func runScan(_ a: ScanArgs) -> Int32 {
     print("Ordner:        \(ByteFormat.count(result.directoryCount))")
     print("Dauer:         \(ByteFormat.duration(result.duration)) (\(a.options.effectiveWorkerCount) Worker)")
     print("Baum:          \(ByteFormat.count(tree.count)) Knoten, \(ByteFormat.string(UInt64(tree.memoryFootprint))) im Speicher")
+    if a.live {
+        print("Live-Snapshots: \(live.count) (Tiefe \(a.options.snapshotDepth), zuletzt \(ByteFormat.count(live.lastNodes)) Knoten)")
+    }
     if result.hardlinkDuplicates > 0 {
         print("Hardlinks:     \(ByteFormat.count(result.hardlinkDuplicates)) Duplikate nicht doppelt gezählt")
     }

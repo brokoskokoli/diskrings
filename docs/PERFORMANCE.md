@@ -58,6 +58,31 @@ Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortier
 
 Beim Scan von `/`: 5 Worker 18,5 s, 8 Worker 14,1 s. Deshalb ist der Standard „alle Kerne, höchstens 8“ (Abweichung von der Spec, siehe DECISIONS.md).
 
+## Speicherspitze: Baumaufbau an Ort und Stelle (Befund K8)
+
+Messung wie oben (`/usr/bin/time -l … scan ~ --top 0`, 8 Worker, warmer Cache, 09.10.2026), je zwei Läufe:
+
+| Stand | Knoten | nach dem Lesen | zusammengeführt | fertiger Baum | Spitze (peak footprint) | max. RSS |
+|---|---:|---:|---:|---:|---:|---:|
+| vorher (Rohbaum + zweites Knoten-Array) | 2 887 413 | 160 MB | 159 MB | 183 MB | 310,5 MB / 310,7 MB | 315 MB |
+| nachher (Permutation an Ort und Stelle) | 2 887 711 | 161 MB | 185 MB | 185 MB | 239,7 MB / 238,7 MB | 244 MB |
+
+- Der Assembler schreibt direkt in das endgültige Knoten-Array (40 Byte pro Knoten), statt erst einen Rohbaum in Spaltenform (36 Byte) anzulegen. Der Builder braucht daneben nur noch 16 Byte Hilfsdaten pro Knoten und ordnet die Knoten per Zyklen-Permutation um.
+- Spitze jetzt etwa 83 Byte pro Knoten (vorher 108). Der Rest der Spitze: Knoten-Array 40 + Namen (mmap) 18 + Hilfsdaten 16 + am Ende die Namenskopie in Baum-Reihenfolge 18 Byte.
+- Die Scandauer ist unverändert (10,4 s / 10,6 s; die Schwankung zwischen Läufen liegt bei ±1 s).
+
+## Live-Snapshots bis Tiefe 6 (Befund K7)
+
+Gemessen mit `DISKRINGS_DEBUG_SNAPSHOT=1 diskrings-cli scan ~ --top 0 --live --live-depth K` (Snapshot alle 250 ms):
+
+| Tiefe | Knoten im Snapshot | Kopie unter dem Lock | Aufbau | Scandauer |
+|---:|---:|---:|---:|---:|
+| ohne Snapshots | – | – | – | 9,4–11,2 s |
+| 3 | 5 312 | 0,04–0,07 ms | 0,5–0,7 ms | 10,3–10,6 s |
+| 6 | 103 851 | 0,3–1,9 ms | 6–11 ms | 10,6–11,0 s |
+
+- Bei Tiefe 6 kostet ein Snapshot etwa 10 ms auf dem Koordinator-Thread (rund 4 % eines Kerns bei 4 Snapshots pro Sekunde). Die Worker warten nur während der Kopie unter dem Lock (unter 2 ms). Ein messbarer Einfluss auf die Scandauer ist nicht erkennbar (innerhalb der Schwankung).
+- Ein Snapshot dieser Größe belegt rund 6 MB. Standard ist deshalb jetzt `snapshotDepth = 6`, passend zu den 6 Standardringen.
+
 ## Offene Punkte
 - Kalter Cache (nach Neustart) ist nicht gemessen; die Zahlen oben sind Bestwerte.
-- Die Spitze beim Baum-Aufbau (etwa 106 Byte pro Knoten) ließe sich durch eine Permutation an Ort und Stelle statt eines zweiten Knoten-Arrays noch um etwa ein Drittel senken.

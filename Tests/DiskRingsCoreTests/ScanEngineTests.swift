@@ -338,6 +338,45 @@ struct ScanEngineOptionTests {
         #expect(r.tree.root.children.map(\.name) == ["da"])
     }
 
+    @Test("K1: Zwischen Auflisten und Öffnen verschwundener Ordner wird still verworfen")
+    func vanishedDirectory() throws {
+        let fx = try Fixture()
+        try fx.file("bleibt/a.bin", size: 1000)
+        try fx.dir("weg/innen")
+        let target = fx.path("weg/innen")
+        var engine = ScanEngine(options: ScanOptions(workerCount: 1))
+        engine.hooks.beforeOpenDirectory = { p in if p == target { rmdir(target) } }
+        let r = try engine.scanBlocking(fx.root)
+        expectValidTree(r.tree)
+        #expect(r.unreadablePaths.isEmpty)
+        #expect(r.tree.paths(withFlag: .unreadable).isEmpty)
+        #expect(r.tree.index(ofPath: target) == nil)
+        #expect(r.tree.root.child(named: "weg")?.childCount == 0)
+        #expect(r.directoryCount == 3) // Wurzel, bleibt, weg
+    }
+
+    @Test("K3: Unterordner werden relativ zum Elternordner geöffnet (kein Pfad-Tausch per Symlink)")
+    func openatRelativeToParent() throws {
+        let fx = try Fixture()
+        try fx.file("scan/a/b/echt.bin", size: 4000)
+        try fx.file("fremd/b/fremd.bin", size: 400_000)
+        let a = fx.path("scan/a")
+        let target = fx.path("scan/a/b")
+        let fremd = fx.path("fremd")
+        var engine = ScanEngine(options: ScanOptions(workerCount: 1))
+        // Nachdem „a“ gelesen wurde, wird „a“ gegen einen Symlink getauscht.
+        engine.hooks.beforeOpenDirectory = { p in
+            if p == target {
+                rename(a, a + "-alt")
+                Darwin.symlink(fremd, a)
+            }
+        }
+        let r = try engine.scanBlocking(fx.path("scan"))
+        let b = try #require(r.tree.index(ofPath: target))
+        #expect(r.tree[b].children.map(\.name) == ["echt.bin"])
+        #expect(r.allocatedSize < 100_000)
+    }
+
     @Test("Einhängepunkte werden nicht betreten")
     func mountPoints() throws {
         // /System/Volumes enthält nur Einhängepunkte (Data, VM, Preboot …).
@@ -371,9 +410,9 @@ struct ScanEngineOptionTests {
     }
 }
 
-@Suite("ScanEngine: Abgleich mit du")
+@Suite("ScanEngine: Abgleich mit du", .serialized, .timeLimit(.minutes(2)))
 struct ScanEngineDuTests {
-    @Test("Fixture-Baum: Abweichung zu du -sk unter 1 %")
+    @Test("S3: Fixture-Baum ergibt exakt du -sk (Hardlinks, Sparse, Symlink)")
     func fixtureVsDu() throws {
         let fx = try Fixture()
         for i in 0 ..< 200 {
@@ -383,10 +422,77 @@ struct ScanEngineDuTests {
         try fx.hardlink(orig, "h/zwei.bin")
         _ = try fx.sparseFile("sparse.bin", logical: 50_000_000)
         try fx.symlink("link", to: "a0")
+        try fx.dir("leer/ganz/tief")
         let r = try scan(fx.root) { $0.workerCount = 4 }
-        let du = try duBytes(fx.root)
-        let diff = Double(max(r.allocatedSize, du) - min(r.allocatedSize, du)) / Double(max(du, 1))
-        #expect(diff < 0.01, "Scan \(r.allocatedSize) vs. du \(du)")
+        #expect(r.hardlinkDuplicates == 1)
+        #expect(r.allocatedSize == (try duBytes(fx.root)))
+    }
+
+    @Test("S3: Genau zwei Hardlinks – exakte Größen und Markierung")
+    func twoHardlinksExact() throws {
+        let fx = try Fixture()
+        let orig = try fx.file("x/orig.bin", size: 300_000)
+        try fx.hardlink(orig, "y/zwei.bin")
+        let one = Fixture.allocated(orig)
+        var st = stat()
+        #expect(lstat(orig, &st) == 0 && st.st_nlink == 2)
+        let r = try scan(fx.root)
+        expectValidTree(r.tree)
+        #expect(r.hardlinkDuplicates == 1)
+        #expect(r.fileCount == 2)
+        #expect(r.allocatedSize == one)
+        #expect(r.logicalSize == 300_000)
+        #expect(r.tree.root.child(named: "x")?.allocatedSize == one)
+        #expect(r.tree.root.child(named: "y")?.allocatedSize == 0)
+        #expect(r.tree.root.child(named: "y")?.child(named: "zwei.bin")?.isHardlinkDuplicate == true)
+        #expect(r.allocatedSize == (try duBytes(fx.root)))
+    }
+
+    /// Füllt ein eingehängtes Image mit vielen Ordnern und Dateien.
+    func populate(_ root: String) throws {
+        for d in 0 ..< 40 {
+            let dir = root + "/ordner\(d % 8)/unter\(d)"
+            try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            for f in 0 ..< (d % 5) {
+                let data = Data(repeating: UInt8(f), count: 1000 + d * 3000 + f * 17)
+                try data.write(to: URL(fileURLWithPath: dir + "/f\(f).bin"))
+            }
+        }
+        try FileManager.default.createDirectory(atPath: root + "/leer/a/b/c", withIntermediateDirectories: true)
+    }
+
+    @Test("S1: Ordner-Eigengröße zählt mit – ExFAT-Image gleich du -sk",
+          .enabled(if: DiskImage.isAvailable, "hdiutil nicht verfügbar"))
+    func exfatVsDu() throws {
+        let fx = try Fixture()
+        let img = try DiskImage(fs: "ExFAT", in: fx.root)
+        defer { img.detach() }
+        try populate(img.mountPoint)
+        let r = try scan(img.mountPoint) { $0.workerCount = 4 }
+        let du = try duBytes(img.mountPoint)
+        #expect(r.allocatedSize == du, "Scan \(r.allocatedSize) vs. du \(du)")
+        // Ordner belegen auf ExFAT eigene Cluster.
+        let leer = try #require(r.tree.index(ofPath: img.mountPoint + "/leer/a/b/c"))
+        #expect(r.tree.node(leer).allocatedSize == Fixture.allocated(img.mountPoint + "/leer/a/b/c"))
+        #expect(r.tree.node(leer).allocatedSize > 0)
+        #expect(r.tree.node(leer).logicalSize == 0)
+        expectValidTree(r.tree)
+    }
+
+    @Test("S1: HFS+-Image (mit Hardlinks) gleich du -sk",
+          .enabled(if: DiskImage.isAvailable, "hdiutil nicht verfügbar"))
+    func hfsVsDu() throws {
+        let fx = try Fixture()
+        let img = try DiskImage(fs: "HFS+", in: fx.root)
+        defer { img.detach() }
+        try populate(img.mountPoint)
+        let orig = img.mountPoint + "/ordner1/unter1/f0.bin"
+        #expect(link(orig, img.mountPoint + "/ordner2/zweit.bin") == 0)
+        let r = try scan(img.mountPoint) { $0.workerCount = 4 }
+        let du = try duBytes(img.mountPoint)
+        #expect(r.allocatedSize == du, "Scan \(r.allocatedSize) vs. du \(du)")
+        #expect(r.hardlinkDuplicates >= 1)
+        expectValidTree(r.tree)
     }
 
     @Test("Integration: /usr/share, Abweichung zu du -sk unter 1 %")
@@ -578,6 +684,8 @@ struct ScanEngineConcurrencyTests {
         let snaps = box.value
         try #require(!snaps.isEmpty)
         for s in snaps {
+            #expect(s.validate().isEmpty)
+            #expect(!s.isComplete)
             #expect(s.rootPath == r.tree.rootPath)
             #expect(s.nodes.allSatisfy { $0.isDirectory })
             #expect((0 ..< Int32(s.count)).allSatisfy { s.depth(of: $0) <= 2 })
@@ -601,6 +709,20 @@ struct ScanEngineConcurrencyTests {
         }
         #expect(missing == 0)
         #expect(tooMany == 0)
+    }
+
+    @Test("K7: Live-Snapshots reichen standardmäßig 6 Ebenen tief")
+    func liveSnapshotDefaultDepth() throws {
+        #expect(ScanOptions().snapshotDepth == 6)
+        let fx = try Fixture()
+        try fx.file("1/2/3/4/5/6/7/8/datei.bin", size: 5000)
+        let box = OSAllocatedUnfairLockBox<[ScanTree]>([])
+        var engine = ScanEngine(options: ScanOptions(workerCount: 1, progressInterval: 0.001))
+        engine.hooks.beforeOpenDirectory = { _ in usleep(20_000) }
+        _ = try engine.scanBlocking(fx.root, onSnapshot: { t in box.value.append(t) })
+        let last = try #require(box.value.last)
+        #expect(last.index(ofPath: "1/2/3/4/5/6") != nil)
+        #expect(last.index(ofPath: "1/2/3/4/5/6/7") == nil)
     }
 
     @Test("Ereignis-Stream liefert Fortschritt und Endergebnis")

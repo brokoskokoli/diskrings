@@ -15,3 +15,11 @@ func memDebug(_ label: String) {
     guard kr == KERN_SUCCESS else { return }
     fputs("[mem] \(label): footprint \(info.phys_footprint / 1_000_000) MB\n", stderr)
 }
+
+/// Gibt Knotenzahl und Dauer eines Live-Snapshots auf stderr aus, wenn
+/// `DISKRINGS_DEBUG_SNAPSHOT` gesetzt ist (Kopie unter dem Lock, Aufbau).
+func snapshotDebug(nodes: Int, copyNanos: UInt64, buildNanos: UInt64) {
+    guard getenv("DISKRINGS_DEBUG_SNAPSHOT") != nil else { return }
+    let copy = Double(copyNanos) / 1e6, build = Double(buildNanos) / 1e6
+    fputs("[snapshot] \(nodes) Knoten, Kopie \(copy) ms, Aufbau \(build) ms\n", stderr)
+}

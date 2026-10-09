@@ -178,34 +178,10 @@ func duBytes(_ path: String, extraArgs: [String] = []) throws -> UInt64 {
     return kb * 1024
 }
 
-/// Prüft die Invarianten aus SPEC 4.2 für den ganzen Baum.
+/// Prüft die Invarianten aus SPEC 4.2 für den ganzen Baum (`ScanTree.validate()`).
 func expectValidTree(_ tree: ScanTree, sourceLocation: SourceLocation = #_sourceLocation) {
-    let nodes = tree.nodes
-    #expect(nodes[0].parent == -1, sourceLocation: sourceLocation)
-    var problems = 0
-    for (i, n) in nodes.enumerated() {
-        let r = tree.childIndices(of: Int32(i))
-        if !r.isEmpty {
-            if r.lowerBound <= Int32(i) || Int(r.upperBound) > nodes.count { problems += 1; continue }
-        }
-        var sumA: UInt64 = 0, sumL: UInt64 = 0, sumF: UInt32 = 0
-        var prev: Node?
-        for c in r {
-            let child = nodes[Int(c)]
-            if child.parent != Int32(i) { problems += 1 }
-            if let p = prev, p.allocatedSize < child.allocatedSize { problems += 1 }
-            prev = child
-            sumA += child.allocatedSize
-            sumL += child.logicalSize
-            sumF += child.fileCount
-        }
-        if n.isDirectory {
-            if n.allocatedSize != sumA || n.logicalSize != sumL || n.fileCount != sumF { problems += 1 }
-        } else {
-            if n.childCount != 0 || n.fileCount != 1 { problems += 1 }
-        }
-    }
-    #expect(problems == 0, "Invarianten verletzt: \(problems)", sourceLocation: sourceLocation)
+    let problems = tree.validate()
+    #expect(problems.isEmpty, "Invarianten verletzt: \(problems)", sourceLocation: sourceLocation)
 }
 
 /// Sequenzieller Standard-Scan für Tests.
