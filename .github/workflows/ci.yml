@@ -1,0 +1,50 @@
+# Build und Tests auf einem macOS-Runner. Keine Signatur, keine Notarisierung:
+# Das Zertifikat bleibt auf dem Entwicklerrechner (SPEC 7).
+#
+# Performance-Tests (Filter "Performance|performance", wie in scripts/check.sh)
+# laufen hier nicht: Ihre Grenzen (z. B. Layout von 2 Mio. Knoten unter 50 ms,
+# Vergleich unter 2 s) sind auf einem lokalen Apple-Silicon-Rechner kalibriert.
+# Die geteilten GitHub-Runner (3 vCPUs, wechselnde Last) schwanken stark, die
+# Tests wären dort unzuverlässig. Sie bleiben Teil von scripts/check.sh, das vor
+# jedem Commit und in scripts/release.sh läuft.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Neuestes stabiles Xcode: Der Code nutzt Swift 6 im Strict-Concurrency-Modus.
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Toolchain
+        run: |
+          xcode-select -p
+          swift --version
+          # Package.swift setzt -plugin-path nur bei aktiven Command Line Tools.
+          # Mit Xcode darf der Zusatz nicht auftauchen:
+          if swift package dump-package | grep -q -- '-plugin-path'; then
+            echo "::error::Package.swift setzt -plugin-path, obwohl Xcode aktiv ist"
+            exit 1
+          fi
+
+      - name: swift build
+        run: swift build
+
+      - name: swift test (ohne Performance-Tests)
+        run: swift test --skip 'Performance|performance'
+
+      - name: Release-Build (universal)
+        run: swift build -c release --product DiskRings --arch arm64 --arch x86_64
