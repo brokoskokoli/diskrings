@@ -136,7 +136,7 @@ swift run -c release diskrings-cli scan / --json
 swift run -c release diskrings-cli volumes
 ```
 
-Release builds (Developer ID signing and notarization) are made locally with `scripts/release.sh`; see the comments in that script. The version lives in [`VERSION`](VERSION).
+Release builds (Developer ID signing and notarization) are made by the GitHub Actions workflow `release.yml` when a `v*` tag is pushed, or locally with `scripts/release.sh`. Setup, secrets and security trade-offs: [docs/RELEASING.md](docs/RELEASING.md) (German). The version lives in [`VERSION`](VERSION).
 
 ## FAQ
 

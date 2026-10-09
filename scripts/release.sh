@@ -8,20 +8,25 @@
 # Ablauf:
 #   1. scripts/check.sh (Build und alle Tests)
 #   2. scripts/make-app.sh (Release, universal, Developer ID + Hardened Runtime)
-#   3. App als ZIP zur Notarisierung einreichen, Ticket an die App heften (stapler)
+#   3. App als ZIP zur Notarisierung einreichen (scripts/notarize.sh),
+#      Ticket an die App heften (stapler)
 #   4. Endgültiges ZIP (ditto) und DMG (hdiutil, mit Link auf /Applications)
 #      aus der gehefteten App; DMG signieren, einreichen, heften
 #   5. Gatekeeper-Prüfung mit spctl
 #   6. nur mit --publish: gh release create v<VERSION> mit ZIP und DMG
 #
-# Voraussetzung für die Notarisierung: ein Schlüsselbund-Profil "diskrings"
-# (einmalig, siehe Abbruchmeldung). Zugangsdaten liegen nie im Repo.
+# Notarisierung (scripts/notarize.sh): Schlüsselbund-Profil "diskrings"
+# (Standard) oder App Store Connect API Key über NOTARY_API_KEY_ID,
+# NOTARY_API_ISSUER_ID und NOTARY_API_KEY_PATH bzw. NOTARY_API_KEY_P8_BASE64.
+# Signatur: DISKRINGS_IDENTITY, DISKRINGS_KEYCHAIN (siehe make-app.sh).
+# Der Release-Workflow (.github/workflows/release.yml) ruft dieses Skript mit
+# --skip-checks auf. Zugangsdaten liegen nie im Repo. Siehe docs/RELEASING.md.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PROFILE=${DISKRINGS_NOTARY_PROFILE:-diskrings}
 IDENTITY=${DISKRINGS_IDENTITY:-"Developer ID Application: Stefan Richter (AGRWTKQZ8C)"}
-TEAM_ID=AGRWTKQZ8C
+KEYCHAIN_ARGS=()
+if [ -n "${DISKRINGS_KEYCHAIN:-}" ]; then KEYCHAIN_ARGS=(--keychain "$DISKRINGS_KEYCHAIN"); fi
 SIGN_TIMEOUT=${DISKRINGS_SIGN_TIMEOUT:-60}
 APP=build/DiskRings.app
 DIST=dist
@@ -32,7 +37,7 @@ for arg in "$@"; do
     case "$arg" in
         --publish) PUBLISH=1 ;;
         --skip-checks) SKIP_CHECKS=1 ;;
-        -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unbekannte Option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -78,40 +83,6 @@ run_with_timeout() {
     wait "$pid"
 }
 
-notary_help() {
-    cat >&2 <<MSG
-
-error: Kein Notarisierungs-Profil "$PROFILE" im Schlüsselbund.
-
-Einmalig anlegen (fragt nach einem app-spezifischen Passwort, erzeugt unter
-https://account.apple.com → Anmeldung und Sicherheit → App-spezifische Passwörter):
-
-    xcrun notarytool store-credentials $PROFILE --apple-id <deine-apple-id> --team-id $TEAM_ID
-
-Danach erneut starten (die Tests müssen nicht noch einmal laufen):
-
-    scripts/release.sh --skip-checks
-
-Bis hierher fertig: $APP (Developer ID signiert, noch nicht notarisiert).
-MSG
-}
-
-# Reicht eine Datei ein und wartet auf das Ergebnis; bei Ablehnung das Protokoll zeigen.
-notarize() {
-    local file=$1 out id
-    echo "==> notarytool submit $file (wartet auf Apple, meist wenige Minuten)"
-    out=$(xcrun notarytool submit "$file" --keychain-profile "$PROFILE" --wait 2>&1) || true
-    echo "$out"
-    if ! grep -q "status: Accepted" <<<"$out"; then
-        id=$(grep -m1 -Eo 'id: [0-9a-f-]{36}' <<<"$out" | cut -d' ' -f2 || true)
-        if [ -n "$id" ]; then
-            xcrun notarytool log "$id" --keychain-profile "$PROFILE" >&2 || true
-        fi
-        echo "error: Notarisierung von $file nicht akzeptiert." >&2
-        exit 1
-    fi
-}
-
 # --- 1. Prüfen -------------------------------------------------------------
 if [ "$SKIP_CHECKS" = "1" ]; then
     echo "==> check.sh übersprungen (--skip-checks)"
@@ -133,22 +104,20 @@ rm -rf "$DIST"
 mkdir -p "$DIST"
 
 # --- 3. App notarisieren ---------------------------------------------------
-echo "==> Notarisierungs-Profil \"$PROFILE\" prüfen"
-set +e
-run_with_timeout 60 xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1
-rc=$?
-set -e
-if [ "$rc" -eq 124 ]; then
-    echo "error: notarytool hat nach 60 s nicht geantwortet (Schlüsselbund-Dialog?)." >&2
-    exit 124
-elif [ "$rc" -ne 0 ]; then
-    notary_help
+if ! scripts/notarize.sh check; then
+    cat >&2 <<MSG
+
+Bis hierher fertig: $APP (Developer ID signiert, noch nicht notarisiert).
+Nach dem Einrichten erneut starten (die Tests müssen nicht noch einmal laufen):
+
+    scripts/release.sh --skip-checks
+MSG
     exit 1
 fi
 
 SUBMIT_ZIP="$DIST/.DiskRings-notarize.zip"
 ditto -c -k --keepParent "$APP" "$SUBMIT_ZIP"
-notarize "$SUBMIT_ZIP"
+scripts/notarize.sh submit "$SUBMIT_ZIP"
 rm -f "$SUBMIT_ZIP"
 echo "==> stapler staple $APP"
 xcrun stapler staple "$APP"
@@ -162,19 +131,28 @@ STAGE=$(mktemp -d "${TMPDIR:-/tmp}/diskrings-dmg.XXXXXX")
 trap 'rm -rf "$STAGE"' EXIT
 ditto "$APP" "$STAGE/DiskRings.app"
 ln -s /Applications "$STAGE/Applications"
-hdiutil create -volname "DiskRings $VERSION" -srcfolder "$STAGE" -fs HFS+ \
-    -format UDZO -ov "$DMG" >/dev/null
+# hdiutil scheitert auf CI-Runnern gelegentlich mit "Resource busy": bis zu 3 Versuche.
+for attempt in 1 2 3; do
+    if hdiutil create -volname "DiskRings $VERSION" -srcfolder "$STAGE" -fs HFS+ \
+        -format UDZO -ov "$DMG" >/dev/null; then
+        break
+    fi
+    if [ "$attempt" -eq 3 ]; then echo "error: hdiutil create fehlgeschlagen." >&2; exit 1; fi
+    echo "warning: hdiutil create fehlgeschlagen, neuer Versuch in 5 s" >&2
+    sleep 5
+done
 
 echo "==> codesign $DMG"
 set +e
-run_with_timeout "$SIGN_TIMEOUT" codesign --force --sign "$IDENTITY" --timestamp "$DMG"
+run_with_timeout "$SIGN_TIMEOUT" codesign --force --sign "$IDENTITY" \
+    ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} --timestamp "$DMG"
 rc=$?
 set -e
 if [ "$rc" -ne 0 ]; then
     echo "error: Signatur des DMG fehlgeschlagen (Code $rc; 124 = Schlüsselbund-Dialog?)." >&2
     exit "$rc"
 fi
-notarize "$DMG"
+scripts/notarize.sh submit "$DMG"
 echo "==> stapler staple $DMG"
 xcrun stapler staple "$DMG"
 

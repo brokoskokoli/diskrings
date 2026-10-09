@@ -19,12 +19,19 @@
 # codesign hängt dann. Das Skript bricht codesign deshalb nach
 # DISKRINGS_SIGN_TIMEOUT Sekunden (Standard 60) ab. Abhilfe: Im Dialog „Immer
 # erlauben“ wählen (einmalig), danach läuft die Signatur ohne Rückfrage.
+#
+# DISKRINGS_IDENTITY=…   andere Signier-Identität (Name wie in `security find-identity`)
+# DISKRINGS_KEYCHAIN=…   Identität nur in diesem Schlüsselbund suchen (z. B. die
+#                        temporäre Keychain der Release-Workflows). Dann gibt es
+#                        keinen Rückfall auf ad hoc: fehlt die Identität dort,
+#                        bricht das Skript ab.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP=build/DiskRings.app
 BUNDLE_ID=de.stefanrichter.DiskRings
 IDENTITY=${DISKRINGS_IDENTITY:-"Developer ID Application: Stefan Richter (AGRWTKQZ8C)"}
+KEYCHAIN=${DISKRINGS_KEYCHAIN:-}
 SIGN_TIMEOUT=${DISKRINGS_SIGN_TIMEOUT:-60}
 VERSION=${VERSION:-$(tr -d '[:space:]' < VERSION)}
 BUILD=${BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}
@@ -134,17 +141,32 @@ sign_adhoc() {
     SIGNED_WITH=adhoc
 }
 
+# Mit DISKRINGS_KEYCHAIN: nur dort suchen, ohne -v (Gültigkeit prüft codesign
+# bzw. die Notarisierung), und ohne Rückfall auf ad hoc.
+KEYCHAIN_ARGS=()
+if [ -n "$KEYCHAIN" ]; then
+    KEYCHAIN_ARGS=(--keychain "$KEYCHAIN")
+    IDENTITIES=$(security find-identity -p codesigning "$KEYCHAIN")
+else
+    IDENTITIES=$(security find-identity -v -p codesigning)
+fi
+
 SIGNED_WITH=
 if [ "${DISKRINGS_ADHOC:-0}" = "1" ]; then
     echo "    DISKRINGS_ADHOC=1: ad-hoc-Signatur"
     sign_adhoc
-elif ! grep -qF "\"$IDENTITY\"" <<<"$(security find-identity -v -p codesigning)"; then
+elif ! grep -qF "\"$IDENTITY\"" <<<"$IDENTITIES"; then
+    if [ -n "$KEYCHAIN" ]; then
+        echo "error: Identität \"$IDENTITY\" nicht im Schlüsselbund $KEYCHAIN" >&2
+        exit 1
+    fi
     echo "warning: Identität \"$IDENTITY\" nicht im Schlüsselbund, signiere ad hoc" >&2
     sign_adhoc
 else
     echo "==> codesign ($IDENTITY, Hardened Runtime, Timeout ${SIGN_TIMEOUT}s)"
     set +e
-    codesign_with_timeout --force --sign "$IDENTITY" --options runtime --timestamp "$APP"
+    codesign_with_timeout --force --sign "$IDENTITY" ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} \
+        --options runtime --timestamp "$APP"
     rc=$?
     set -e
     if [ "$rc" -eq 0 ]; then

@@ -116,7 +116,11 @@ swift scripts/make-social-preview.swift  # docs/images/social-preview.png
 
 ### Release-Ablauf
 
-Signieren und Notarisieren laufen lokal, nicht in der CI. Die CI (GitHub Actions) baut nur und führt die Tests aus. Einmalig das Notarisierungs-Profil anlegen (mit einem app-spezifischen Passwort der Apple-ID):
+Ausführlich, mit einmaliger Einrichtung und Sicherheitsabwägungen: [RELEASING.md](RELEASING.md).
+
+**Über GitHub Actions:** `VERSION` erhöhen und committen, dann `git tag v<version> && git push origin v<version>`. Der Workflow `release.yml` baut, signiert, notarisiert und veröffentlicht das Release. Ein Trockenlauf ohne Veröffentlichung geht über Actions → Release → Run workflow.
+
+**Lokal:** Einmalig das Notarisierungs-Profil anlegen (mit einem app-spezifischen Passwort der Apple-ID; alternativ API-Key-Variablen, siehe RELEASING.md):
 
 ```sh
 xcrun notarytool store-credentials diskrings --apple-id <apple-id> --team-id AGRWTKQZ8C
