@@ -252,6 +252,8 @@ extension AppState {
     func endCompare() {
         compare = nil
         compareRunGate.invalidate()
+        // Ein verworfener Lauf räumt seine Meldung nicht mehr selbst ab.
+        snapshots.busy = nil
         if tree == nil, phase == .browsing {
             phase = .start
             refreshVolumes()

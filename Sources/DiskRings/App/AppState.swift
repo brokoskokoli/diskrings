@@ -226,6 +226,7 @@ final class AppState {
         clearSearch()
         compare = nil
         compareRunGate.invalidate()
+        snapshots.busy = nil
         setTree(nil)
         phase = .scanning
         stallDetector = ScanStallDetector(start: Date())
@@ -255,6 +256,7 @@ final class AppState {
     func backToStart() {
         compare = nil
         compareRunGate.invalidate()
+        snapshots.busy = nil
         cancelScan()
         cancelPartialRescans()
         setTree(nil)
