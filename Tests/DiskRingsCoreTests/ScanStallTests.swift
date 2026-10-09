@@ -36,6 +36,20 @@ struct ScanStallTests {
         #expect(d.isStalled(at: t0.addingTimeInterval(9.1)))
     }
 
+    @Test("Herzschlag (gelesener Block in einem großen Ordner) zählt als Bewegung")
+    func heartbeatCountsAsMovement() {
+        var d = ScanStallDetector(start: t0)
+        var p = progress(files: 5, dirs: 1)
+        d.observe(p, at: t0)
+        // Ein Ordner mit 1 Mio. Dateien: Zähler stehen 8 s, aber Blöcke kommen.
+        for i in 1 ... 8 {
+            p.heartbeat += 1
+            d.observe(p, at: t0.addingTimeInterval(Double(i)))
+        }
+        #expect(!d.isStalled(at: t0.addingTimeInterval(10.9)))
+        #expect(d.isStalled(at: t0.addingTimeInterval(11.1)))
+    }
+
     @Test("Nur gelesene Bytes ohne neue Einträge zählen nicht als Bewegung; eigene Schwelle")
     func bytesOnlyAndThreshold() {
         var d = ScanStallDetector(start: t0, threshold: 5)

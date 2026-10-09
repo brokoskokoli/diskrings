@@ -62,6 +62,10 @@ public struct ScanProgress: Sendable, Equatable {
     public var elapsed: Double
     /// Anzahl der Worker, die gerade einen Teilbaum lesen.
     public var activeWorkers: Int = 0
+    /// Herzschlag: Anzahl der bisher gelesenen `getattrlistbulk`-Blöcke. Steigt
+    /// auch, während ein sehr großer Ordner gelesen wird (die Zähler oben
+    /// steigen erst, wenn er fertig ist); siehe `ScanStallDetector`.
+    public var heartbeat: UInt64 = 0
 }
 
 /// Ereignisse des asynchronen Scan-Streams.

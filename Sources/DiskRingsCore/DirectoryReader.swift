@@ -51,10 +51,12 @@ struct DirectoryReader: ~Copyable {
 
     /// Liest alle Einträge des geöffneten Verzeichnisses. Gibt 0 oder den
     /// `errno` des ersten fehlgeschlagenen Aufrufs zurück. `shouldStop` wird
-    /// nach jedem Block geprüft.
+    /// nach jedem Block geprüft, `onBlock` nach jedem gelesenen Block
+    /// aufgerufen (Herzschlag für die Fortschrittsanzeige).
     mutating func read(
         fd: Int32,
         shouldStop: () -> Bool,
+        onBlock: () -> Void = {},
         _ body: (RawEntry) -> Void
     ) -> Int32 {
         let base = buffer.baseAddress!
@@ -68,6 +70,7 @@ struct DirectoryReader: ~Copyable {
                 Self.parse(p, body)
                 p += entryLength
             }
+            onBlock()
             if shouldStop() { return 0 }
         }
     }

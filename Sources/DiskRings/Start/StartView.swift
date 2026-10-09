@@ -277,7 +277,7 @@ struct StallHint: View {
         HStack(spacing: 10) {
             Image(systemName: "hand.raised.fill").foregroundStyle(.orange).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Wartet auf Freigabe durch macOS … (Systemdialog prüfen)")
+                Text("Wartet evtl. auf Freigabe durch macOS … (Systemdialog prüfen)")
                     .font(.system(size: 12, weight: .semibold))
                 Text("macOS fragt evtl. nach dem Zugriff auf einen Ordner oder ein Laufwerk; der Dialog kann hinter anderen Fenstern liegen. Mit Festplattenvollzugriff entfallen diese Abfragen.")
                     .font(.system(size: 11))

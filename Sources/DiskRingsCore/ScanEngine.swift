@@ -377,6 +377,9 @@ final class ScanContext: @unchecked Sendable {
     var dirs = 0
     var bytes: UInt64 = 0
     var currentPath = ""
+    /// Herzschlag (gelesene Blöcke); eigenes Lock, damit die Worker dafür
+    /// nicht auf `cond` warten.
+    let heartbeats = OSAllocatedUnfairLock(initialState: UInt64(0))
     /// Live-Skelett der obersten Ebenen (Ordner bis `snapshotDepth`).
     var skeleton = RawTree()
 
@@ -437,7 +440,8 @@ final class ScanContext: @unchecked Sendable {
         cond.lock()
         defer { cond.unlock() }
         return ScanProgress(filesScanned: files, directoriesScanned: dirs, allocatedBytes: bytes,
-                            currentPath: currentPath, elapsed: 0, activeWorkers: active)
+                            currentPath: currentPath, elapsed: 0, activeWorkers: active,
+                            heartbeat: heartbeats.withLock { $0 })
     }
 
     func skeletonSnapshot() -> RawTree {
@@ -535,7 +539,8 @@ final class ScanWorker: @unchecked Sendable {
             if fd < 0 {
                 readError = -fd
             } else {
-                readError = reader.read(fd: fd, shouldStop: { ctx.cancellation.isCancelled }) { e in
+                readError = reader.read(fd: fd, shouldStop: { ctx.cancellation.isCancelled },
+                                        onBlock: { ctx.heartbeats.withLock { $0 &+= 1 } }) { e in
                     let name = e.name
                     guard name.count > 0 else { return }
                     entries += 1
