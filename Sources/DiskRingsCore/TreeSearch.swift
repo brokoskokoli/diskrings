@@ -13,6 +13,11 @@ public enum TreeSearch {
         public var matches: [Int32]
         /// Gesamtzahl der Treffer.
         public var total: Int
+
+        public init(matches: [Int32], total: Int) {
+            self.matches = matches
+            self.total = total
+        }
     }
 
     public static func search(_ query: String, in tree: ScanTree, under start: Int32 = ScanTree.rootIndex,

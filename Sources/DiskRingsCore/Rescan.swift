@@ -93,7 +93,7 @@ extension ScanEngine {
     }
 
     /// Index des Knotens für `path` oder seines nächsten Vorfahren im Baum.
-    static func nearestExistingIndex(of path: String, in tree: ScanTree) -> Int32 {
+    public static func nearestExistingIndex(of path: String, in tree: ScanTree) -> Int32 {
         var p = path
         while true {
             if let i = tree.index(ofPath: p) { return i }

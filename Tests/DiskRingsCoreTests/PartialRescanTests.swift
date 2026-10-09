@@ -164,3 +164,56 @@ struct TreeSearchTests {
         #endif
     }
 }
+
+@Suite("Animation nach Änderungen am Baum")
+struct EditTransitionTests {
+    @Test("Entfernter Knoten schrumpft, Geschwister wandern, Endbild = neues Layout")
+    func removal() throws {
+        let tree = smallTree()
+        let movies = try #require(tree.index(ofPath: "Movies"))
+        let chain = tree.removingNodes([movies])
+        let old = SunburstLayout(tree: tree, focus: 0)
+        let new = SunburstLayout(tree: chain.tree, focus: 0)
+        let tr = EditTransition(from: old, to: new, translate: chain.translate)
+        #expect(tr.matchedCount >= new.arcs.filter { $0.kind == .node }.count)
+        // Am Anfang: alte Winkel der verbleibenden Arcs.
+        let f0 = tr.frame(at: 0, rings: 6)
+        let lib = try #require(tree.index(ofPath: "Library"))
+        let oldLib = try #require(old.arcIndex(ofNode: lib).map { old.arcs[$0] })
+        let newLibIndex = try #require(chain.translate(lib).flatMap { new.arcIndex(ofNode: $0) })
+        let d0 = try #require(f0.first { $0.isFromTarget && $0.arcIndex == newLibIndex })
+        #expect(abs(d0.startAngle - oldLib.startAngle) < 1e-9 && abs(d0.endAngle - oldLib.endAngle) < 1e-9)
+        // Das entfernte Segment ist zu Beginn voll sichtbar …
+        let oldMovies = try #require(old.arcIndex(ofNode: movies))
+        #expect(f0.contains { !$0.isFromTarget && $0.arcIndex == oldMovies && $0.opacity == 1 })
+        // … in der Mitte halb so breit und am Ende verschwunden.
+        let fm = tr.frame(at: 0.5, rings: 6)
+        let mid = try #require(fm.first { !$0.isFromTarget && $0.arcIndex == oldMovies })
+        #expect(abs((mid.endAngle - mid.startAngle) - old.arcs[oldMovies].span / 2) < 1e-9)
+        let f1 = tr.frame(at: 1, rings: 6)
+        #expect(f1.allSatisfy { $0.isFromTarget })
+        for d in f1 {
+            let a = new.arcs[d.arcIndex]
+            #expect(abs(d.startAngle - a.startAngle) < 1e-9 && abs(d.endAngle - a.endAngle) < 1e-9)
+        }
+    }
+
+    @Test("Neue Arcs wachsen aus ihrer Mitte")
+    func growth() throws {
+        let tree = smallTree()
+        var b = ScanTreeBuilder(rootName: "Movies")
+        b.file("film.mov", size: 9_000_000)
+        b.file("neu.mov", size: 20_000_000)
+        let sub = b.build(rootPath: "/Users/demo/Movies")
+        let movies = try #require(tree.index(ofPath: "Movies"))
+        let edit = tree.replacingSubtree(at: movies, with: sub)
+        let tr = EditTransition(from: SunburstLayout(tree: tree), to: SunburstLayout(tree: edit.tree),
+                                translate: edit.translate)
+        let neu = try #require(edit.tree.index(ofPath: "Movies/neu.mov"))
+        let j = try #require(tr.to.arcIndex(ofNode: neu))
+        #expect(!tr.frame(at: 0, rings: 6).contains { $0.isFromTarget && $0.arcIndex == j })
+        let d = try #require(tr.frame(at: 0.5, rings: 6).first { $0.isFromTarget && $0.arcIndex == j })
+        #expect(abs((d.endAngle - d.startAngle) - tr.to.arcs[j].span / 2) < 1e-9)
+        #expect(d.opacity == 0.5)
+    }
+}
