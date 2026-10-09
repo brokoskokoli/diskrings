@@ -6,8 +6,11 @@ import Foundation
 /// zeigen und den Aufruf bis zur Antwort blockieren. Ohne Hinweis sähe das
 /// aus, als hinge die App.
 ///
-/// Als Bewegung zählt nur ein neuer Eintrag (Datei oder Ordner); die Engine
-/// meldet den Fortschritt auch ohne Änderung alle 250 ms. Die Uhrzeit kommt
+/// Als Bewegung zählt ein neuer Eintrag (Datei oder Ordner) oder ein neuer
+/// Herzschlag (`ScanProgress.heartbeat`, ein gelesener Block): In einem
+/// Ordner mit 1 Mio. Dateien steigen die Zähler erst nach 5–9 s, die Blöcke
+/// kommen aber laufend. Die Engine meldet den Fortschritt auch ohne Änderung
+/// alle 250 ms; das zählt nicht. Die Uhrzeit kommt
 /// von außen, damit sich die Logik ohne Warten testen lässt.
 public struct ScanStallDetector: Sendable, Equatable {
     /// Ab so vielen Sekunden ohne neue Einträge gilt der Scan als stillstehend.
@@ -16,6 +19,8 @@ public struct ScanStallDetector: Sendable, Equatable {
     public let threshold: TimeInterval
     /// Letzter gesehener Zählerstand (Dateien + Ordner).
     public private(set) var lastCount: Int = 0
+    /// Letzter gesehener Herzschlag.
+    public private(set) var lastHeartbeat: UInt64 = 0
     /// Zeitpunkt der letzten Bewegung (oder des Scan-Starts).
     public private(set) var lastChange: Date
 
@@ -26,8 +31,9 @@ public struct ScanStallDetector: Sendable, Equatable {
 
     public mutating func observe(_ p: ScanProgress, at date: Date) {
         let count = p.filesScanned + p.directoriesScanned
-        if count != lastCount {
+        if count != lastCount || p.heartbeat != lastHeartbeat {
             lastCount = count
+            lastHeartbeat = p.heartbeat
             lastChange = date
         }
     }
@@ -50,6 +56,6 @@ extension FullDiskAccess {
                                             dismissed: Bool) -> Bool {
         guard status == .denied, !dismissed else { return false }
         let p = ProtectedPaths.normalize(path)
-        return p == "/" || p == ProtectedPaths.key("/System/Volumes/Data") || p == ProtectedPaths.normalize(home)
+        return p == "/" || p == ProtectedPaths.normalize(home)
     }
 }

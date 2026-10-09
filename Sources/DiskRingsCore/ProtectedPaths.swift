@@ -119,7 +119,12 @@ public struct ProtectedPaths: Sendable, Equatable {
         var s = "/" + parts.joined(separator: "/")
         // Firmlinks: /System/Volumes/Data/Users/x ist dasselbe wie /Users/x.
         let data = "/System/Volumes/Data/"
-        if s.lowercased().hasPrefix(data.lowercased()) { s = "/" + s.dropFirst(data.count) }
+        if s.lowercased().hasPrefix(data.lowercased()) {
+            s = "/" + s.dropFirst(data.count)
+        } else if s.lowercased() == "/system/volumes/data" {
+            // Die Wurzel des Data-Volumes ist dasselbe wie „/“.
+            s = "/"
+        }
         // /var, /etc, /tmp sind Symlinks nach /private/….
         for link in ["/var", "/etc", "/tmp"] where s.lowercased() == link || s.lowercased().hasPrefix(link + "/") {
             s = "/private" + s
