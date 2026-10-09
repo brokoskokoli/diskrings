@@ -95,6 +95,8 @@ struct ScanJSON: Encodable {
     let directoryCount: Int
     let durationSeconds: Double
     let workers: Int
+    let nodeCount: Int
+    let treeBytes: Int
     let hardlinkDuplicates: Int
     let unreadablePaths: [String]
     let skippedMountPoints: [String]
@@ -182,6 +184,7 @@ func runScan(_ a: ScanArgs) -> Int32 {
             root: tree.rootPath, allocatedSize: result.allocatedSize, logicalSize: result.logicalSize,
             fileCount: result.fileCount, directoryCount: result.directoryCount,
             durationSeconds: result.duration, workers: a.options.effectiveWorkerCount,
+            nodeCount: tree.count, treeBytes: tree.memoryFootprint,
             hardlinkDuplicates: result.hardlinkDuplicates, unreadablePaths: result.unreadablePaths,
             skippedMountPoints: result.skippedMountPoints, volume: volume.map(volumeJSON),
             unassigned: unassigned, top: top)
@@ -198,6 +201,7 @@ func runScan(_ a: ScanArgs) -> Int32 {
     print("Dateien:       \(ByteFormat.count(result.fileCount))")
     print("Ordner:        \(ByteFormat.count(result.directoryCount))")
     print("Dauer:         \(ByteFormat.duration(result.duration)) (\(a.options.effectiveWorkerCount) Worker)")
+    print("Baum:          \(ByteFormat.count(tree.count)) Knoten, \(ByteFormat.string(UInt64(tree.memoryFootprint))) im Speicher")
     if result.hardlinkDuplicates > 0 {
         print("Hardlinks:     \(ByteFormat.count(result.hardlinkDuplicates)) Duplikate nicht doppelt gezählt")
     }
