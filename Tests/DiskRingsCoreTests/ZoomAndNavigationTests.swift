@@ -84,6 +84,51 @@ struct ZoomTransitionTests {
         #expect(z.frame(at: 1, rings: 6).count == new.arcs.count)
     }
 
+    @Test("Bei t = 0,25/0,5/0,75 liegen alte und neue Arcs desselben Knotens deckungsgleich")
+    func sameCameraMidway() {
+        let t = DemoTree.home()
+        let root = SunburstLayout(tree: t)
+        let lib = SunburstLayout(tree: t, focus: idx(t, "Library"))
+        for (from, to) in [(root, lib), (lib, root)] {
+            let z = ZoomTransition(from: from, to: to, tree: t)
+            #expect(z.kind != .crossfade)
+            for step in [0.25, 0.5, 0.75] {
+                let frame = z.frame(at: step, rings: 6)
+                var oldByNode: [Int32: DisplayArc] = [:]
+                for d in frame where !d.isFromTarget && from.arcs[d.arcIndex].kind == .node {
+                    oldByNode[from.arcs[d.arcIndex].nodeIndex] = d
+                }
+                var matched = 0
+                for d in frame where d.isFromTarget && to.arcs[d.arcIndex].kind == .node {
+                    guard let o = oldByNode[to.arcs[d.arcIndex].nodeIndex] else { continue }
+                    #expect(abs(o.startAngle - d.startAngle) < 1e-9 && abs(o.endAngle - d.endAngle) < 1e-9)
+                    #expect(abs(o.outerBoundary - d.outerBoundary) < 1e-9)
+                    #expect(abs(o.innerBoundary - d.innerBoundary) < 1e-9)
+                    matched += 1
+                }
+                #expect(matched > 10)
+            }
+        }
+    }
+
+    @Test("Arcs, die von außen hereinkommen, blenden über einen Ring ein")
+    func edgeFade() {
+        let t = sampleTree()
+        let z = ZoomTransition(from: SunburstLayout(tree: t), to: SunburstLayout(tree: t, focus: idx(t, "a")), tree: t)
+        // t = 0,5: Tiefenverschiebung 0,5. Mit 2 Ringen liegt Ring 2 (x, y) bei 1,5…2,5 → halb sichtbar.
+        let frame = z.frame(at: 0.5, rings: 2).filter { $0.isFromTarget }
+        let outer = frame.filter { z.to.arcs[$0.arcIndex].depth == 2 }
+        #expect(!outer.isEmpty)
+        for d in outer {
+            #expect(abs(d.innerBoundary - 1.5) < 1e-9)
+            #expect(d.outerBoundary == 2) // auf den Außenrand beschnitten
+            #expect(abs(d.opacity - 0.5) < 1e-9)
+        }
+        for d in frame where z.to.arcs[d.arcIndex].depth == 1 { #expect(d.opacity == 1) }
+        // Ganz außerhalb (inner >= Ringe): gar nicht gezeichnet.
+        #expect(z.frame(at: 0, rings: 2).filter { $0.isFromTarget && z.to.arcs[$0.arcIndex].depth == 2 }.isEmpty)
+    }
+
     @Test("Ohne Vorfahrenbeziehung wird überblendet")
     func crossfade() {
         let t = sampleTree()
@@ -151,6 +196,9 @@ struct FocusHistoryTests {
         for i in 1 ... 500 { h.navigate(to: Int32(i)) }
         #expect(h.backStack.count == FocusHistory.limit)
         #expect(h.current == 500)
+        // Die ältesten Einträge fallen weg, die jüngsten bleiben in Reihenfolge.
+        #expect(h.backStack == (300 ..< 500).map { Int32($0) })
+        do { let ok = h.goBack(); #expect(ok && h.current == 499) }
     }
 
     @Test("Breadcrumb-Pfad und Vorfahren")
@@ -207,6 +255,21 @@ struct SunburstPerformanceTests {
             best = min(best, Double(DispatchTime.now().uptimeNanoseconds - start) / 1e6)
         }
         return best
+    }
+
+    /// Nur mit `DISKRINGS_PERF_PATH=<pfad>`: scannt den Pfad und misst das Layout
+    /// am echten Baum (nicht in check.sh, weil abhängig vom Rechner).
+    @Test("Layout am echten Baum (DISKRINGS_PERF_PATH)",
+          .enabled(if: ProcessInfo.processInfo.environment["DISKRINGS_PERF_PATH"] != nil))
+    func realTree() throws {
+        let path = ProcessInfo.processInfo.environment["DISKRINGS_PERF_PATH"]!
+        let t = try ScanEngine().scanBlocking(path).tree
+        for (rings, mode) in [(6, SizeMode.allocated), (10, .allocated), (6, .logical), (10, .logical)] {
+            var l: SunburstLayout!
+            let ms = measure(5) { l = SunburstLayout(tree: t, options: SunburstOptions(maxRings: rings, sizeMode: mode)) }
+            print("Layout \(path) (\(t.count) Knoten), \(rings) Ringe, \(mode): \(ms) ms, \(l.arcs.count) Arcs")
+            #expect(ms < 50)
+        }
     }
 
     @Test("Layout für 2 Mio. Knoten unter 50 ms, Hit-Test unter 1 ms")

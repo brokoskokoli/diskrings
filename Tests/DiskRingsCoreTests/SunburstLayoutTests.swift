@@ -201,7 +201,6 @@ struct SunburstLayoutTests {
     func remainder() {
         var b = ScanTreeBuilder(rootName: "r")
         let d = b.partialDirectory("d", ownSize: 500, files: 10)
-        b.directory("sub", in: d)
         b.partialDirectory("sub2", ownSize: 500, files: 3, in: d)
         let t = b.build(rootPath: "/r")
         let l = SunburstLayout(tree: t)
@@ -210,6 +209,102 @@ struct SunburstLayoutTests {
         #expect(ring2.map(\.kind) == [.node, .remainder])
         #expect(ring2[1].size == 500)
         #expect(abs(ring2[1].span - .pi) < eps)
+    }
+
+    @Test("Eigengröße plus übrige Kinder ergibt ein Sammelsegment (Rest = Elterngröße − platzierte)")
+    func remainderWithRestChildren() {
+        var b = ScanTreeBuilder(rootName: "r")
+        let d = b.partialDirectory("d", ownSize: 500, files: 10)
+        b.partialDirectory("gross", ownSize: 1000, files: 3, in: d)
+        b.file("winzig", size: 1, in: d)
+        let t = b.build(rootPath: "/r")
+        let l = SunburstLayout(tree: t)
+        expectConsistent(l, t)
+        let ring2 = Array(l.arcs(inRing: 2))
+        #expect(ring2.map(\.kind) == [.node, .aggregate])
+        #expect(ring2[1].size == 501)
+        #expect(ring2[1].itemCount == 1)
+    }
+
+    @Test("Kinder mit Größe 0 erzeugen keine Arcs, auch ohne Schwelle")
+    func zeroSizeChildren() {
+        var b = ScanTreeBuilder(rootName: "r")
+        b.file("voll", size: 100)
+        b.directory("leer1")
+        b.directory("leer2")
+        b.file("null", size: 0)
+        let t = b.build(rootPath: "/r")
+        for mode in SizeMode.allCases {
+            let l = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, sizeMode: mode))
+            #expect(l.arcs.count == 1)
+            #expect(l.arcs.allSatisfy { $0.size > 0 && $0.span > 0 })
+        }
+    }
+
+    @Test("Schwelle: genau an der Grenze einzeln, knapp darunter im Sammelsegment")
+    func thresholdBoundary() {
+        // Gesamt 36 000 → 1 Byte = 0,01°; 50 Byte = genau 0,5°, 49 Byte = 0,49°.
+        var b = ScanTreeBuilder(rootName: "r")
+        b.file("gross", size: 35_901)
+        b.file("genau", size: 50)
+        b.file("knapp", size: 49)
+        let t = b.build(rootPath: "/r")
+        let l = SunburstLayout(tree: t)
+        #expect(l.arcs.map(\.kind) == [.node, .node, .aggregate])
+        #expect(t.name(of: l.arcs[1].nodeIndex) == "genau")
+        #expect(l.arcs[2].size == 49)
+        // Schwelle 0,49°: jetzt auch „knapp“ einzeln (>=, nicht >).
+        let l2 = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0.49))
+        #expect(l2.arcs.map(\.kind) == [.node, .node, .node])
+    }
+
+    @Test("Obergrenze wird nie überschritten (auch mit Restsegment und „Nicht zugeordnet“)")
+    func arcCapNeverExceeded() {
+        var b = ScanTreeBuilder(rootName: "r")
+        for i in 0 ..< 6 {
+            let d = b.partialDirectory("d\(i)", ownSize: 50, files: 1)
+            for j in 0 ..< 5 { b.file("f\(j)", size: 10, in: d) }
+        }
+        let t = b.build(rootPath: "/r")
+        for maxArcs in 1 ... 40 {
+            for unassigned: UInt64 in [0, 300] {
+                let l = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: maxArcs,
+                                                                         unassigned: unassigned))
+                #expect(l.arcs.count <= maxArcs, "maxArcs \(maxArcs), unassigned \(unassigned): \(l.arcs.count)")
+                expectConsistent(l, t)
+            }
+        }
+        let demo = DemoTree.home()
+        for maxArcs in [1, 2, 5, 50, 500] {
+            #expect(SunburstLayout(tree: demo, options: SunburstOptions(minAngleDegrees: 0, maxArcs: maxArcs,
+                                                                        unassigned: 1)).arcs.count <= maxArcs)
+        }
+    }
+
+    @Test("Inkonsistenter Baum (Kindersumme > Eltern): Kinder bleiben im Eltern-Arc")
+    func inconsistentTreeClamped() {
+        // Direkt gebaut, weil TreeBuilder/ScanTreeBuilder immer konsistente Summen erzeugen.
+        func node(_ size: UInt64, parent: Int32, first: Int32, count: Int32, name: UInt32, dir: Bool) -> Node {
+            Node(allocatedSize: size, logicalSize: size, parent: parent, firstChild: first, childCount: count,
+                 nameOffset: name, fileCount: 1, nameLength: 1, flags: dir ? .directory : [])
+        }
+        let nodes = [
+            node(100, parent: -1, first: 1, count: 2, name: 0, dir: true), // Wurzel: 100
+            node(80, parent: 0, first: 3, count: 1, name: 1, dir: true), // a: 80, Kind 200 (!)
+            node(60, parent: 0, first: 4, count: 0, name: 2, dir: false), // b: 60 → Summe 140 > 100
+            node(200, parent: 1, first: 4, count: 0, name: 3, dir: false),
+        ]
+        let t = ScanTree(rootPath: "/x", nodes: nodes, names: Array("rabc".utf8))
+        let l = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0))
+        expectConsistent(l, t)
+        #expect(l.arcs.allSatisfy { $0.startAngle >= 0 && $0.endAngle <= twoPi + 1e-12 })
+        let ring1 = Array(l.arcs(inRing: 1))
+        #expect(ring1.count == 2)
+        #expect(abs(ring1[1].endAngle - twoPi) < 1e-12)
+        #expect(ring1[1].size == 20)
+        let ring2 = Array(l.arcs(inRing: 2))
+        #expect(ring2.count == 1)
+        #expect(abs(ring2[0].endAngle - ring1[0].endAngle) < 1e-12)
     }
 
     @Test("Obergrenze für die Zahl der Arcs")
@@ -237,8 +332,10 @@ struct SunburstLayoutTests {
         expectConsistent(tiny, t)
         // Grenze 1 mit „Nicht zugeordnet“: nur das Sammelsegment und das Spezialsegment passen nicht beide;
         // das Spezialsegment bleibt immer erhalten.
-        let one = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: 2, unassigned: 100))
-        #expect(one.arcs.map(\.kind) == [.aggregate, .unassigned])
+        let two = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: 2, unassigned: 100))
+        #expect(two.arcs.map(\.kind) == [.aggregate, .unassigned])
+        let one = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: 1, unassigned: 100))
+        #expect(one.arcs.map(\.kind) == [.unassigned])
     }
 
     @Test("Logische Größe: eigene Reihenfolge und Winkel")

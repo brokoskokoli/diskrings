@@ -130,6 +130,22 @@ struct SunburstHitTesterTests {
         #expect(SunburstHitTester(layout: l, geometry: g, unassignedSpansAllRings: false).hit(dx: x, dy: y) == .none)
     }
 
+    @Test("Ringgrenzen: Radius genau auf der Grenze gehört zum äußeren Ring")
+    func ringBoundaries() {
+        let (_, l, h) = setup()
+        let g = h.geometry
+        // Senkrecht nach oben (Winkel 0), dort liegt in Ring 1 und 2 der Ast a.
+        #expect(h.hit(dx: 0, dy: -g.centerRadius) == .arc(0))
+        #expect(h.hit(dx: 0, dy: -g.centerRadius.nextDown) == .center)
+        let r1 = g.outerRadius(ofRing: 1)
+        guard case .arc(let i2) = h.hit(dx: 0, dy: -r1) else { Issue.record("kein Treffer"); return }
+        #expect(l.arcs[i2].depth == 2)
+        guard case .arc(let i1) = h.hit(dx: 0, dy: -r1.nextDown) else { Issue.record("kein Treffer"); return }
+        #expect(l.arcs[i1].depth == 1)
+        #expect(h.hit(dx: 0, dy: -g.outerRadius) == .none)
+        #expect(g.ring(atRadius: g.outerRadius.nextDown) == 6)
+    }
+
     @Test("Leeres Layout: nur die Mitte")
     func empty() {
         let t = ScanTreeBuilder(rootName: "e").build(rootPath: "/e")

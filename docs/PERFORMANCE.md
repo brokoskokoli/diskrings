@@ -64,14 +64,29 @@ Beim Scan von `/`: 5 Worker 18,5 s, 8 Worker 14,1 s. Deshalb ist der Standard �
 
 ## Sunburst-Layout und Hit-Test (M3)
 
-Test `Sunburst-Performance` (`ZoomAndNavigationTests.swift`), synthetischer Baum mit 2 000 000 Knoten (`DemoTree.large`), 10 Ringe, bester von mehreren Läufen. Debug-Build (`swift test`), also eher pessimistisch:
+Debug-Build (`swift test`), bester von 5 Läufen, Apple M3 Pro.
+
+### Echter Baum: `~/Library` (607 706 Knoten)
+Messung: `DISKRINGS_PERF_PATH=$HOME/Library swift test --filter realTree` (nicht Teil von check.sh).
+
+| Einstellung | vorher (erste M3-Fassung) | jetzt | Arcs |
+|---|---:|---:|---:|
+| 6 Ringe, belegt | 9,8 ms | 0,15 ms | 355 |
+| 10 Ringe, belegt | 17,4 ms | 0,21 ms | 465 |
+| 6 Ringe, logisch | 11,8 ms | 5,8 ms | 458 |
+| 10 Ringe, logisch | 24,4 ms | 11,3 ms | 593 |
+
+Die erste Fassung hat für die Größe des Sammelsegments alle übrigen Kinder jedes sichtbaren Ordners aufsummiert; bei Ordnern mit Tausenden Dateien kostete das fast die ganze Zeit. Jetzt ist der Rest einfach Elterngröße − platzierte Kinder, das Layout ist im Modus „belegt“ O(Arcs). Im Modus „logisch“ sind die Kinder nicht nach logischer Größe sortiert; jeder sichtbare Ordner wird deshalb einmal ganz durchlaufen (O(Kinder der sichtbaren Ordner)). Das Ziel von 50 ms ist in allen Fällen erreicht.
+
+Die früher hier genannten 1,3 ms galten nur für den synthetischen Baum und waren für echte Bäume zu optimistisch: Dort gibt es einzelne Ordner mit sehr vielen kleinen Dateien.
+
+### Synthetischer Baum: 2 000 000 Knoten (`DemoTree.large`, 10 Ringe)
+Test `Sunburst-Performance` in `ZoomAndNavigationTests.swift` (läuft in check.sh mit).
 
 | Messung | Ergebnis | Ziel |
 |---|---:|---:|
-| Layout, Schwelle 0,5°, Modus belegt | 1,3 ms (616 Arcs) | < 50 ms |
-| Layout, Modus logisch | 2,7 ms | < 50 ms |
-| Layout ohne Schwelle (ungünstigster Fall, bis zur Obergrenze) | 16 ms (10 563 Arcs) | < 50 ms |
-| Hit-Test | 0,9 µs pro Punkt | < 1 ms |
-| Farben für alle Arcs | 0,2 ms | – |
+| Layout, Schwelle 0,5°, belegt | unter 1 ms | < 50 ms |
+| Layout ohne Schwelle (ungünstigster Fall, bis zur Obergrenze von 12 000 Arcs) | ca. 16 ms | < 50 ms |
+| Hit-Test | unter 1 µs pro Punkt | < 1 ms |
 
-Die Laufzeit hängt im Wesentlichen von der Zahl der Arcs ab, nicht von der Baumgröße. Das Zeichnen im `Canvas` ist nicht automatisiert gemessen.
+Das Zeichnen im `Canvas` ist nicht automatisiert gemessen.

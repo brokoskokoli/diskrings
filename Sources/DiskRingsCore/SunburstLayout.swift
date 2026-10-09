@@ -174,7 +174,9 @@ private struct LayoutBuilder {
         self.tree = tree
         self.nodes = tree.nodes
         self.mode = options.sizeMode
-        self.minAngle = options.minAngle
+        // Kleine relative Toleranz: Ein Element genau auf der Schwelle (z. B. 0,5°) soll
+        // trotz Rundung im Gleitkomma einzeln erscheinen (Vergleich ist „>=“).
+        self.minAngle = options.minAngle * (1 - 1e-9)
     }
 
     /// Hängt die Arcs der Kinder von `parent` an `out` an: alle Kinder ab der
@@ -195,16 +197,19 @@ private struct LayoutBuilder {
         // zum ersten zu kleinen Kind zu laufen (O(Arcs) statt O(Kinder)).
         scratch.removeAll(keepingCapacity: true)
         let budget = max(0, budget)
+        guard budget > 0 else { return }
         if mode == .allocated {
             var i = first
             while i < first + count, scratch.count < budget {
-                if Double(nodes[i].allocatedSize) * scale < minAngle { break }
+                let sz = nodes[i].allocatedSize
+                if sz == 0 || Double(sz) * scale < minAngle { break }
                 scratch.append(Int32(i))
                 i += 1
             }
         } else {
-            for i in first ..< first + count where Double(nodes[i].logicalSize) * scale >= minAngle {
-                scratch.append(Int32(i))
+            for i in first ..< first + count {
+                let sz = nodes[i].logicalSize
+                if sz > 0, Double(sz) * scale >= minAngle { scratch.append(Int32(i)) }
             }
             scratch.sort { a, b in
                 let sa = nodes[Int(a)].logicalSize, sb = nodes[Int(b)].logicalSize
@@ -212,59 +217,44 @@ private struct LayoutBuilder {
             }
             if scratch.count > budget { scratch.removeLast(scratch.count - budget) }
         }
-        // Budget voll, aber noch Kinder übrig: Platz für das Sammelsegment schaffen.
-        if scratch.count >= budget, count > scratch.count, !scratch.isEmpty {
+        // Budget voll, aber noch Kinder übrig: Platz für das Sammelsegment schaffen,
+        // damit nie mehr als `budget` Arcs entstehen.
+        if scratch.count >= budget, count > scratch.count {
             scratch.removeLast()
         }
 
+        // Einzelne Kinder. Bei einem inkonsistenten Baum (Kindersumme größer als
+        // der Elternknoten) wird geklemmt: Kein Kind ragt über den Eltern-Arc hinaus.
+        let end = start + span
         var cum: UInt64 = 0
+        var shown = 0
         for c in scratch {
+            if cum >= psize { break }
             let n = nodes[Int(c)]
-            let s = n.size(mode)
+            let sz = min(n.size(mode), psize - cum)
             let a0 = start + Double(cum) * scale
-            cum &+= s
-            let a1 = start + Double(cum) * scale
+            cum += sz
+            let a1 = cum == psize ? end : min(end, start + Double(cum) * scale)
             let idx = Int32(out.count)
-            out.append(SunburstArc(kind: .node, nodeIndex: c, depth: depth, startAngle: a0, endAngle: a1, size: s,
+            out.append(SunburstArc(kind: .node, nodeIndex: c, depth: depth, startAngle: a0, endAngle: a1, size: sz,
                                    itemCount: 1, parentArc: parentArc, branch: branch ?? idx,
                                    isDirectory: n.isDirectory))
+            shown += 1
         }
-        let restCount = count - scratch.count
-        let restSize = psize > cum ? psize - cum : 0
-        guard restSize > 0 else { return }
-        // Der Rest teilt sich in die nicht einzeln gezeigten Kinder (Sammelsegment)
-        // und Größe, die keinem Kind gehört (nur in Live-Snapshots, dort fehlen
-        // die Dateien noch als Knoten).
-        var restChildren: UInt64 = 0
-        if restCount > 0 {
-            var shown = Set<Int32>()
-            if mode == .logical { shown = Set(scratch) }
-            let from = mode == .allocated ? first + scratch.count : first
-            for i in from ..< first + count where mode == .allocated || !shown.contains(Int32(i)) {
-                let s = nodes[i].size(mode)
-                if s == 0, mode == .allocated { break } // absteigend sortiert: ab hier nur noch Nullen
-                restChildren &+= s
-            }
-            restChildren = min(restChildren, restSize)
-        }
-        var a0 = start + Double(cum) * scale
-        if restChildren > 0 {
-            let a1 = restChildren == restSize ? start + span : start + Double(cum &+ restChildren) * scale
-            if a1 > a0 {
-                let idx = Int32(out.count)
-                out.append(SunburstArc(kind: .aggregate, nodeIndex: parent, depth: depth, startAngle: a0, endAngle: a1,
-                                       size: restChildren, itemCount: Int32(clamping: restCount),
-                                       parentArc: parentArc, branch: branch ?? idx, isDirectory: false))
-                a0 = a1
-            }
-        }
-        let remainder = restSize - restChildren
-        let a1 = start + span
-        guard remainder > 0, a1 > a0 else { return }
+        // Rest = Elterngröße − bereits platzierte Kinder (ohne die übrigen Kinder
+        // einzeln zu durchlaufen). Gibt es noch Kinder, ist das ein Sammelsegment;
+        // es enthält dann auch eine eventuelle Eigengröße des Ordners. Ohne
+        // weitere Kinder ist der Rest reine Eigengröße („Dateien in diesem Ordner“,
+        // z. B. in Live-Snapshots).
+        let restCount = count - shown
+        let restSize = psize - cum
+        let a0 = start + Double(cum) * scale
+        guard restSize > 0, end > a0 else { return }
         let idx = Int32(out.count)
-        out.append(SunburstArc(kind: .remainder, nodeIndex: parent, depth: depth, startAngle: a0, endAngle: a1,
-                               size: remainder, itemCount: 1, parentArc: parentArc, branch: branch ?? idx,
-                               isDirectory: false))
+        out.append(SunburstArc(kind: restCount > 0 ? .aggregate : .remainder, nodeIndex: parent, depth: depth,
+                               startAngle: a0, endAngle: end, size: restSize,
+                               itemCount: Int32(clamping: max(restCount, 1)),
+                               parentArc: parentArc, branch: branch ?? idx, isDirectory: false))
     }
 }
 
