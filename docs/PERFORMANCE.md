@@ -109,3 +109,34 @@ Gemessen mit `DISKRINGS_DEBUG_SNAPSHOT=1 diskrings-cli scan ~ --top 0 --live --l
 
 ## Offene Punkte
 - Kalter Cache (nach Neustart) ist nicht gemessen; die Zahlen oben sind Bestwerte.
+
+- Die Spitze beim Baum-Aufbau (etwa 106 Byte pro Knoten) ließe sich durch eine Permutation an Ort und Stelle statt eines zweiten Knoten-Arrays noch um etwa ein Drittel senken.
+
+## Sunburst-Layout und Hit-Test (M3)
+
+Debug-Build (`swift test`), bester von 5 Läufen, Apple M3 Pro.
+
+### Echter Baum: `~/Library` (607 706 Knoten)
+Messung: `DISKRINGS_PERF_PATH=$HOME/Library swift test --filter realTree` (nicht Teil von check.sh).
+
+| Einstellung | vorher (erste M3-Fassung) | jetzt | Arcs |
+|---|---:|---:|---:|
+| 6 Ringe, belegt | 9,8 ms | 0,15 ms | 355 |
+| 10 Ringe, belegt | 17,4 ms | 0,21 ms | 465 |
+| 6 Ringe, logisch | 11,8 ms | 5,8 ms | 458 |
+| 10 Ringe, logisch | 24,4 ms | 11,3 ms | 593 |
+
+Die erste Fassung hat für die Größe des Sammelsegments alle übrigen Kinder jedes sichtbaren Ordners aufsummiert; bei Ordnern mit Tausenden Dateien kostete das fast die ganze Zeit. Jetzt ist der Rest einfach Elterngröße − platzierte Kinder, das Layout ist im Modus „belegt“ O(Arcs). Im Modus „logisch“ sind die Kinder nicht nach logischer Größe sortiert; jeder sichtbare Ordner wird deshalb einmal ganz durchlaufen (O(Kinder der sichtbaren Ordner)). Das Ziel von 50 ms ist in allen Fällen erreicht.
+
+Die früher hier genannten 1,3 ms galten nur für den synthetischen Baum und waren für echte Bäume zu optimistisch: Dort gibt es einzelne Ordner mit sehr vielen kleinen Dateien.
+
+### Synthetischer Baum: 2 000 000 Knoten (`DemoTree.large`, 10 Ringe)
+Test `Sunburst-Performance` in `ZoomAndNavigationTests.swift` (läuft in check.sh mit).
+
+| Messung | Ergebnis | Ziel |
+|---|---:|---:|
+| Layout, Schwelle 0,5°, belegt | unter 1 ms | < 50 ms |
+| Layout ohne Schwelle (ungünstigster Fall, bis zur Obergrenze von 12 000 Arcs) | ca. 16 ms | < 50 ms |
+| Hit-Test | unter 1 µs pro Punkt | < 1 ms |
+
+Das Zeichnen im `Canvas` ist nicht automatisiert gemessen.
