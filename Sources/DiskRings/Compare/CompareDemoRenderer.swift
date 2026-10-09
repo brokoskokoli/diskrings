@@ -151,8 +151,12 @@ enum CompareDemoRenderer {
             try cutData.prefix(cutData.count - 100).write(to: cut.url)
             try Data("kein Snapshot".utf8).write(to: cut.url.deletingLastPathComponent()
                 .appendingPathComponent("20260901T080000000Z.drsnap"))
+            let newer = try store.save(before, volume: v1, name: "aus neuerer Version", date: date("2026-09-05 12:00"))
+            var newerData = try Data(contentsOf: newer.url)
+            newerData[8] = 2 // Formatversion 2
+            try newerData.write(to: newer.url)
             let s8b = makeState()
-            shot(SnapshotsWindow(state: s8b), "snapshots-window-damaged", CGSize(width: 780, height: 380))
+            shot(SnapshotsWindow(state: s8b), "snapshots-window-damaged", CGSize(width: 780, height: 400))
             for d in try store.listDamaged() { try store.delete(d) }
 
             // 9. Dialog „Snapshot sichern“ und Einstellungen.

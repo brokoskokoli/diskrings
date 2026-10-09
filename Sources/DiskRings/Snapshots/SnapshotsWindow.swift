@@ -145,7 +145,7 @@ struct DamagedSnapshotsList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Label("\(library.damaged.count == 1 ? "1 beschädigte Datei" : "\(library.damaged.count) beschädigte Dateien")",
+                Label("\(library.damaged.count == 1 ? "1 nicht lesbare Datei" : "\(library.damaged.count) nicht lesbare Dateien")",
                       systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                     .font(.system(size: 12, weight: .semibold))
@@ -158,10 +158,11 @@ struct DamagedSnapshotsList: View {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(library.damaged) { d in
                         HStack(spacing: 8) {
-                            Text("beschädigt")
+                            Text(d.statusLabel)
                                 .font(.system(size: 10, weight: .semibold))
                                 .padding(.horizontal, 5).padding(.vertical, 1)
-                                .background(Color.orange.opacity(0.2), in: Capsule())
+                                .background((d.kind == .newerVersion ? Color.blue : Color.orange).opacity(0.2),
+                                            in: Capsule())
                             Text(title(d)).lineLimit(1).truncationMode(.middle)
                             Text(d.reason).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
                             Spacer()
@@ -185,7 +186,7 @@ struct DamagedSnapshotsList: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(Color.orange.opacity(0.06))
-        .confirmationDialog(confirm.count == 1 ? "Beschädigte Datei löschen?" : "\(confirm.count) beschädigte Dateien löschen?",
+        .confirmationDialog(confirm.count == 1 ? "Nicht lesbare Datei löschen?" : "\(confirm.count) nicht lesbare Dateien löschen?",
                             isPresented: Binding(get: { !confirm.isEmpty }, set: { if !$0 { confirm = [] } }),
                             titleVisibility: .visible) {
             Button("Löschen", role: .destructive) {
@@ -194,7 +195,9 @@ struct DamagedSnapshotsList: View {
             }
             Button("Abbrechen", role: .cancel) { confirm = [] }
         } message: {
-            Text("Die Datei lässt sich nicht mehr als Snapshot lesen und wird endgültig gelöscht. Gescannte Dateien und Ordner bleiben unberührt.")
+            Text(confirm.contains { $0.kind == .newerVersion }
+                ? "Darunter sind Snapshots einer neueren DiskRings-Version, die diese Version nicht lesen kann; eine neuere App könnte sie noch öffnen. Die Dateien werden endgültig gelöscht. Gescannte Dateien und Ordner bleiben unberührt."
+                : "Die Datei lässt sich nicht mehr als Snapshot lesen und wird endgültig gelöscht. Gescannte Dateien und Ordner bleiben unberührt.")
         }
     }
 

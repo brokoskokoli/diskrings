@@ -11,25 +11,38 @@ public struct SnapshotInfo: Sendable, Equatable, Identifiable {
     public var id: UUID { metadata.id }
 }
 
-/// Eine Datei in der Ablage, die sich nicht als Snapshot lesen lässt
-/// (abgeschnitten, beschädigter Kopf, kein Snapshot). Sie lässt sich nur
-/// löschen; `prune` räumt sie auf.
+/// Eine Datei in der Ablage, die sich nicht als Snapshot lesen lässt. Sie
+/// lässt sich nur löschen. `prune` räumt beschädigte Dateien auf, Dateien
+/// einer neueren Formatversion aber nie (die könnten mit einer neueren
+/// App-Version gültig sein).
 public struct DamagedSnapshot: Sendable, Equatable, Identifiable {
+    public enum Kind: Sendable, Equatable {
+        /// Abgeschnitten, beschädigter Kopf oder kein Snapshot.
+        case damaged
+        /// Gültiger Vorspann, aber eine neuere Formatversion.
+        case newerVersion
+    }
+
     public let url: URL
+    public let kind: Kind
     public let fileSize: UInt64
     /// Grund, z. B. „Snapshot-Datei ist unvollständig“.
     public let reason: String
     /// Metadaten, falls wenigstens der Kopf lesbar ist.
     public let metadata: SnapshotMetadata?
 
-    public init(url: URL, fileSize: UInt64, reason: String, metadata: SnapshotMetadata?) {
+    public init(url: URL, kind: Kind = .damaged, fileSize: UInt64, reason: String, metadata: SnapshotMetadata?) {
         self.url = url
+        self.kind = kind
         self.fileSize = fileSize
         self.reason = reason
         self.metadata = metadata
     }
 
     public var id: String { url.path }
+
+    /// Kennzeichen im Fenster „Snapshots“.
+    public var statusLabel: String { kind == .newerVersion ? "neuere Version" : "beschädigt" }
 }
 
 /// Ablage der Snapshots unter
@@ -184,7 +197,13 @@ public struct SnapshotStore: Sendable {
                 } catch {
                     let reason = (error as? SnapshotError)?.description ?? "\(error)"
                     let meta = try? SnapshotFile.readMetadata(file)
-                    damaged.append(DamagedSnapshot(url: file, fileSize: size, reason: reason, metadata: meta))
+                    var kind = DamagedSnapshot.Kind.damaged
+                    if case SnapshotError.unsupportedVersion(let v)? = error as? SnapshotError,
+                       v > SnapshotFile.formatVersion {
+                        kind = .newerVersion
+                    }
+                    damaged.append(DamagedSnapshot(url: file, kind: kind, fileSize: size, reason: reason,
+                                                   metadata: meta))
                 }
             }
         }
@@ -247,6 +266,7 @@ public struct SnapshotStore: Sendable {
         for d in damaged where isPrunable(d, rootPath: rootPath, volumeUUID: volumeUUID) {
             try? delete(d)
         }
+        removeStaleTemporaryFiles()
         let all = valid.filter { // neueste zuerst
             $0.metadata.rootPath == rootPath && (volumeUUID == nil || $0.metadata.volumeUUID == volumeUUID)
         }
@@ -257,11 +277,39 @@ public struct SnapshotStore: Sendable {
     }
 
     private func isPrunable(_ d: DamagedSnapshot, rootPath: String, volumeUUID: String?) -> Bool {
+        // Eine neuere Formatversion ist vielleicht gültig: nur manuell löschen.
+        guard d.kind == .damaged else { return false }
         if let m = d.metadata {
             return m.rootPath == rootPath && (volumeUUID == nil || m.volumeUUID == volumeUUID)
         }
         guard volumeUUID != nil else { return true }
         return d.url.deletingLastPathComponent().lastPathComponent == Self.directoryName(for: volumeUUID)
+    }
+
+    /// Temporäre Dateien von `save` (`.<UUID>.tmp`), die ein Absturz
+    /// zurückgelassen hat. Nur solche mit genau diesem Namensmuster und
+    /// älter als `maxAge` (Standard 1 h; ein laufendes Speichern dauert
+    /// Sekunden).
+    public static let temporaryFileMaxAge: TimeInterval = 3600
+
+    func removeStaleTemporaryFiles(maxAge: TimeInterval = SnapshotStore.temporaryFileMaxAge, now: Date = Date()) {
+        let fm = FileManager.default
+        guard let dirs = try? fm.contentsOfDirectory(at: baseDirectory, includingPropertiesForKeys: [.isDirectoryKey])
+        else { return }
+        for dir in dirs where (try? dir.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
+            guard let files = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey])
+            else { continue }
+            for f in files where Self.isTemporaryName(f.lastPathComponent) {
+                guard let m = (try? f.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate,
+                      now.timeIntervalSince(m) > maxAge else { continue }
+                try? fm.removeItem(at: f)
+            }
+        }
+    }
+
+    static func isTemporaryName(_ name: String) -> Bool {
+        guard name.hasPrefix("."), name.hasSuffix(".tmp") else { return false }
+        return UUID(uuidString: String(name.dropFirst().dropLast(4))) != nil
     }
 
     // MARK: Hilfen
