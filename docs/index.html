@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DiskRings – Free disk space analyzer for macOS</title>
+<meta name="description" content="DiskRings is a free, open-source disk space analyzer for macOS. See your disk usage as an interactive sunburst chart, compare scans to find out where your storage went, and free up space on your Mac safely.">
+<meta name="keywords" content="disk space analyzer, disk usage, macOS, Mac, storage, sunburst, free up space, WinDirStat alternative, TreeSize alternative, open source">
+<link rel="canonical" href="https://brokoskokoli.github.io/diskrings/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14171f" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DiskRings">
+<meta property="og:title" content="DiskRings – Free disk space analyzer for macOS">
+<meta property="og:description" content="See your disk usage as an interactive sunburst chart, compare scans over time and free up space safely. Free and open source.">
+<meta property="og:url" content="https://brokoskokoli.github.io/diskrings/">
+<meta property="og:image" content="https://brokoskokoli.github.io/diskrings/images/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="DiskRings app icon, name and a screenshot of the sunburst chart">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DiskRings – Free disk space analyzer for macOS">
+<meta name="twitter:description" content="Interactive sunburst chart, snapshot compare, Trash with undo. Free and open source.">
+<meta name="twitter:image" content="https://brokoskokoli.github.io/diskrings/images/social-preview.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "DiskRings",
+  "operatingSystem": "macOS 14 or later",
+  "applicationCategory": "UtilitiesApplication",
+  "description": "Free, open-source disk space analyzer for macOS with an interactive sunburst chart.",
+  "url": "https://brokoskokoli.github.io/diskrings/",
+  "downloadUrl": "https://github.com/brokoskokoli/diskrings/releases/latest",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --bg-alt: #ffffff;
+    --text: #1b1f27;
+    --muted: #5a6270;
+    --border: #e1e4ea;
+    --accent: #0a6cff;
+    --accent-text: #ffffff;
+    --shadow: 0 18px 50px rgba(20, 30, 50, .16);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171f;
+      --bg-alt: #1b1f29;
+      --text: #eef0f4;
+      --muted: #a2a9b6;
+      --border: #2b303c;
+      --accent: #3d8bff;
+      --accent-text: #ffffff;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .5);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text); }
+  .brand img { width: 32px; height: 32px; }
+  nav a { margin-left: 20px; color: var(--muted); font-size: 15px; }
+  .hero { text-align: center; padding: 48px 0 24px; }
+  .hero img.icon { width: 112px; height: 112px; }
+  h1 { font-size: clamp(36px, 6vw, 56px); line-height: 1.1; margin: 16px 0 12px; letter-spacing: -.02em; }
+  .subtitle { font-size: clamp(18px, 2.4vw, 22px); color: var(--muted); max-width: 720px; margin: 0 auto 28px; }
+  .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 12px 22px; border-radius: 12px; font-weight: 600;
+    border: 1px solid var(--border); color: var(--text); background: var(--bg-alt);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  .btn:hover { text-decoration: none; filter: brightness(1.06); }
+  .meta { color: var(--muted); font-size: 14px; margin-top: 12px; }
+  .shot { margin: 40px auto 0; }
+  .shot img, .feature img {
+    width: 100%; height: auto; display: block;
+    border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow);
+  }
+  section { padding: 56px 0 8px; }
+  h2 { font-size: clamp(26px, 3.6vw, 34px); letter-spacing: -.01em; margin: 0 0 20px; text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .card { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .feature { display: grid; grid-template-columns: 1fr 1.4fr; gap: 32px; align-items: center; margin: 40px 0; }
+  .feature.flip { grid-template-columns: 1.4fr 1fr; }
+  .feature.flip .text { order: 2; }
+  .feature h3 { font-size: 22px; margin: 0 0 8px; }
+  .feature p { color: var(--muted); margin: 0; }
+  .install ol { padding-left: 22px; }
+  .install li { margin: 6px 0; }
+  code { font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+  footer { color: var(--muted); font-size: 14px; text-align: center; padding: 56px 0 40px; }
+  @media (max-width: 760px) {
+    nav a:not(.gh) { display: none; }
+    .feature, .feature.flip { grid-template-columns: 1fr; gap: 16px; }
+    .feature.flip .text { order: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="favicon.png" alt="" width="32" height="32">DiskRings</a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a class="gh" href="https://github.com/brokoskokoli/diskrings">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <img class="icon" src="images/icon.png" alt="DiskRings app icon" width="112" height="112">
+      <h1>DiskRings</h1>
+      <p class="subtitle">Free, open-source disk space analyzer for macOS with an interactive sunburst chart. See what fills your Mac, find out where your storage went, and free up space safely.</p>
+      <div class="buttons">
+        <a class="btn primary" href="https://github.com/brokoskokoli/diskrings/releases/latest">Download for macOS</a>
+        <a class="btn" href="https://github.com/brokoskokoli/diskrings">View on GitHub</a>
+      </div>
+      <p class="meta">macOS 14 or later · Apple Silicon and Intel · MIT License · UI currently in German</p>
+      <div class="shot">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="images/hero-dark.png">
+          <img src="images/hero-light.png" alt="DiskRings showing a sunburst chart of a disk next to a folder list" width="1400" height="901">
+        </picture>
+      </div>
+    </div>
+
+    <section id="features">
+      <h2>Everything you need to understand your disk usage</h2>
+      <div class="grid">
+        <div class="card"><h3>Sunburst chart</h3><p>Every ring is a folder level. Click to zoom, swipe to go back, and the list follows along.</p></div>
+        <div class="card"><h3>Where did my space go?</h3><p>Save snapshots and compare them later to see what grew, shrank, appeared or vanished.</p></div>
+        <div class="card"><h3>Unassigned space</h3><p>APFS snapshots, purgeable space and system data get their own segment, so the totals add up.</p></div>
+        <div class="card"><h3>Safe cleanup</h3><p>Items only go to the Trash, after a confirmation, with ⌘Z undo. System locations are protected.</p></div>
+        <div class="card"><h3>Fast and accurate</h3><p>2.9 million files in about 10 seconds. Hard links counted once, sparse and compressed files with their real size.</p></div>
+        <div class="card"><h3>Private</h3><p>No network access, no telemetry, no account. Free and open source under the MIT License.</p></div>
+      </div>
+
+      <div class="feature">
+        <div class="text"><h3>Compare scans over time</h3><p>The growth view sizes each segment by how much it grew since the snapshot, and ranks the largest changes. Perfect after an update, a big download or a busy week.</p></div>
+        <img src="images/compare-growth.png" alt="Growth view comparing a snapshot with the current scan" width="1200" height="774">
+      </div>
+      <div class="feature flip">
+        <div class="text"><h3>Delta coloring</h3><p>Keep the familiar layout and see change at a glance: growth in red, shrinkage in green, new items marked, removed items dashed.</p></div>
+        <img src="images/compare-delta.png" alt="Delta coloring with grown folders in red and shrunk folders in green" width="1200" height="774">
+      </div>
+      <div class="feature">
+        <div class="text"><h3>Clean up right from the chart</h3><p>Show in Finder, Quick Look, copy the path, rescan a folder or move it to the Trash, from the chart, the list or the menu bar.</p></div>
+        <img src="images/context-menu.png" alt="Context menus for a file, a protected folder and a multi-selection" width="1200" height="390">
+      </div>
+    </section>
+
+    <section id="install" class="install">
+      <h2>Install</h2>
+      <ol>
+        <li>Download the DMG from the <a href="https://github.com/brokoskokoli/diskrings/releases/latest">latest release</a>.</li>
+        <li>Drag <b>DiskRings</b> into <b>Applications</b> and start it. The app is signed and notarized by Apple.</li>
+        <li>Recommended: grant <b>Full Disk Access</b> in System Settings → Privacy &amp; Security, so folders like <code>~/Library/Mail</code> can be measured too.</li>
+      </ol>
+      <p>Prefer to build it yourself? The <a href="https://github.com/brokoskokoli/diskrings#build-from-source">README</a> explains how. A Homebrew cask is planned.</p>
+    </section>
+  </main>
+
+  <footer>
+    DiskRings is free software under the <a href="https://github.com/brokoskokoli/diskrings/blob/main/LICENSE">MIT License</a>.
+    © 2026 Stefan Richter ·
+    <a href="https://github.com/brokoskokoli/diskrings">Source code</a> ·
+    <a href="https://github.com/brokoskokoli/diskrings/issues">Report an issue</a>
+  </footer>
+</div>
+</body>
+</html>
