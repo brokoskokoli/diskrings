@@ -344,6 +344,10 @@ struct TreeMutator {
                 i += 1
             }
             nodes[Int(end - 1)] = rec // toter Datensatz außerhalb des Bereichs
+            // Auch den toten Datensatz als verschoben vermerken; sonst übersetzt
+            // `TreeEdit.translate` den entfernten Index auf das nachgerückte
+            // Geschwister statt auf `nil`.
+            didMove(from: index, to: end - 1)
             commitMoves(sources: sources)
         }
         nodes[Int(parent)].childCount -= 1

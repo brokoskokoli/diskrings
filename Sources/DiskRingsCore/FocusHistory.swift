@@ -72,6 +72,25 @@ public struct FocusHistory: Sendable, Equatable {
         return h
     }
 
+    /// Überträgt die Historie nach einer Änderung am Baum (Papierkorb,
+    /// Teil-Rescan) über eine Index-Übersetzung wie `TreeEdit.translate`.
+    /// Schneller als `remapped`, weil keine Pfade verglichen werden. Ein
+    /// entfernter Fokus fällt auf seinen nächsten noch vorhandenen Vorfahren
+    /// in `old` zurück; entfernte Einträge der Stapel entfallen.
+    public func translated(from old: ScanTree, by map: (Int32) -> Int32?) -> FocusHistory {
+        var cur = current
+        var mapped: Int32?
+        while cur >= 0, Int(cur) < old.count {
+            mapped = map(cur)
+            if mapped != nil { break }
+            cur = old.node(cur).parent
+        }
+        var h = FocusHistory(root: mapped ?? ScanTree.rootIndex)
+        h.backStack = Self.dedupe(backStack.compactMap(map), excluding: h.current)
+        h.forwardStack = Self.dedupe(forwardStack.compactMap(map), excluding: h.current)
+        return h
+    }
+
     /// Entfernt direkt aufeinanderfolgende Duplikate und einen Eintrag gleich
     /// dem aktuellen Fokus am Stapelende.
     private static func dedupe(_ a: [Int32], excluding current: Int32) -> [Int32] {
