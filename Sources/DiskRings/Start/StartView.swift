@@ -11,9 +11,10 @@ struct StartView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(spacing: 12) {
-                    Image(systemName: "circle.circle.fill")
-                        .font(.system(size: 34))
-                        .foregroundStyle(.tint)
+                    Image(nsImage: AppIcon.image)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 56, height: 56)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DiskRings").font(.largeTitle.weight(.semibold))
@@ -247,4 +248,21 @@ extension Color {
     /// Farbe für bereinigbaren Speicher im Belegungsbalken und in der Legende;
     /// heller Ton mit genug Kontrast auf hellem und dunklem Hintergrund.
     static let purgeable = Color(nsColor: .systemTeal)
+}
+
+/// App-Icon für den Startbildschirm: aus dem Bündel (`NSApp.applicationIconImage`);
+/// bei `swift run` und in den Vorschaubildern gibt es kein Bündel-Icon, dann
+/// wird `Resources/DiskRings.icns` aus dem Quellbaum geladen.
+@MainActor
+enum AppIcon {
+    static let image: NSImage = {
+        if Bundle.main.object(forInfoDictionaryKey: "CFBundleIconFile") != nil, let app = NSApp {
+            return app.applicationIconImage
+        }
+        // …/Sources/DiskRings/Start/StartView.swift → …/Resources/DiskRings.icns
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        if let icns = NSImage(contentsOf: root.appendingPathComponent("Resources/DiskRings.icns")) { return icns }
+        return NSApp?.applicationIconImage ?? NSImage(named: NSImage.applicationIconName) ?? NSImage()
+    }()
 }
