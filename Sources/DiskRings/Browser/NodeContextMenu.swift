@@ -134,7 +134,7 @@ struct NodeContextMenu: View {
         if let tree = state.tree {
             let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node)
             ContextMenuItems(state: state, target: target,
-                             header: target.nodes.count == 1 ? tree.name(of: node) : "\(target.nodes.count) Objekte")
+                             header: target.nodes.count == 1 ? tree.name(of: node) : L("count.items", target.nodes.count, ByteFormat.count(target.nodes.count)))
         }
     }
 }
@@ -198,7 +198,7 @@ struct ContextMenuPreview: View {
         if let tree = state.tree {
             let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node)
             ContextMenuPreviewBody(state: state, target: target,
-                                   header: target.nodes.count == 1 ? tree.name(of: node) : "\(target.nodes.count) Objekte")
+                                   header: target.nodes.count == 1 ? tree.name(of: node) : L("count.items", target.nodes.count, ByteFormat.count(target.nodes.count)))
         }
     }
 }

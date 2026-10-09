@@ -2,7 +2,7 @@
 import Foundation
 import Testing
 
-@Suite("Snapshots: Auswahl, automatisches Speichern und Aufräumen", .timeLimit(.minutes(2)))
+@Suite("Snapshots: Auswahl, automatisches Speichern und Aufräumen", .timeLimit(.minutes(2)), .language("de"))
 struct SnapshotRetentionTests {
     let engine = ScanEngine(options: ScanOptions(workerCount: 2))
 

@@ -58,6 +58,16 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/DiskRings"
 cp Resources/DiskRings.icns "$APP/Contents/Resources/DiskRings.icns"
 
+# Lokalisierung: die .lproj-Ordner aus DiskRingsCore (Localizable.strings,
+# .stringsdict, InfoPlist.strings) ins Haupt-Bundle. Dann nutzt die App das
+# Haupt-Bundle (L10n.bundle), macOS kennt die Sprachen (Sprache pro App in den
+# Systemeinstellungen) und übersetzt auch die Datenschutz-Texte.
+LOCALIZATIONS=""
+for lproj in Sources/DiskRingsCore/Resources/*.lproj; do
+    cp -R "$lproj" "$APP/Contents/Resources/"
+    LOCALIZATIONS="$LOCALIZATIONS<string>$(basename "$lproj" .lproj)</string>"
+done
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -71,7 +81,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>${VERSION}</string>
     <key>CFBundleVersion</key><string>${BUILD}</string>
-    <key>CFBundleDevelopmentRegion</key><string>de</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key><array>${LOCALIZATIONS}</array>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
@@ -80,15 +91,17 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSHumanReadableCopyright</key><string>Copyright © ${COPYRIGHT_YEARS} Stefan Richter. MIT License.</string>
     <!-- Datenschutz-Abfragen (TCC): macOS zeigt diese Texte, wenn der Scan
          geschützte Orte öffnet. Ohne sie fragt macOS mit einem generischen
-         Text bzw. verweigert den Zugriff still. -->
-    <key>NSDesktopFolderUsageDescription</key><string>DiskRings liest die Größe der Dateien auf deinem Schreibtisch, um die Belegung anzuzeigen. Dateien werden weder geöffnet noch verändert.</string>
-    <key>NSDocumentsFolderUsageDescription</key><string>DiskRings liest die Größe der Dateien in deinem Ordner „Dokumente“, um die Belegung anzuzeigen. Dateien werden weder geöffnet noch verändert.</string>
-    <key>NSDownloadsFolderUsageDescription</key><string>DiskRings liest die Größe der Dateien in deinem Ordner „Downloads“, um die Belegung anzuzeigen. Dateien werden weder geöffnet noch verändert.</string>
-    <key>NSRemovableVolumesUsageDescription</key><string>DiskRings liest die Größe der Dateien auf Wechseldatenträgern (z. B. USB-Sticks), um deren Belegung anzuzeigen.</string>
-    <key>NSNetworkVolumesUsageDescription</key><string>DiskRings liest die Größe der Dateien auf Netzlaufwerken, um deren Belegung anzuzeigen.</string>
-    <key>NSFileProviderDomainUsageDescription</key><string>DiskRings liest die Größe der Dateien in Cloud-Speichern (z. B. iCloud Drive, Dropbox), um die Belegung anzuzeigen. Es werden keine Dateien heruntergeladen.</string>
-    <key>NSPhotoLibraryUsageDescription</key><string>DiskRings liest die Größe deiner Fotomediathek, um die Belegung anzuzeigen. Fotos werden weder geöffnet noch verändert.</string>
-    <key>NSAppleMusicUsageDescription</key><string>DiskRings liest die Größe deiner Musik- und Medienordner, um die Belegung anzuzeigen.</string>
+         Text bzw. verweigert den Zugriff still. Englische Basis; die
+         Übersetzungen stehen in <sprache>.lproj/InfoPlist.strings (ein Test
+         prüft, dass beide dieselben Schlüssel haben). -->
+    <key>NSDesktopFolderUsageDescription</key><string>DiskRings reads the sizes of the files on your desktop to show how your space is used. Files are neither opened nor changed.</string>
+    <key>NSDocumentsFolderUsageDescription</key><string>DiskRings reads the sizes of the files in your Documents folder to show how your space is used. Files are neither opened nor changed.</string>
+    <key>NSDownloadsFolderUsageDescription</key><string>DiskRings reads the sizes of the files in your Downloads folder to show how your space is used. Files are neither opened nor changed.</string>
+    <key>NSRemovableVolumesUsageDescription</key><string>DiskRings reads the sizes of the files on removable volumes (such as USB drives) to show how their space is used.</string>
+    <key>NSNetworkVolumesUsageDescription</key><string>DiskRings reads the sizes of the files on network volumes to show how their space is used.</string>
+    <key>NSFileProviderDomainUsageDescription</key><string>DiskRings reads the sizes of the files in cloud storage (such as iCloud Drive or Dropbox) to show how your space is used. No files are downloaded.</string>
+    <key>NSPhotoLibraryUsageDescription</key><string>DiskRings reads the size of your photo library to show how your space is used. Photos are neither opened nor changed.</string>
+    <key>NSAppleMusicUsageDescription</key><string>DiskRings reads the size of your music and media folders to show how your space is used.</string>
 </dict>
 </plist>
 PLIST

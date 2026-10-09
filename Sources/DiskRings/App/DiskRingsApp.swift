@@ -4,13 +4,17 @@ import SwiftUI
 
 /// Einstieg: Mit `--render-snapshots <ordner>` rendert die App Vorschaubilder
 /// der Oberfläche als PNG und beendet sich (siehe `SnapshotRenderer`);
-/// sonst startet sie normal.
+/// `--language <code>` (z. B. `fr`, `zh-Hans`) legt die Sprache dafür fest.
+/// Sonst startet sie normal.
 @main
 enum Entry {
     static func main() {
         let args = CommandLine.arguments
         if let i = args.firstIndex(of: "--render-snapshots") {
             let dir = i + 1 < args.count ? args[i + 1] : "build/snapshots"
+            if let l = args.firstIndex(of: "--language"), l + 1 < args.count {
+                L10n.setProcessLanguage(args[l + 1])
+            }
             let scanPath = args.firstIndex(of: "--scan").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
             if args.contains("--compare-demo") {
                 MainActor.assumeIsolated { exit(CompareDemoRenderer.run(outputDirectory: dir)) }
@@ -38,7 +42,7 @@ struct DiskRingsApp: App {
             SnapshotCommands(state: state)
         }
 
-        Window("Snapshots", id: SnapshotsWindow.id) {
+        Window(L("snapshots.window.title"), id: SnapshotsWindow.id) {
             SnapshotsWindow(state: state)
         }
         .defaultSize(width: 760, height: 420)
@@ -118,14 +122,14 @@ struct RootView: View {
         }
         .onChange(of: state.prefs.layoutKey) { _, _ in state.relayout(animated: false) }
         .modifier(SnapshotUIHost(state: state))
-        .alert("Kein Festplattenvollzugriff",
+        .alert(L("fda.alert.title"),
                isPresented: Binding(get: { state.fullDiskAccessPromptPath != nil },
                                     set: { if !$0 { state.fullDiskAccessPromptPath = nil } })) {
-            Button("Festplattenvollzugriff einrichten") { state.answerFullDiskAccessPrompt(scanAnyway: false) }
-            Button("Trotzdem scannen") { state.answerFullDiskAccessPrompt(scanAnyway: true) }
-            Button("Abbrechen", role: .cancel) { state.fullDiskAccessPromptPath = nil }
+            Button(L("fda.alert.setUp")) { state.answerFullDiskAccessPrompt(scanAnyway: false) }
+            Button(L("fda.alert.scanAnyway")) { state.answerFullDiskAccessPrompt(scanAnyway: true) }
+            Button(L("common.cancel"), role: .cancel) { state.fullDiskAccessPromptPath = nil }
         } message: {
-            Text("Ohne Festplattenvollzugriff fragt macOS beim Scan einzeln nach Ordnern wie Schreibtisch, Dokumente und Downloads, und Bereiche wie ~/Library/Mail bleiben unlesbar. Der Scan wartet, bis du die Systemdialoge beantwortest.\n\nEmpfohlen: In den Systemeinstellungen unter „Datenschutz & Sicherheit → Festplattenvollzugriff“ DiskRings einschalten und danach erneut scannen.")
+            Text(L("fda.alert.message"))
         }
     }
 
@@ -147,15 +151,15 @@ struct AppCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .newItem) {
-            Button("Ordner wählen…") { state.chooseFolder() }
+            Button(L("menu.chooseFolder")) { state.chooseFolder() }
                 .keyboardShortcut("o", modifiers: .command)
-            Button("Komplett neu scannen") { state.rescan() }
+            Button(L("menu.fullRescan")) { state.rescan() }
                 .keyboardShortcut("r", modifiers: [.command, .option])
                 .disabled(state.tree == nil || state.phase == .scanning)
         }
         CommandGroup(replacing: .undoRedo) {
             // Im Suchfeld gehört ⌘Z dem Textfeld.
-            Button(state.canUndoTrash ? state.undoTitle : "Widerrufen") {
+            Button(state.canUndoTrash ? state.undoTitle : L("menu.undo")) {
                 if FileActions.isEditingText {
                     NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
                 } else {
@@ -163,15 +167,15 @@ struct AppCommands: Commands {
                 }
             }
             .keyboardShortcut("z", modifiers: .command)
-            Button("Wiederholen") { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil) }
+            Button(L("menu.redo")) { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil) }
                 .keyboardShortcut("z", modifiers: [.command, .shift])
         }
         CommandGroup(after: .textEditing) {
-            Button("Suchen…") { if !state.searchVisible { state.toggleSearch() } }
+            Button(L("menu.find")) { if !state.searchVisible { state.toggleSearch() } }
                 .keyboardShortcut("f", modifiers: .command)
                 .disabled(state.tree == nil)
         }
-        CommandMenu("Objekt") {
+        CommandMenu(L("menu.item")) {
             ForEach(NodeAction.allCases) { action in
                 if action.startsGroup { Divider() }
                 let button = Button(state.commandTitle(action)) { state.performCommand(action) }
@@ -187,21 +191,21 @@ struct AppCommands: Commands {
             }
         }
         // Im Vergleichsmodus wirkt „Gehe zu“ auf den Vergleich.
-        CommandMenu("Gehe zu") {
-            Button("Zurück") { state.navigateBack() }
+        CommandMenu(L("menu.go")) {
+            Button(L("menu.back")) { state.navigateBack() }
                 .keyboardShortcut("[", modifiers: .command)
                 .disabled(!state.canNavigateBack)
-            Button("Vor") { state.navigateForward() }
+            Button(L("menu.forward")) { state.navigateForward() }
                 .keyboardShortcut("]", modifiers: .command)
                 .disabled(!state.canNavigateForward)
-            Button("Übergeordneter Ordner") { state.navigateUp() }
+            Button(L("menu.enclosingFolder")) { state.navigateUp() }
                 .keyboardShortcut(.upArrow, modifiers: .command)
                 .disabled(!state.canNavigateUp)
-            Button(state.compare != nil ? "Zur Vergleichswurzel" : "Zur Scan-Wurzel") { state.navigateToRoot() }
+            Button(state.compare != nil ? L("menu.compareRoot") : L("menu.scanRoot")) { state.navigateToRoot() }
                 .keyboardShortcut(.upArrow, modifiers: [.command, .shift])
                 .disabled(!state.canNavigateUp)
             Divider()
-            Button("Startbildschirm") { state.backToStart() }
+            Button(L("menu.startScreen")) { state.backToStart() }
                 .keyboardShortcut("0", modifiers: .command)
         }
     }

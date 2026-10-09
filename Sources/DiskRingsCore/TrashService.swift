@@ -114,11 +114,12 @@ public enum TrashPlanError: Error, Sendable, Equatable {
 
     public var message: String {
         switch self {
-        case .empty: "Nichts ausgewählt"
-        case .scanRoot: "Die Scan-Wurzel selbst lässt sich nicht in den Papierkorb legen"
+        case .empty: L("reason.nothingSelected")
+        case .scanRoot: L("trash.error.scanRoot")
         case .protected(let p, let r):
-            "Geschützt: \(r.message)" + (p.isEmpty ? "" : " – \((p as NSString).lastPathComponent)")
-        case .notLive: "Element ist nicht mehr im Baum"
+            p.isEmpty ? L("trash.error.protected", r.message)
+                : L("trash.error.protectedItem", r.message, (p as NSString).lastPathComponent)
+        case .notLive: L("reason.notInTree")
         }
     }
 }
@@ -170,20 +171,20 @@ public struct TrashPlan: Sendable, Equatable {
 
     /// Überschrift des Bestätigungsdialogs.
     public var title: String {
-        if items.count == 1 { return "„\(items[0].name)“ in den Papierkorb legen?" }
-        return "\(ByteFormat.count(items.count)) Objekte in den Papierkorb legen?"
+        if items.count == 1 { return L("trash.confirm.title.one", items[0].name) }
+        return L("trash.confirm.title.count", items.count, ByteFormat.count(items.count))
     }
 
     /// Text des Bestätigungsdialogs: Name, Größe und Dateianzahl bzw. Summe.
     public var message: String {
-        let files = totalFiles == 1 ? "1 Datei" : "\(ByteFormat.count(totalFiles)) Dateien"
+        let files = L10n.files(totalFiles)
         if items.count == 1 {
             let i = items[0]
             if !i.isDirectory { return "\(i.name) · \(ByteFormat.string(totalSize))\n\(i.path)" }
             return "\(i.name) · \(ByteFormat.string(totalSize)) · \(files)\n\(i.path)"
         }
         let names = items.prefix(5).map(\.name).joined(separator: ", ") + (items.count > 5 ? ", …" : "")
-        return "Insgesamt \(ByteFormat.string(totalSize)) · \(files)\n\(names)"
+        return L("trash.confirm.total", ByteFormat.string(totalSize), files) + "\n" + names
     }
 }
 
@@ -265,7 +266,7 @@ public struct TrashService {
         var out = TrashOutcome()
         for item in plan.items {
             if let r = protection.reason(for: item.path) {
-                out.failures.append(TrashFailure(path: item.path, message: "Geschützt: \(r.message)"))
+                out.failures.append(TrashFailure(path: item.path, message: L("trash.error.protected", r.message)))
                 continue
             }
             guard fileManager.itemExists(atPath: item.path) else {
@@ -298,24 +299,24 @@ public struct TrashService {
         let parent = (path as NSString).deletingLastPathComponent
         let name = (path as NSString).lastPathComponent
         guard let resolvedParent = fileManager.resolvedPath(parent) else {
-            return "Der Pfad lässt sich nicht mehr auflösen"
+            return L("trash.error.unresolvable")
         }
         let resolved = resolvedParent == "/" ? "/" + name : resolvedParent + "/" + name
         if let r = protection.reason(for: resolved) {
-            return "Geschützt: \(r.message) (aufgelöster Pfad \(resolved))"
+            return L("trash.error.protectedResolved", r.message, resolved)
         }
         guard let rootPath else { return nil }
         let rootKey = ProtectedPaths.normalize(rootPath)
         let pathKey = ProtectedPaths.normalize(path)
         guard ProtectedPaths.isStrictDescendant(pathKey, of: rootKey),
               let resolvedRoot = fileManager.resolvedPath(rootPath) else {
-            return "Liegt nicht mehr unter der Scan-Wurzel"
+            return L("trash.error.outsideRoot")
         }
         let relative = pathKey.dropFirst(rootKey == "/" ? 0 : rootKey.count)
         let base = ProtectedPaths.normalize(resolvedRoot)
         let expected = base == "/" ? String(relative) : base + relative
         guard ProtectedPaths.normalize(resolved) == ProtectedPaths.key(expected) else {
-            return "Liegt nicht mehr unter der Scan-Wurzel (ein Ordner im Pfad wurde durch einen Symlink ersetzt)"
+            return L("trash.error.outsideRootSymlink")
         }
         return nil
     }
@@ -330,32 +331,32 @@ public struct TrashService {
         var out = RestoreOutcome()
         for r in records {
             guard let src = r.trashURL else {
-                out.failures.append(TrashFailure(path: r.originalPath, message: "Ort im Papierkorb unbekannt"))
+                out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.unknownLocation")))
                 continue
             }
             guard fileManager.itemExists(atPath: src.path) else {
-                out.failures.append(TrashFailure(path: r.originalPath, message: "Nicht mehr im Papierkorb"))
+                out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.notInTrash")))
                 continue
             }
             guard let expected = r.identity else {
                 out.failures.append(TrashFailure(path: r.originalPath,
-                                                 message: "Das Objekt im Papierkorb lässt sich nicht sicher wiedererkennen"))
+                                                 message: L("trash.undo.unrecognized")))
                 continue
             }
             guard fileManager.identity(atPath: src.path) == expected else {
                 out.failures.append(TrashFailure(
                     path: r.originalPath,
-                    message: "Im Papierkorb liegt unter diesem Namen inzwischen ein anderes Objekt (wurde der Papierkorb geleert oder das Objekt verändert?)"))
+                    message: L("trash.undo.replacedInTrash")))
                 continue
             }
             guard !fileManager.itemExists(atPath: r.originalPath) else {
                 out.failures.append(TrashFailure(path: r.originalPath,
-                                                 message: "Am alten Ort liegt inzwischen ein anderes Objekt"))
+                                                 message: L("trash.undo.occupied")))
                 continue
             }
             let parent = (r.originalPath as NSString).deletingLastPathComponent
             guard fileManager.itemExists(atPath: parent) else {
-                out.failures.append(TrashFailure(path: r.originalPath, message: "Der Elternordner existiert nicht mehr"))
+                out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.parentMissing")))
                 continue
             }
             do {

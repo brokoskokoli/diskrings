@@ -1,0 +1,404 @@
+/* DiskRings – nl. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Toon in Finder";
+"action.open" = "Open";
+"action.quickLook" = "Snelle weergave";
+"action.zoomIn" = "Zoom hier in";
+"action.copyPath" = "Kopieer pad";
+"action.info" = "Toon info";
+"action.rescan" = "Scan deze map opnieuw";
+"action.moveToTrash" = "Verplaats naar prullenmand";
+"shortcut.space" = "Spatie";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "Niets geselecteerd";
+"reason.notInTree" = "Het onderdeel staat niet meer in de boom";
+"reason.singleItemOnly" = "Alleen voor één onderdeel";
+"reason.foldersOnly" = "Alleen voor mappen";
+"reason.alreadyCenter" = "Staat al in het midden";
+"reason.folderEmpty" = "De map is leeg";
+"reason.fullScanRunning" = "Niet mogelijk tijdens een volledige scan";
+"reason.otherVolume" = "Ander volume (niet meegenomen in de scan)";
+"reason.rescanRunning" = "Wordt nu opnieuw gescand";
+"reason.rescanRunningIn" = "Wordt opnieuw gescand als onderdeel van ‘%@’";
+"reason.scanRunning" = "Niet mogelijk tijdens de scan";
+"reason.notInCompare" = "Het onderdeel staat niet meer in de vergelijking";
+"reason.removedSinceSnapshot" = "‘%@’ bestaat niet meer (verwijderd sinds de momentopname)";
+"reason.containsRemoved" = "Bevat verwijderde onderdelen die niet meer bestaan";
+"reason.missingOnDisk" = "‘%@’ bestaat niet meer op de schijf";
+"reason.twoSnapshots" = "Niet mogelijk bij het vergelijken van twee momentopnamen";
+"reason.notInCurrentScan" = "Niet meer in de huidige scan";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "De basismap van de scan zelf kan niet naar de prullenmand worden verplaatst";
+"trash.error.protected" = "Beschermd: %@";
+"trash.error.protectedItem" = "Beschermd: %1$@ – %2$@";
+"trash.error.protectedResolved" = "Beschermd: %1$@ (omgezet pad %2$@)";
+"trash.error.unresolvable" = "Het pad kan niet meer worden omgezet";
+"trash.error.outsideRoot" = "Niet meer binnen de basismap van de scan";
+"trash.error.outsideRootSymlink" = "Niet meer binnen de basismap van de scan (een map in het pad is vervangen door een symbolische koppeling)";
+"trash.confirm.title.one" = "‘%@’ naar de prullenmand verplaatsen?";
+"trash.confirm.total" = "Totaal %1$@ · %2$@";
+"trash.undo.unknownLocation" = "Locatie in de prullenmand onbekend";
+"trash.undo.notInTrash" = "Niet meer in de prullenmand";
+"trash.undo.unrecognized" = "Het onderdeel in de prullenmand kan niet betrouwbaar worden herkend";
+"trash.undo.replacedInTrash" = "Er staat nu een ander onderdeel met deze naam in de prullenmand (is de prullenmand geleegd of het onderdeel gewijzigd?)";
+"trash.undo.occupied" = "Op de oorspronkelijke locatie bestaat nu een ander onderdeel";
+"trash.undo.parentMissing" = "De bovenliggende map bestaat niet meer";
+"trash.confirm.undoHint" = "Je kunt de onderdelen met ⌘Z of in de Finder uit de prullenmand terugzetten.";
+"trash.confirm.dontAsk" = "Vraag niet meer (alleen voor onderdelen kleiner dan 1 GB)";
+"trash.confirm.alwaysAsk" = "Onderdelen van 1 GB of meer moeten altijd worden bevestigd.";
+
+/* Protected paths (reasons) */
+"protected.system" = "macOS-systeemgebied (%@)";
+"protected.volumeRoot" = "Hoofdniveau van een volume";
+"protected.home" = "De volledige thuismap";
+"protected.homeLibrary" = "~/Library als geheel";
+"protected.runningApp" = "De actieve DiskRings-app";
+"protected.contains" = "Bevat een beschermd gebied: %1$@ (%2$@)";
+
+/* Scan errors */
+"error.scan.notFound" = "Pad niet gevonden: %@";
+"error.scan.tooManyNodes" = "Te veel onderdelen voor één scanboom";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "Geen DiskRings-momentopnamebestand";
+"error.snapshot.unsupportedVersion" = "Momentopnameformaat %@ wordt niet ondersteund (nieuwere versie?)";
+"error.snapshot.truncated" = "Het momentopnamebestand is onvolledig";
+"error.snapshot.corrupted" = "Het momentopnamebestand is beschadigd: %@";
+"error.snapshot.outsideStore" = "Het bestand staat niet in de map met momentopnamen: %@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "nieuwere versie";
+"snapshots.damaged.damaged" = "beschadigd";
+"snapshot.untitled" = "Momentopname van %@";
+"snapshots.window.title" = "Momentopnamen";
+"snapshots.empty" = "Nog geen momentopnamen";
+"snapshots.empty.message" = "Momentopnamen worden automatisch na elke volledige scan gemaakt (uit te schakelen in Instellingen) of met ‘Archief → Bewaar momentopname’ (⌘S).";
+"snapshots.column.date" = "Datum";
+"snapshots.column.name" = "Naam";
+"snapshots.column.root" = "Basismap";
+"snapshots.column.size" = "Totale grootte";
+"snapshots.column.file" = "Bestand";
+"snapshots.compareEachOther" = "Vergelijk met elkaar";
+"snapshots.olderIsBefore" = "De oudere is ‘vooraf’";
+"snapshots.selectTwo" = "Selecteer twee momentopnamen om te vergelijken";
+"snapshots.rename.title" = "Wijzig naam van momentopname";
+"snapshots.rename.message" = "Scan van %1$@, %2$@";
+"snapshots.delete.message" = "Het momentopnamebestand wordt definitief verwijderd. Gescande bestanden en mappen worden niet aangetast.";
+"snapshots.delete.title.one" = "Momentopname verwijderen?";
+"snapshots.damaged.deleteAll" = "Verwijder alle…";
+"snapshots.damaged.delete.title.one" = "Onleesbaar bestand verwijderen?";
+"snapshots.damaged.delete.newer" = "Sommige hiervan zijn momentopnamen van een nieuwere versie van DiskRings die deze versie niet kan lezen; een nieuwere app kan ze mogelijk nog openen. De bestanden worden definitief verwijderd. Gescande bestanden en mappen worden niet aangetast.";
+"snapshots.damaged.delete.message" = "Het bestand kan niet meer als momentopname worden gelezen en wordt definitief verwijderd. Gescande bestanden en mappen worden niet aangetast.";
+"snapshots.name.placeholder" = "Naam (optioneel), bijv. ‘voor Xcode-update’";
+"snapshots.save.title" = "Bewaar momentopname";
+"snapshots.save.confirm" = "Bewaar";
+"snapshots.save.message" = "Huidige scan van %@";
+"menu.saveSnapshot" = "Bewaar momentopname…";
+"menu.snapshots" = "Momentopnamen…";
+"snapshots.error.read" = "Momentopnamen konden niet worden gelezen: %@";
+"snapshots.saved" = "Momentopname ‘%@’ bewaard";
+"snapshots.error.save" = "De momentopname kon niet worden bewaard: %@";
+"snapshots.error.rename" = "Naam wijzigen mislukt: %@";
+"snapshots.error.delete" = "Verwijderen mislukt: %@";
+
+/* General */
+"list.separator" = ", ";
+
+/* Compare: headline and warnings */
+"compare.since" = "Sinds %@";
+"compare.fromTo" = "Van %1$@ tot %2$@";
+"compare.part.used" = "gebruikt %@";
+"compare.part.free" = "vrij %@";
+"compare.part.scan" = "scan %@";
+"compare.part.unassigned" = "waarvan niet toegewezen %@";
+"compare.part.volumeUsed" = "volume gebruikt %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "eerder zonder verborgen bestanden";
+"compare.warning.hiddenNow" = "nu zonder verborgen bestanden";
+"compare.warning.exclusions" = "andere uitsluitingslijst";
+"compare.warning.volumes" = "andere instelling voor volumes";
+"compare.warning.options" = "Momentopname gemaakt met andere instellingen (%@)";
+"compare.warning.root" = "Andere basismap van de scan: %1$@ tegenover %2$@";
+"compare.warning.volume" = "Ander volume";
+"compare.warning.minimumSize" = "Bestanden kleiner dan %@ worden alleen via de maptotalen vergeleken";
+"compare.mode.growth" = "Groei";
+"compare.mode.delta" = "Deltakleuren";
+"diff.added" = "nieuw";
+"diff.removed" = "verwijderd";
+"diff.grown" = "gegroeid";
+"diff.shrunk" = "gekrompen";
+"diff.unchanged" = "ongewijzigd";
+"compare.label.used" = "gebruikt";
+"compare.label.free" = "vrij";
+"compare.label.unassigned" = "waarvan niet toegewezen";
+"compare.label.volumeUsed" = "volume gebruikt";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@: bestaat niet meer (%2$@)";
+"rescan.summary.unchanged" = "%1$@: %2$@ (ongewijzigd)";
+"rescan.summary.changed" = "%1$@: %2$@ → %3$@ (%4$@)";
+
+/* File type categories (legend) */
+"fileType.video" = "Video";
+"fileType.image" = "Afbeeldingen";
+"fileType.audio" = "Audio";
+"fileType.archive" = "Archieven";
+"fileType.application" = "Apps";
+"fileType.code" = "Code";
+"fileType.document" = "Documenten";
+"fileType.other" = "Overig";
+
+/* Common buttons */
+"common.cancel" = "Annuleer";
+"common.ok" = "OK";
+"common.done" = "Gereed";
+"common.close" = "Sluit";
+"common.delete" = "Verwijder";
+"common.deleteEllipsis" = "Verwijder…";
+"common.renameEllipsis" = "Wijzig naam…";
+"common.rename" = "Wijzig naam";
+
+/* Full Disk Access */
+"fda.alert.title" = "Geen volledige schijftoegang";
+"fda.alert.setUp" = "Stel volledige schijftoegang in";
+"fda.alert.scanAnyway" = "Scan toch";
+"fda.alert.message" = "Zonder volledige schijftoegang vraagt macOS tijdens de scan afzonderlijk om toegang tot mappen zoals Bureaublad, Documenten en Downloads, en blijven gebieden zoals ~/Library/Mail onleesbaar. De scan wacht tot je de systeemvensters hebt beantwoord.\n\nAanbevolen: schakel in Systeeminstellingen DiskRings in onder ‘Privacy en beveiliging → Volledige schijftoegang’ en scan daarna opnieuw.";
+
+/* Menus */
+"menu.chooseFolder" = "Kies map…";
+"menu.fullRescan" = "Scan alles opnieuw";
+"menu.undo" = "Herstel";
+"menu.redo" = "Opnieuw";
+"menu.find" = "Zoek…";
+"menu.item" = "Onderdeel";
+"menu.go" = "Ga";
+"menu.back" = "Vorige";
+"menu.forward" = "Volgende";
+"menu.enclosingFolder" = "Bovenliggende map";
+"menu.compareRoot" = "Basismap van vergelijking";
+"menu.scanRoot" = "Basismap van scan";
+"menu.startScreen" = "Beginscherm";
+
+/* Open panel */
+"panel.scan.prompt" = "Scan";
+"panel.scan.message" = "Kies een map of volume om te scannen";
+"reason.noScan" = "Geen scan";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "‘%1$@’ naar de prullenmand verplaatst (%2$@)";
+"toast.trashFailed" = "‘%1$@’ is niet naar de prullenmand verplaatst: %2$@";
+"menu.undo.putBack.one" = "Zet ‘%@’ terug";
+"toast.putBackFailed" = "‘%1$@’ is niet teruggezet: %2$@";
+"toast.putBack.one" = "‘%@’ teruggezet";
+"toast.rescanBlocked" = "Gedeeltelijk opnieuw scannen is niet mogelijk tijdens een volledige scan";
+"toast.rescanCovered" = "‘%@’ wordt al opnieuw gescand";
+"toast.rescanFailed" = "‘%1$@’ kon niet opnieuw worden gescand: %2$@";
+"toast.rootMissing" = "De basismap van de scan ‘%@’ bestaat niet meer";
+"toast.close" = "Sluit melding";
+
+/* Item kinds and badges */
+"badge.package" = "pakket";
+"badge.unreadable" = "onleesbaar";
+"badge.icloudOnly" = "alleen in iCloud";
+"badge.symlink" = "symbolische koppeling";
+"badge.otherVolume" = "ander volume";
+"badge.hardlink" = "harde koppeling";
+"kind.file" = "Bestand";
+"kind.folder" = "Map";
+"kind.package" = "Pakket";
+"kind.symlink" = "Symbolische koppeling";
+
+/* Chart segments */
+"arc.aggregate.detail" = "samengevoegd, elk onder de hoekdrempel";
+"arc.remainder.title" = "Bestanden in deze map";
+"arc.remainder.detail" = "nog niet afzonderlijk geteld";
+"arc.unassigned.title" = "Niet toegewezen";
+"arc.unassigned.detail" = "Systeem, lokale momentopnamen, opschoonbare ruimte";
+"sunburst.accessibility" = "Zonnestraaldiagram van %@";
+"sunburst.shareOf" = "%1$@ van %2$@";
+"sunburst.center.hint" = "Klik: één niveau omhoog";
+
+/* Settings */
+"settings.section.chart" = "Diagram";
+"settings.rings" = "Aantal ringen";
+"settings.colorScheme" = "Kleurenschema";
+"settings.colorScheme.branch" = "Per tak";
+"settings.colorScheme.fileType" = "Per bestandstype";
+"settings.minAngle" = "Voeg segmenten samen onder";
+"settings.minAngle.accessibilityValue" = "%@ graden";
+"settings.showLabels" = "Label segmenten";
+"settings.section.size" = "Grootte";
+"settings.sizeMode" = "Groottemodus";
+"settings.sizeMode.allocated" = "Toegewezen op schijf";
+"settings.sizeMode.logical" = "Logische grootte";
+"settings.section.trash" = "Prullenmand";
+"settings.trash.confirm" = "Vraag voor verplaatsen naar prullenmand";
+"settings.trash.footer" = "Onderdelen van 1 GB of meer moeten altijd worden bevestigd.";
+"settings.section.scan" = "Scan";
+"settings.includeHidden" = "Tel verborgen bestanden mee";
+"settings.crossMounts" = "Ga tijdens het scannen andere volumes in";
+"settings.excluded" = "Uitgesloten paden";
+"settings.excluded.add" = "Voeg pad toe";
+"settings.excluded.remove" = "Verwijder geselecteerd pad";
+"settings.excluded.prompt" = "Sluit uit";
+"settings.scan.footer" = "Deze instellingen gelden vanaf de volgende scan.";
+"settings.legend.accessibility" = "Legenda: %@";
+"settings.section.language" = "Taal";
+"settings.language" = "Taal";
+"settings.language.automatic" = "Automatisch (systeem)";
+"settings.language.restartNote" = "De nieuwe taal wordt actief nadat DiskRings opnieuw is gestart.";
+"settings.language.restartNow" = "Start nu opnieuw";
+"settings.language.footer" = "Je kunt de taal ook kiezen in Systeeminstellingen → Algemeen → Taal en regio → Apps.";
+"settings.section.snapshots" = "Momentopnamen";
+"settings.snapshots.autoSave" = "Bewaar automatisch na elke volledige scan";
+"settings.snapshots.maxCount" = "Maximum per basismap";
+"settings.snapshots.footer" = "Mappen en bestanden van 1 MB of meer worden bewaard. Zijn er meer dan het maximum, dan worden de oudste verwijderd.";
+
+/* Get Info window */
+"info.where" = "Locatie";
+"info.allocated" = "Toegewezen";
+"info.logical" = "Logisch";
+"info.contents" = "Inhoud";
+"info.contents.value" = "%1$@, %2$@";
+"info.modified" = "Gewijzigd";
+"info.created" = "Aangemaakt";
+"info.badges" = "Kenmerken";
+"info.protected" = "Beschermd";
+
+/* Search */
+"search.placeholder" = "Zoek op naam";
+"search.clear" = "Wis zoekopdracht";
+"search.backToList" = "Terug naar lijst";
+"search.results" = "Zoekresultaten";
+"search.searching" = "Zoeken…";
+"search.noResults" = "Geen resultaten";
+
+/* Main window toolbar */
+"browser.listWidth" = "Lijstbreedte";
+"browser.listWidth.value" = "%@ punten";
+"browser.back.help" = "Vorige (⌘[)";
+"browser.forward.help" = "Volgende (⌘])";
+"browser.scanRunning" = "Scan bezig";
+"browser.rescanRunning" = "Gedeeltelijke nieuwe scan bezig";
+"browser.rescan" = "Scan opnieuw";
+"browser.rescan.help" = "Scan de map in focus opnieuw (⇧⌘R)";
+"browser.search" = "Zoek";
+"browser.search.help" = "Zoek op naam (⌘F)";
+"browser.newScan" = "Nieuwe scan";
+"browser.newScan.help" = "Terug naar het beginscherm";
+"browser.breadcrumb" = "Pad";
+"browser.breadcrumb.current" = "%@, huidige map";
+
+/* Status bar and scan summary */
+"status.unassigned" = "niet toegewezen %@";
+"status.unassigned.help" = "Gebruikte ruimte op het volume die in geen enkele map verschijnt: systeem, lokale Time Machine-momentopnamen, opschoonbare ruimte. Klonen en momentopnamen kunnen afwijkingen veroorzaken.";
+"status.deviation" = "Klonen en momentopnamen kunnen afwijkingen veroorzaken";
+"status.deviation.help" = "Klonen en momentopnamen kunnen afwijkingen veroorzaken: APFS-klonen delen blokken, maar worden apart geteld; lokale Time Machine-momentopnamen en opschoonbare ruimte verschijnen in geen enkele map en staan onder ‘Niet toegewezen’.";
+"status.fda.help" = "Zonder volledige schijftoegang blijven mappen zoals ~/Library/Mail onleesbaar en komen ze onder ‘Niet toegewezen’ terecht. Klik om Systeeminstellingen te openen.";
+"status.scanSummary" = "Scan: %1$@ in %2$@";
+"status.volume" = "%1$@: %2$@ · gebruikt %3$@ · vrij %4$@";
+"status.volume.purgeable" = "(waarvan %@ opschoonbaar)";
+"summary.finished" = "Scan voltooid: %1$@, %2$@, %3$@ in %4$@";
+"summary.less" = "Minder";
+"summary.close" = "Sluit overzicht";
+"fda.grant" = "Verleen volledige schijftoegang…";
+
+/* Detail list */
+"list.accessibility" = "Inhoud van %@";
+"list.shareOfRoot" = "%@ van de basismap van de scan";
+"list.unassigned.help" = "Niet toegewezen (systeem, lokale momentopnamen, opschoonbare ruimte): gebruikte ruimte op het volume die in geen enkele map verschijnt.";
+"list.row.accessibility" = "%1$@, %2$@, %3$@";
+"accessibility.zoomIn" = "Zoom in";
+
+/* Start screen */
+"start.subtitle" = "Kies een volume of map om te zien waar je ruimte naartoe gaat.";
+"start.volumes" = "Volumes";
+"start.noVolumes" = "Geen volumes gevonden.";
+"start.scanHome" = "Scan thuismap";
+"start.fda.message" = "Zonder volledige schijftoegang blijven mappen zoals ~/Library/Mail, Safari of containers van andere apps onleesbaar. Ze ontbreken in het diagram en komen onder ‘Niet toegewezen’ terecht.";
+"start.fda.openSettings" = "Open Systeeminstellingen…";
+"start.fda.checkAgain" = "Controleer opnieuw";
+"start.volume.used" = "%1$@ van %2$@ gebruikt";
+"start.legend.used" = "Gebruikt %@";
+"start.legend.purgeable" = "Opschoonbaar %@";
+"start.legend.free" = "Vrij %@";
+"start.volume.accessibility" = "%1$@, %2$@ van %3$@ gebruikt, %4$@ vrij";
+"start.volume.hint" = "Scant dit volume";
+"start.dropHint" = "of sleep een map hierheen";
+
+/* Scan progress */
+"scan.reading" = "Mappen lezen…";
+"scan.title" = "%@ scannen";
+"scan.starting" = "Starten…";
+"scan.accessibility.starting" = "Scan wordt gestart";
+"scan.accessibility.running" = "Scan bezig: %1$@, %2$@";
+"scan.stalled.title" = "Mogelijk wachten op toestemming van macOS … (controleer of er een systeemvenster is)";
+"scan.stalled.message" = "macOS vraagt mogelijk om toegang tot een map of schijf; het venster kan achter andere vensters verborgen zijn. Met volledige schijftoegang verschijnen deze verzoeken niet.";
+"scan.stalled.fda" = "Volledige schijftoegang…";
+"scan.stalled.fda.help" = "Opent ‘Privacy en beveiliging → Volledige schijftoegang’ in Systeeminstellingen";
+
+/* Compare: list and chart */
+"compare.showInChart" = "Toon in diagram";
+"compare.removedName" = "%@ (verwijderd)";
+"reason.noCompare" = "Geen vergelijking";
+"compare.busy.updating" = "Vergelijking bijwerken…";
+"compare.busy.computing" = "Vergelijking berekenen…";
+"compare.error" = "Vergelijken niet mogelijk: %@";
+"compare.currentScan" = "Huidige scan";
+"compare.list.accessibility" = "Vergelijking: inhoud van %@";
+"compare.column.name" = "Naam";
+"compare.column.before" = "Vooraf";
+"compare.column.now" = "Nu";
+"compare.sortBy" = "Sorteer op %@";
+"compare.moreItems" = "meer onderdelen";
+"compare.direction" = "Richting";
+"compare.direction.growth" = "Groei";
+"compare.direction.shrink" = "Krimp";
+"compare.largest.noShrink" = "Geen krimp van 1 MB of meer";
+"compare.largest.noGrowth" = "Geen groei van 1 MB of meer";
+"compare.tab.contents" = "Inhoud";
+"compare.tab.largest" = "Grootste wijzigingen";
+"compare.inScanRoot" = "in de basismap van de scan";
+"compare.inFolder" = "in %@";
+"compare.largest.row.accessibility" = "%1$@. %2$@, %3$@, %4$@";
+"compare.chart.noGrowth" = "Geen groei sinds de momentopname";
+"compare.chart.noData" = "Geen gegevens";
+"compare.chart.noGrowth.hint" = "‘Deltakleuren’ toont ook onderdelen die zijn gekrompen of verwijderd.";
+"compare.chart.accessibility" = "Vergelijkingsdiagram (%1$@) van %2$@";
+"compare.center.growth" = "Groei";
+"compare.center.now" = "nu %@";
+"compare.tooltip.folderGrowth" = "Groei in map: %@";
+"compare.tooltip.growthWithoutEntries" = "Groei zonder eigen onderdelen";
+"compare.tooltip.smallFiles" = "kleine bestanden onder %@ en de eigen grootte van de map";
+"compare.beforeNow" = "Vooraf %1$@  →  Nu %2$@";
+"compare.entry.accessibility" = "%1$@, %2$@, %3$@, delta %4$@";
+"compare.listPicker" = "Lijst";
+"compare.viewPicker" = "Weergave";
+"compare.viewPicker.help" = "Groei: segmentgrootte = groei. Deltakleuren: normale groottes, rood gegroeid, groen gekrompen.";
+"compare.end" = "Beëindig vergelijking";
+"compare.end.help" = "Terug naar de normale weergave (Esc)";
+"compare.breadcrumb" = "Pad in vergelijking";
+"compare.warning.footer" = "Verschillen kunnen daarom ook door de instellingen komen.";
+"compare.warning.accessibility" = "Waarschuwing: %@";
+"compare.legend.growth" = "Segmentgrootte = groei sinds %@";
+"compare.legend.intensity" = "Sterker = grotere wijziging";
+
+/* Compare: picker */
+"compare.with" = "Vergelijk met…";
+"compare.with.help" = "Vergelijk deze scan met een bewaarde momentopname";
+"compare.picker.empty" = "Geen passende momentopnamen";
+"compare.picker.empty.message" = "Er is nog geen oudere momentopname van deze basismap op dit volume. Momentopnamen worden automatisch na elke scan gemaakt of met ‘Archief → Bewaar momentopname’ (⌘S).";
+"compare.button" = "Vergelijk";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@ s";
+"format.duration.minutes" = "%1$@ min %2$@ s";

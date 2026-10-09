@@ -51,7 +51,7 @@ public enum DemoTree {
         files(library, prefix: "prefs", ext: "plist", count: 120, avg: 40_000)
 
         let movies = b.directory("Movies")
-        files(movies, prefix: "Urlaub", ext: "mov", count: 9, avg: 3 * GB)
+        files(movies, prefix: "Vacation", ext: "mov", count: 9, avg: 3 * GB)
         let fcp = b.directory("Final Cut Library.fcpbundle", in: movies, flags: .package)
         files(fcp, prefix: "render", ext: "mov", count: 14, avg: 900 * MB)
 
@@ -65,14 +65,14 @@ public enum DemoTree {
         files(pictures, prefix: "Scan", ext: "png", count: 50, avg: 4 * MB)
 
         let documents = b.directory("Documents")
-        files(documents, prefix: "Rechnung", ext: "pdf", count: 80, avg: 400_000)
-        let archive = b.directory("Archiv", in: documents)
+        files(documents, prefix: "Invoice", ext: "pdf", count: 80, avg: 400_000)
+        let archive = b.directory("Archive", in: documents)
         files(archive, prefix: "Backup", ext: "zip", count: 6, avg: 2 * GB)
-        files(documents, prefix: "Notiz", ext: "txt", count: 200, avg: 4_000)
+        files(documents, prefix: "Note", ext: "txt", count: 200, avg: 4_000)
 
         let downloads = b.directory("Downloads")
         files(downloads, prefix: "Installer", ext: "dmg", count: 7, avg: 1_200 * MB)
-        files(downloads, prefix: "Datei", ext: "zip", count: 25, avg: 90 * MB)
+        files(downloads, prefix: "File", ext: "zip", count: 25, avg: 90 * MB)
 
         let music = b.directory("Music")
         let mlib = b.directory("Music", in: music)

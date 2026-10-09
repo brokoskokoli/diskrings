@@ -29,7 +29,7 @@ enum CompareDemoRenderer {
         do {
             return try render(temp: temp, out: out)
         } catch {
-            FileHandle.standardError.write(Data("Vergleichs-Demo fehlgeschlagen: \(error)\n".utf8))
+            FileHandle.standardError.write(Data("compare demo failed: \(error)\n".utf8))
             return 1
         }
     }
@@ -54,14 +54,14 @@ enum CompareDemoRenderer {
 
         // Ablage: ein älterer Stand ohne versteckte Dateien, ein unbenannter, der benannte Vergleichspartner.
         let hiddenOff = try ScanEngine(options: ScanOptions(includeHidden: false)).scanBlocking(home)
-        let warnInfo = try store.save(hiddenOff, volume: v1, name: "ohne versteckte Dateien", date: date("2026-09-18 08:02"))
+        let warnInfo = try store.save(hiddenOff, volume: v1, name: "without hidden files", date: date("2026-09-18 08:02"))
         try store.save(before, volume: v1, date: date("2026-09-25 19:45"))
-        let info = try store.save(before, volume: v1, name: "vor Xcode-Update", date: snapDate)
+        let info = try store.save(before, volume: v1, name: "before Xcode update", date: snapDate)
 
         try CompareDemo.applyChanges(at: home)
         let after = try engine.scanBlocking(home)
         let current = Snapshot(metadata: .current(for: after, volume: v2, date: scanDate), tree: after.tree)
-        let laterInfo = try store.save(after, volume: v2, name: "nach Xcode-Update", date: scanDate)
+        let laterInfo = try store.save(after, volume: v2, name: "after Xcode update", date: scanDate)
 
         func makeState() -> AppState {
             let s = SnapshotRenderer.makeState(tree: after.tree, volume: v2,
@@ -74,8 +74,8 @@ enum CompareDemoRenderer {
         }
         func comparing(_ view: CompareViewMode) throws -> (AppState, CompareSession) {
             let s = makeState()
-            s.startCompareSynchronously(old: try store.load(info), new: current, oldTitle: "vor Xcode-Update",
-                                        newTitle: "Aktueller Scan", comparesSnapshots: false)
+            s.startCompareSynchronously(old: try store.load(info), new: current, oldTitle: "before Xcode update",
+                                        newTitle: L("compare.currentScan"), comparesSnapshots: false)
             let c = s.compare!
             c.view = view
             return (s, c)
@@ -104,9 +104,9 @@ enum CompareDemoRenderer {
             if let dl = c2.diff.entry(forPath: home + "/" + CompareDemo.newFolderParent) { c2.navigate(to: dl) }
             shot(BrowserView(state: s2, frozenTime: .distantPast), "compare-growth-downloads")
 
-            // 3. Delta-Färbung mit aufgeklappter Liste (Musik: entferntes Album).
+            // 3. Delta-Färbung mit aufgeklappter Liste (Music: entferntes Album).
             let (s3, c3) = try comparing(.delta)
-            if let musik = c3.diff.entry(forPath: home + "/Musik") { c3.expanded.insert(musik) }
+            if let musik = c3.diff.entry(forPath: home + "/Music") { c3.expanded.insert(musik) }
             if let dl = c3.diff.entry(forPath: home + "/Downloads") {
                 c3.expanded.insert(dl)
                 c3.selected = dl
@@ -125,7 +125,7 @@ enum CompareDemoRenderer {
             // 5. Zwei Snapshots, einer mit anderen Scan-Optionen → Warnung.
             let s5 = makeState()
             s5.startCompareSynchronously(old: try store.load(warnInfo), new: try store.load(laterInfo),
-                                         oldTitle: "ohne versteckte Dateien", newTitle: "nach Xcode-Update",
+                                         oldTitle: "without hidden files", newTitle: "after Xcode update",
                                          comparesSnapshots: true)
             s5.compare?.view = .delta
             shot(BrowserView(state: s5, frozenTime: .distantPast), "compare-two-snapshots-warning")
@@ -146,12 +146,12 @@ enum CompareDemoRenderer {
 
             // 8b. Dasselbe Fenster mit einer abgeschnittenen und einer unlesbaren
             //     Datei (nur in der temporären Ablage).
-            let cut = try store.save(before, volume: v1, name: "abgeschnitten", date: date("2026-09-10 12:00"))
+            let cut = try store.save(before, volume: v1, name: "truncated", date: date("2026-09-10 12:00"))
             let cutData = try Data(contentsOf: cut.url)
             try cutData.prefix(cutData.count - 100).write(to: cut.url)
-            try Data("kein Snapshot".utf8).write(to: cut.url.deletingLastPathComponent()
+            try Data("not a snapshot".utf8).write(to: cut.url.deletingLastPathComponent()
                 .appendingPathComponent("20260901T080000000Z.drsnap"))
-            let newer = try store.save(before, volume: v1, name: "aus neuerer Version", date: date("2026-09-05 12:00"))
+            let newer = try store.save(before, volume: v1, name: "from a newer version", date: date("2026-09-05 12:00"))
             var newerData = try Data(contentsOf: newer.url)
             newerData[8] = 2 // Formatversion 2
             try newerData.write(to: newer.url)
@@ -160,16 +160,16 @@ enum CompareDemoRenderer {
             for d in try store.listDamaged() { try store.delete(d) }
 
             // 9. Dialog „Snapshot sichern“ und Einstellungen.
-            shot(SnapshotNameSheet(title: "Snapshot sichern", message: "Aktueller Scan von \(home)", confirm: "Sichern",
-                                   name: .constant("vor macOS-Update")) { _ in }, "snapshot-save-sheet", nil)
+            shot(SnapshotNameSheet(title: L("snapshots.save.title"), message: L("snapshots.save.message", home),
+                                   confirm: L("snapshots.save.confirm"), name: .constant("before macOS update")) { _ in }, "snapshot-save-sheet", nil)
             shot(SettingsView(prefs: makeState().prefs), "settings-snapshots", nil)
 
             // 10. Kontextmenü im Vergleich (nachgebildet): bestehender Ordner,
             //     entferntes Element, Vergleich zweier Snapshots.
             let (s10, c10) = try comparing(.delta)
             if let dl = c10.diff.entry(forPath: home + "/Downloads"),
-               let gone = c10.diff.entry(forPath: home + "/Musik/Album B"),
-               let s5c = s5.compare, let musik = s5c.diff.entry(forPath: home + "/Musik") {
+               let gone = c10.diff.entry(forPath: home + "/Music/Album B"),
+               let s5c = s5.compare, let musik = s5c.diff.entry(forPath: home + "/Music") {
                 shot(HStack(alignment: .top, spacing: 24) {
                     CompareContextMenuPreview(state: s10, entry: dl)
                     CompareContextMenuPreview(state: s10, entry: gone)

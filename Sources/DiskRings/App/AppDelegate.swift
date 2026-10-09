@@ -43,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                        isMiniaturized: $0.isMiniaturized, canBecomeMain: $0.canBecomeMain)
         }
         let action = WindowLifecycle.reopenAction(hasVisibleWindows: flag, windows: infos)
-        selftestLog("Dock-Klick (sichtbare Fenster: \(flag)) → \(action)")
+        selftestLog("dock click (visible windows: \(flag)) → \(action)")
         switch action {
         case .none:
             return true
@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Laufende Scans sauber beenden (Worker prüfen die Abbruch-Markierung).
         state.cancelScan()
         state.cancelPartialRescans()
-        selftestLog("App wird beendet")
+        selftestLog("app terminating")
     }
 
     /// Das Hauptfenster wurde geschlossen: Ein laufender Scan wird abgebrochen,
@@ -69,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let wasScanning = state.phase == .scanning
         state.cancelScan()
         state.cancelPartialRescans()
-        selftestLog("Hauptfenster geschlossen\(wasScanning ? ", laufender Scan abgebrochen" : "")")
+        selftestLog("main window closed\(wasScanning ? ", running scan cancelled" : "")")
     }
 
     // MARK: Selbsttest (`--selftest-close [ids]`)
@@ -92,38 +92,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if id == "settings" { openSettings?() } else { openWindow?(id: id) }
             }
             try? await Task.sleep(for: .seconds(1))
-            selftestLog("Fenster: \(describeWindows())")
+            selftestLog("windows: \(describeWindows())")
             for step in steps {
                 switch step {
                 case .dockClick:
                     let visible = NSApp.windows.contains { $0.isVisible }
                     if applicationShouldHandleReopen(NSApp, hasVisibleWindows: visible) {
-                        selftestLog("Reopen an AppKit weitergereicht")
+                        selftestLog("reopen passed on to AppKit")
                     }
                 case .hideApp:
-                    selftestLog("blende App aus (⌘H)")
+                    selftestLog("hiding app (⌘H)")
                     NSApp.hide(nil)
                 case .close(let id), .minimize(let id), .orderOut(let id):
                     guard let window = selftestWindow(id) else {
-                        selftestLog("Fenster \(id) nicht gefunden")
+                        selftestLog("window \(id) not found")
                         continue
                     }
                     if case .minimize = step {
-                        selftestLog("minimiere \(id)")
+                        selftestLog("minimizing \(id)")
                         window.miniaturize(nil)
                     } else if case .orderOut = step {
-                        selftestLog("blende \(id) aus")
+                        selftestLog("ordering out \(id)")
                         window.orderOut(nil)
                     } else {
-                        selftestLog("schließe \(id) (Scan läuft: \(state.phase == .scanning))")
+                        selftestLog("closing \(id) (scan running: \(state.phase == .scanning))")
                         window.performClose(nil)
                     }
                 }
                 try? await Task.sleep(for: .seconds(1.5))
-                selftestLog("läuft noch; sichtbar: \(describeWindows())")
+                selftestLog("still running; visible: \(describeWindows())")
             }
             try? await Task.sleep(for: .seconds(6))
-            selftestLog("Selbsttest-Ende, sichtbar: \(describeWindows())")
+            selftestLog("selftest end, visible: \(describeWindows())")
             NSApp.terminate(nil)
         }
     }
@@ -140,6 +140,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func describeWindows() -> String {
         let visible = NSApp.windows.filter(\.isVisible).map { $0.identifier?.rawValue ?? "?" }
-        return visible.isEmpty ? "keine" : visible.joined(separator: ", ")
+        return visible.isEmpty ? "none" : visible.joined(separator: ", ")
     }
 }

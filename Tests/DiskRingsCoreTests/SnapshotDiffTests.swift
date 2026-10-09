@@ -2,7 +2,7 @@
 import Foundation
 import Testing
 
-@Suite("Snapshot-Vergleich", .timeLimit(.minutes(3)))
+@Suite("Snapshot-Vergleich", .timeLimit(.minutes(3)), .language("de"))
 struct SnapshotDiffTests {
     let engine = ScanEngine(options: ScanOptions(workerCount: 2))
 

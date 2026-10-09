@@ -66,7 +66,7 @@ enum CompareFixture {
     static func model(_ mode: SizeMode = .allocated) -> CompareModel { CompareModel(diff: diff(), mode: mode) }
 }
 
-@Suite("Vergleichsmodell")
+@Suite("Vergleichsmodell", .language("de"))
 struct CompareModelTests {
     let MB = CompareFixture.MB
 
@@ -305,7 +305,7 @@ struct CompareModelTests {
 
 // MARK: Kopfzeile
 
-@Suite("Vergleich: Kopfzeile")
+@Suite("Vergleich: Kopfzeile", .language("de"))
 struct CompareHeadlineTests {
     let MB = CompareFixture.MB
     let berlin = TimeZone(identifier: "Europe/Berlin")!

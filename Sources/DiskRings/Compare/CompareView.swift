@@ -46,7 +46,7 @@ struct CompareView: View {
                     .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
                 Divider()
                 VStack(spacing: 0) {
-                    Picker("Liste", selection: Binding(get: { session.tab }, set: { session.tab = $0 })) {
+                    Picker(L("compare.listPicker"), selection: Binding(get: { session.tab }, set: { session.tab = $0 })) {
                         ForEach(CompareSession.Tab.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
@@ -80,27 +80,27 @@ struct CompareToolbar: View {
             ControlGroup {
                 Button { session.goBack() } label: { Image(systemName: "chevron.left") }
                     .disabled(!session.history.canGoBack)
-                    .help("Zurück")
-                    .accessibilityLabel("Zurück")
+                    .help(L("menu.back"))
+                    .accessibilityLabel(L("menu.back"))
                 Button { session.goForward() } label: { Image(systemName: "chevron.right") }
                     .disabled(!session.history.canGoForward)
-                    .help("Vor")
-                    .accessibilityLabel("Vor")
+                    .help(L("menu.forward"))
+                    .accessibilityLabel(L("menu.forward"))
             }
             .controlGroupStyle(.navigation)
             .fixedSize()
             CompareBreadcrumb(state: state, session: session)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Picker("Darstellung", selection: Binding(get: { session.view }, set: { session.view = $0 })) {
+            Picker(L("compare.viewPicker"), selection: Binding(get: { session.view }, set: { session.view = $0 })) {
                 ForEach(CompareViewMode.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             .fixedSize()
-            .help("Wachstum: Segmentgröße = Zuwachs. Delta-Färbung: normale Größen, rot gewachsen, grün geschrumpft.")
-            Button { state.endCompare() } label: { Label("Vergleich beenden", systemImage: "xmark.circle") }
+            .help(L("compare.viewPicker.help"))
+            Button { state.endCompare() } label: { Label(L("compare.end"), systemImage: "xmark.circle") }
                 .keyboardShortcut(.escape, modifiers: [])
-                .help("Zurück zur normalen Ansicht (Esc)")
+                .help(L("compare.end.help"))
         }
         .labelStyle(.titleAndIcon)
         .padding(.horizontal, 12)
@@ -141,7 +141,7 @@ struct CompareBreadcrumb: View {
             .font(.system(size: 13))
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Pfad im Vergleich")
+        .accessibilityLabel(L("compare.breadcrumb"))
     }
 
     private var rootLabel: String {
@@ -166,7 +166,7 @@ struct CompareHeadlineBar: View {
                 .truncationMode(.tail)
                 .textSelection(.enabled)
             Spacer(minLength: 12)
-            Text("\(session.oldTitle)  →  \(session.newTitle)")
+            Text(session.oldTitle + "  →  " + session.newTitle)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -196,7 +196,7 @@ struct CompareWarningBar: View {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(texts, id: \.self) { Text($0) }
-                Text("Unterschiede können deshalb auch von den Einstellungen kommen.")
+                Text(L("compare.warning.footer"))
                     .foregroundStyle(.secondary)
             }
             Spacer()
@@ -206,7 +206,7 @@ struct CompareWarningBar: View {
         .padding(.vertical, 6)
         .background(Color.orange.opacity(0.12))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Warnung: " + texts.joined(separator: ". "))
+        .accessibilityLabel(L("compare.warning.accessibility", texts.joined(separator: ". ")))
     }
 }
 
@@ -221,24 +221,24 @@ struct CompareLegend: View {
         VStack(alignment: .leading, spacing: 5) {
             switch session.view {
             case .growth:
-                Text("Segmentgröße = Zuwachs seit \(CompareHeadline.shortDate(session.diff.summary.oldDate))")
+                Text(L("compare.legend.growth", CompareHeadline.shortDate(session.diff.summary.oldDate)))
                     .font(.system(size: 11, weight: .medium))
                 HStack(spacing: 5) {
                     RoundedRectangle(cornerRadius: 2).fill(Color(palette.unchangedFill)).frame(width: 14, height: 10)
                         .overlay(Circle().fill(Color(palette.label(on: palette.unchangedFill))).frame(width: 5, height: 5))
-                    Text("neu").font(.system(size: 11))
+                    Text(L("diff.added")).font(.system(size: 11))
                 }
             case .delta:
                 HStack(spacing: 6) {
                     gradient(palette, .grown)
-                    Text("gewachsen").font(.system(size: 11))
+                    Text(L("diff.grown")).font(.system(size: 11))
                     gradient(palette, .shrunk)
-                    Text("geschrumpft").font(.system(size: 11))
+                    Text(L("diff.shrunk")).font(.system(size: 11))
                 }
                 HStack(spacing: 10) {
                     HStack(spacing: 5) {
                         marker(palette)
-                        Text("neu")
+                        Text(L("diff.added"))
                     }
                     HStack(spacing: 5) {
                         RoundedRectangle(cornerRadius: 2)
@@ -246,15 +246,15 @@ struct CompareLegend: View {
                             .overlay(RoundedRectangle(cornerRadius: 2)
                                 .strokeBorder(Color(palette.removedStroke), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
                             .frame(width: 14, height: 10)
-                        Text("entfernt")
+                        Text(L("diff.removed"))
                     }
                     HStack(spacing: 5) {
                         RoundedRectangle(cornerRadius: 2).fill(Color(palette.unchangedFill)).frame(width: 14, height: 10)
-                        Text("unverändert")
+                        Text(L("diff.unchanged"))
                     }
                 }
                 .font(.system(size: 11))
-                Text("Kräftiger = größere Änderung").font(.system(size: 10)).foregroundStyle(.secondary)
+                Text(L("compare.legend.intensity")).font(.system(size: 10)).foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 10)

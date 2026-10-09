@@ -42,7 +42,7 @@ public struct DamagedSnapshot: Sendable, Equatable, Identifiable {
     public var id: String { url.path }
 
     /// Kennzeichen im Fenster „Snapshots“.
-    public var statusLabel: String { kind == .newerVersion ? "neuere Version" : "beschädigt" }
+    public var statusLabel: String { kind == .newerVersion ? L("snapshots.damaged.newer") : L("snapshots.damaged.damaged") }
 }
 
 /// Ablage der Snapshots unter
@@ -191,7 +191,7 @@ public struct SnapshotStore: Sendable {
                         valid.append(SnapshotInfo(url: file, metadata: meta, fileSize: size))
                     } else {
                         let reason = size < expected ? SnapshotError.truncated.description
-                            : SnapshotError.corrupted("Dateilänge").description
+                            : SnapshotError.corrupted("file length").description
                         damaged.append(DamagedSnapshot(url: file, fileSize: size, reason: reason, metadata: meta))
                     }
                 } catch {

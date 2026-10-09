@@ -144,7 +144,7 @@ final class AppState {
             case .snapshot(let t): self.applySnapshot(t)
             case .finished(let r): self.finish(r)
             case .failed(let error):
-                self.scanError = "\(error)"
+                self.scanError = L10n.describe(error)
                 self.setTree(nil)
                 self.phase = .start
             }
@@ -175,8 +175,8 @@ final class AppState {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.prompt = "Scannen"
-        panel.message = "Ordner oder Volume zum Scannen wählen"
+        panel.prompt = L("panel.scan.prompt")
+        panel.message = L("panel.scan.message")
         if panel.runModal() == .OK, let url = panel.url { requestScan(url.path) }
     }
 
@@ -509,7 +509,7 @@ final class AppState {
     }
 
     func availability(_ action: NodeAction, targets: [Int32]) -> ActionAvailability {
-        guard let c = actionContext else { return .disabled("Kein Scan") }
+        guard let c = actionContext else { return .disabled(L("reason.noScan")) }
         return action.availability(targets: targets, context: c)
     }
 
@@ -585,22 +585,25 @@ final class AppState {
         }
         if !out.trashed.isEmpty {
             undoStack.append(out.trashed)
-            let what = out.trashed.count == 1 ? "„\(out.trashed[0].name)“" : "\(out.trashed.count) Objekte"
-            showToast(.success, "\(what) in den Papierkorb gelegt (\(ByteFormat.signed(-Int64(clamping: out.removedSize))))",
+            let delta = ByteFormat.signed(-Int64(clamping: out.removedSize))
+            showToast(.success, out.trashed.count == 1
+                ? L("toast.trashed.one", out.trashed[0].name, delta)
+                : L("toast.trashed.count", out.trashed.count, ByteFormat.count(out.trashed.count), delta),
                       offersUndo: true)
             rescanTrashFolders(out.trashed)
         }
         if let f = out.failures.first {
             let name = (f.path as NSString).lastPathComponent
-            showToast(.error, "„\(name)“ nicht in den Papierkorb gelegt: \(f.message)")
+            showToast(.error, L("toast.trashFailed", name, f.message))
         }
     }
 
     var canUndoTrash: Bool { !undoStack.isEmpty && tree != nil }
 
     var undoTitle: String {
-        guard let last = undoStack.last else { return "Widerrufen" }
-        return last.count == 1 ? "„\(last[0].name)“ zurücklegen" : "\(last.count) Objekte zurücklegen"
+        guard let last = undoStack.last else { return L("menu.undo") }
+        return last.count == 1 ? L("menu.undo.putBack.one", last[0].name)
+            : L("menu.undo.putBack.count", last.count, ByteFormat.count(last.count))
     }
 
     /// ⌘Z: zurückverschieben, dann den Elternordner neu einlesen (SPEC 3.6).
@@ -613,11 +616,11 @@ final class AppState {
         }
         rescanTrashFolders(records)
         if let f = out.failures.first {
-            showToast(.error, "„\((f.path as NSString).lastPathComponent)“ nicht zurückgelegt: \(f.message)")
+            showToast(.error, L("toast.putBackFailed", (f.path as NSString).lastPathComponent, f.message))
         } else if !out.restored.isEmpty {
             showToast(.info, out.restored.count == 1
-                ? "„\((out.restored[0] as NSString).lastPathComponent)“ zurückgelegt"
-                : "\(out.restored.count) Objekte zurückgelegt")
+                ? L("toast.putBack.one", (out.restored[0] as NSString).lastPathComponent)
+                : L("toast.putBack.count", out.restored.count, ByteFormat.count(out.restored.count)))
         }
     }
 
@@ -648,9 +651,9 @@ final class AppState {
         guard let tree else { return }
         switch rescanQueue.request(path, fullScanRunning: phase == .scanning) {
         case .blockedByFullScan:
-            showToast(.info, "Während eines vollständigen Scans ist kein Teil-Rescan möglich")
+            showToast(.info, L("toast.rescanBlocked"))
         case .alreadyCovered(let p):
-            if !silentIfCovered { showToast(.info, "„\((p as NSString).lastPathComponent)“ wird bereits neu gescannt") }
+            if !silentIfCovered { showToast(.info, L("toast.rescanCovered", (p as NSString).lastPathComponent)) }
         case .start(let id, let cancelling):
             for c in cancelling {
                 rescanTokens.removeValue(forKey: c)?.cancel()
@@ -697,11 +700,11 @@ final class AppState {
         let name = (path as NSString).lastPathComponent
         switch result {
         case .failure(let error):
-            if !(error is CancellationError) { showToast(.error, "„\(name)“ konnte nicht neu gescannt werden: \(error)") }
+            if !(error is CancellationError) { showToast(.error, L("toast.rescanFailed", name, L10n.describe(error))) }
         case .success(let scanned):
             guard let merge = PartialRescan.merge(scanned?.tree, path: path, into: tree) else {
                 if scanned == nil, path == tree.rootPath {
-                    showToast(.error, "Die Scan-Wurzel „\(name)“ existiert nicht mehr")
+                    showToast(.error, L("toast.rootMissing", name))
                 }
                 return
             }

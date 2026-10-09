@@ -38,12 +38,12 @@ public struct ProtectedPaths: Sendable, Equatable {
         /// Text für Tooltip und Fehlermeldung.
         public var message: String {
             switch self {
-            case .system(let p): "Systembereich von macOS (\(p))"
-            case .volumeRoot: "Wurzel eines Volumes"
-            case .home: "Das Home-Verzeichnis als Ganzes"
-            case .homeLibrary: "~/Library als Ganzes"
-            case .runningApp: "Die laufende App DiskRings"
-            case .containsProtected(let p, let r): "Enthält einen geschützten Bereich: \(p) (\(r.message))"
+            case .system(let p): L("protected.system", p)
+            case .volumeRoot: L("protected.volumeRoot")
+            case .home: L("protected.home")
+            case .homeLibrary: L("protected.homeLibrary")
+            case .runningApp: L("protected.runningApp")
+            case .containsProtected(let p, let r): L("protected.contains", p, r.message)
             }
         }
     }

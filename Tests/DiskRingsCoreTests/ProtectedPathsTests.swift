@@ -2,7 +2,7 @@
 import Foundation
 import Testing
 
-@Suite("Schutzliste für das Löschen")
+@Suite("Schutzliste für das Löschen", .language("de"))
 struct ProtectedPathsTests {
     let p = ProtectedPaths(home: "/Users/stefan", appBundlePath: "/Applications/DiskRings.app",
                            volumeRoots: ["/", "/Volumes/Backup", "/System/Volumes/Data"])
@@ -88,7 +88,7 @@ struct ProtectedPathsTests {
     @Test("Begründungen sind lesbar")
     func messages() {
         #expect(ProtectedPaths.Reason.system("/usr").message.contains("/usr"))
-        #expect(p.reason(for: "/Users")!.message.contains("Home"))
+        #expect(p.reason(for: "/Users")!.message.contains("Benutzerordner"))
     }
 
     @Test("Einhängepunkte des Systems werden gefunden, „/“ ist immer dabei")

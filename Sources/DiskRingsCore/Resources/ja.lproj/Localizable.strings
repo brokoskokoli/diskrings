@@ -1,0 +1,404 @@
+/* DiskRings – ja. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Finderに表示";
+"action.open" = "開く";
+"action.quickLook" = "クイックルック";
+"action.zoomIn" = "ここをズームイン";
+"action.copyPath" = "パスをコピー";
+"action.info" = "情報を見る";
+"action.rescan" = "このフォルダを再スキャン";
+"action.moveToTrash" = "ゴミ箱に入れる";
+"shortcut.space" = "スペース";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "何も選択されていません";
+"reason.notInTree" = "この項目はツリー内にもうありません";
+"reason.singleItemOnly" = "単一の項目でのみ使用できます";
+"reason.foldersOnly" = "フォルダでのみ使用できます";
+"reason.alreadyCenter" = "すでに中心にあります";
+"reason.folderEmpty" = "フォルダは空です";
+"reason.fullScanRunning" = "フルスキャン中は実行できません";
+"reason.otherVolume" = "別のボリューム（スキャン時に対象外）";
+"reason.rescanRunning" = "現在再スキャン中です";
+"reason.rescanRunningIn" = "「%@」の一部として再スキャン中です";
+"reason.scanRunning" = "スキャン中は実行できません";
+"reason.notInCompare" = "この項目は比較内にもうありません";
+"reason.removedSinceSnapshot" = "「%@」は存在しなくなりました（スナップショット以降に削除）";
+"reason.containsRemoved" = "存在しなくなった削除済みの項目を含みます";
+"reason.missingOnDisk" = "「%@」はディスク上に存在しなくなりました";
+"reason.twoSnapshots" = "2つのスナップショットの比較中は実行できません";
+"reason.notInCurrentScan" = "現在のスキャンにもうありません";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "スキャンのルート自体はゴミ箱に入れられません";
+"trash.error.protected" = "保護されています：%@";
+"trash.error.protectedItem" = "保護されています：%1$@ – %2$@";
+"trash.error.protectedResolved" = "保護されています：%1$@（解決後のパス：%2$@）";
+"trash.error.unresolvable" = "パスを解決できなくなりました";
+"trash.error.outsideRoot" = "スキャンのルート内にもうありません";
+"trash.error.outsideRootSymlink" = "スキャンのルート内にもうありません（パス内のフォルダがシンボリックリンクに置き換えられました）";
+"trash.confirm.title.one" = "「%@」をゴミ箱に入れますか？";
+"trash.confirm.total" = "合計 %1$@ · %2$@";
+"trash.undo.unknownLocation" = "ゴミ箱内の場所が不明です";
+"trash.undo.notInTrash" = "ゴミ箱にもうありません";
+"trash.undo.unrecognized" = "ゴミ箱内の項目を確実に特定できません";
+"trash.undo.replacedInTrash" = "この名前の別の項目がゴミ箱にあります（ゴミ箱が空にされたか、項目が変更された可能性があります）";
+"trash.undo.occupied" = "元の場所に別の項目が存在します";
+"trash.undo.parentMissing" = "親フォルダが存在しなくなりました";
+"trash.confirm.undoHint" = "項目は⌘ZまたはFinderでゴミ箱から戻すことができます。";
+"trash.confirm.dontAsk" = "今後確認しない（1 GB未満の項目のみ）";
+"trash.confirm.alwaysAsk" = "1 GB以上の項目は常に確認されます。";
+
+/* Protected paths (reasons) */
+"protected.system" = "macOSのシステム領域（%@）";
+"protected.volumeRoot" = "ボリュームのルート";
+"protected.home" = "ホームフォルダ全体";
+"protected.homeLibrary" = "~/Library全体";
+"protected.runningApp" = "実行中のDiskRingsアプリ";
+"protected.contains" = "保護された領域を含みます：%1$@（%2$@）";
+
+/* Scan errors */
+"error.scan.notFound" = "パスが見つかりません：%@";
+"error.scan.tooManyNodes" = "1つのスキャンツリーとしては項目が多すぎます";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "DiskRingsのスナップショットファイルではありません";
+"error.snapshot.unsupportedVersion" = "スナップショット形式%@には対応していません（新しいバージョンの可能性があります）";
+"error.snapshot.truncated" = "スナップショットファイルが不完全です";
+"error.snapshot.corrupted" = "スナップショットファイルが破損しています：%@";
+"error.snapshot.outsideStore" = "ファイルがスナップショットフォルダ内にありません：%@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "新しいバージョン";
+"snapshots.damaged.damaged" = "破損";
+"snapshot.untitled" = "%@のスナップショット";
+"snapshots.window.title" = "スナップショット";
+"snapshots.empty" = "スナップショットはまだありません";
+"snapshots.empty.message" = "スナップショットは各フルスキャン後に自動的に作成されるほか（設定でオフにできます）、「ファイル → スナップショットを保存」（⌘S）でも作成できます。";
+"snapshots.column.date" = "日付";
+"snapshots.column.name" = "名前";
+"snapshots.column.root" = "スキャンのルート";
+"snapshots.column.size" = "合計サイズ";
+"snapshots.column.file" = "ファイル";
+"snapshots.compareEachOther" = "互いに比較";
+"snapshots.olderIsBefore" = "古い方を「以前」とします";
+"snapshots.selectTwo" = "比較するスナップショットを2つ選択してください";
+"snapshots.rename.title" = "スナップショットの名称変更";
+"snapshots.rename.message" = "%1$@のスキャン、%2$@";
+"snapshots.delete.message" = "スナップショットファイルは完全に削除されます。スキャンしたファイルやフォルダには影響しません。";
+"snapshots.delete.title.one" = "スナップショットを削除しますか？";
+"snapshots.damaged.deleteAll" = "すべて削除…";
+"snapshots.damaged.delete.title.one" = "読み込めないファイルを削除しますか？";
+"snapshots.damaged.delete.newer" = "これらの一部は、このバージョンでは読み込めない新しいバージョンのDiskRingsのスナップショットです。新しいアプリでは開ける可能性があります。ファイルは完全に削除されます。スキャンしたファイルやフォルダには影響しません。";
+"snapshots.damaged.delete.message" = "このファイルはスナップショットとして読み込めなくなっているため、完全に削除されます。スキャンしたファイルやフォルダには影響しません。";
+"snapshots.name.placeholder" = "名前（オプション）、例：「Xcodeアップデート前」";
+"snapshots.save.title" = "スナップショットを保存";
+"snapshots.save.confirm" = "保存";
+"snapshots.save.message" = "%@の現在のスキャン";
+"menu.saveSnapshot" = "スナップショットを保存…";
+"menu.snapshots" = "スナップショット…";
+"snapshots.error.read" = "スナップショットを読み込めませんでした：%@";
+"snapshots.saved" = "スナップショット「%@」を保存しました";
+"snapshots.error.save" = "スナップショットを保存できませんでした：%@";
+"snapshots.error.rename" = "名称変更に失敗しました：%@";
+"snapshots.error.delete" = "削除に失敗しました：%@";
+
+/* General */
+"list.separator" = "、";
+
+/* Compare: headline and warnings */
+"compare.since" = "%@以降";
+"compare.fromTo" = "%1$@から%2$@まで";
+"compare.part.used" = "使用済み %@";
+"compare.part.free" = "空き %@";
+"compare.part.scan" = "スキャン %@";
+"compare.part.unassigned" = "うち未割り当て %@";
+"compare.part.volumeUsed" = "ボリューム使用済み %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "以前は不可視ファイルを除外";
+"compare.warning.hiddenNow" = "現在は不可視ファイルを除外";
+"compare.warning.exclusions" = "除外リストが異なります";
+"compare.warning.volumes" = "ボリュームの設定が異なります";
+"compare.warning.options" = "スナップショットは異なる設定で作成されました（%@）";
+"compare.warning.root" = "スキャンのルートが異なります：%1$@と%2$@";
+"compare.warning.volume" = "ボリュームが異なります";
+"compare.warning.minimumSize" = "%@未満のファイルはフォルダの合計でのみ比較されます";
+"compare.mode.growth" = "増加";
+"compare.mode.delta" = "差分カラー";
+"diff.added" = "新規";
+"diff.removed" = "削除";
+"diff.grown" = "増加";
+"diff.shrunk" = "減少";
+"diff.unchanged" = "変更なし";
+"compare.label.used" = "使用済み";
+"compare.label.free" = "空き";
+"compare.label.unassigned" = "うち未割り当て";
+"compare.label.volumeUsed" = "ボリューム使用済み";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@：存在しなくなりました（%2$@）";
+"rescan.summary.unchanged" = "%1$@：%2$@（変更なし）";
+"rescan.summary.changed" = "%1$@：%2$@ → %3$@（%4$@）";
+
+/* File type categories (legend) */
+"fileType.video" = "ビデオ";
+"fileType.image" = "イメージ";
+"fileType.audio" = "オーディオ";
+"fileType.archive" = "アーカイブ";
+"fileType.application" = "アプリ";
+"fileType.code" = "コード";
+"fileType.document" = "書類";
+"fileType.other" = "その他";
+
+/* Common buttons */
+"common.cancel" = "キャンセル";
+"common.ok" = "OK";
+"common.done" = "完了";
+"common.close" = "閉じる";
+"common.delete" = "削除";
+"common.deleteEllipsis" = "削除…";
+"common.renameEllipsis" = "名称変更…";
+"common.rename" = "名称変更";
+
+/* Full Disk Access */
+"fda.alert.title" = "フルディスクアクセスがありません";
+"fda.alert.setUp" = "フルディスクアクセスを設定";
+"fda.alert.scanAnyway" = "このままスキャン";
+"fda.alert.message" = "フルディスクアクセスがない場合、スキャン中にmacOSがデスクトップ、書類、ダウンロードなどのフォルダへのアクセスを個別に確認し、~/Library/Mailなどの領域は読み込めないままになります。スキャンはシステムのダイアログに応答するまで待機します。\n\n推奨：システム設定の「プライバシーとセキュリティ → フルディスクアクセス」でDiskRingsをオンにしてから、もう一度スキャンしてください。";
+
+/* Menus */
+"menu.chooseFolder" = "フォルダを選択…";
+"menu.fullRescan" = "すべてを再スキャン";
+"menu.undo" = "取り消す";
+"menu.redo" = "やり直す";
+"menu.find" = "検索…";
+"menu.item" = "項目";
+"menu.go" = "移動";
+"menu.back" = "戻る";
+"menu.forward" = "進む";
+"menu.enclosingFolder" = "内包しているフォルダ";
+"menu.compareRoot" = "比較のルート";
+"menu.scanRoot" = "スキャンのルート";
+"menu.startScreen" = "開始画面";
+
+/* Open panel */
+"panel.scan.prompt" = "スキャン";
+"panel.scan.message" = "スキャンするフォルダまたはボリュームを選択してください";
+"reason.noScan" = "スキャンがありません";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "「%1$@」をゴミ箱に入れました（%2$@）";
+"toast.trashFailed" = "「%1$@」をゴミ箱に入れられませんでした：%2$@";
+"menu.undo.putBack.one" = "「%@」を戻す";
+"toast.putBackFailed" = "「%1$@」を戻せませんでした：%2$@";
+"toast.putBack.one" = "「%@」を戻しました";
+"toast.rescanBlocked" = "フルスキャン中は部分的な再スキャンを実行できません";
+"toast.rescanCovered" = "「%@」はすでに再スキャン中です";
+"toast.rescanFailed" = "「%1$@」を再スキャンできませんでした：%2$@";
+"toast.rootMissing" = "スキャンのルート「%@」は存在しなくなりました";
+"toast.close" = "通知を閉じる";
+
+/* Item kinds and badges */
+"badge.package" = "パッケージ";
+"badge.unreadable" = "読み込み不可";
+"badge.icloudOnly" = "iCloudのみ";
+"badge.symlink" = "シンボリックリンク";
+"badge.otherVolume" = "別のボリューム";
+"badge.hardlink" = "ハードリンク";
+"kind.file" = "ファイル";
+"kind.folder" = "フォルダ";
+"kind.package" = "パッケージ";
+"kind.symlink" = "シンボリックリンク";
+
+/* Chart segments */
+"arc.aggregate.detail" = "角度のしきい値未満の項目をまとめたもの";
+"arc.remainder.title" = "このフォルダ内のファイル";
+"arc.remainder.detail" = "まだ個別に集計されていません";
+"arc.unassigned.title" = "未割り当て";
+"arc.unassigned.detail" = "システム、ローカルスナップショット、パージ可能な領域";
+"sunburst.accessibility" = "%@のサンバーストグラフ";
+"sunburst.shareOf" = "%2$@の%1$@";
+"sunburst.center.hint" = "クリック：1階層上へ";
+
+/* Settings */
+"settings.section.chart" = "グラフ";
+"settings.rings" = "リングの数";
+"settings.colorScheme" = "配色";
+"settings.colorScheme.branch" = "枝ごと";
+"settings.colorScheme.fileType" = "ファイルの種類ごと";
+"settings.minAngle" = "次の角度未満のセグメントをまとめる";
+"settings.minAngle.accessibilityValue" = "%@度";
+"settings.showLabels" = "セグメントにラベルを表示";
+"settings.section.size" = "サイズ";
+"settings.sizeMode" = "サイズの計算方法";
+"settings.sizeMode.allocated" = "ディスク上の割り当て";
+"settings.sizeMode.logical" = "論理サイズ";
+"settings.section.trash" = "ゴミ箱";
+"settings.trash.confirm" = "ゴミ箱に入れる前に確認";
+"settings.trash.footer" = "1 GB以上の項目は常に確認されます。";
+"settings.section.scan" = "スキャン";
+"settings.includeHidden" = "不可視ファイルを含める";
+"settings.crossMounts" = "スキャン時にほかのボリュームにも入る";
+"settings.excluded" = "除外するパス";
+"settings.excluded.add" = "パスを追加";
+"settings.excluded.remove" = "選択したパスを削除";
+"settings.excluded.prompt" = "除外";
+"settings.scan.footer" = "これらの設定は次回のスキャンから適用されます。";
+"settings.legend.accessibility" = "凡例：%@";
+"settings.section.language" = "言語";
+"settings.language" = "言語";
+"settings.language.automatic" = "自動（システム）";
+"settings.language.restartNote" = "新しい言語はDiskRingsの再起動後に適用されます。";
+"settings.language.restartNow" = "今すぐ再起動";
+"settings.language.footer" = "言語は、システム設定 → 一般 → 言語と地域 → アプリケーションでも選択できます。";
+"settings.section.snapshots" = "スナップショット";
+"settings.snapshots.autoSave" = "各フルスキャン後に自動的に保存";
+"settings.snapshots.maxCount" = "スキャンのルートごとの最大数";
+"settings.snapshots.footer" = "1 MB以上のフォルダとファイルが保存されます。最大数を超えると、古いものから削除されます。";
+
+/* Get Info window */
+"info.where" = "場所";
+"info.allocated" = "割り当て";
+"info.logical" = "論理";
+"info.contents" = "内容";
+"info.contents.value" = "%1$@、%2$@";
+"info.modified" = "変更日";
+"info.created" = "作成日";
+"info.badges" = "属性";
+"info.protected" = "保護";
+
+/* Search */
+"search.placeholder" = "名前で検索";
+"search.clear" = "検索をクリア";
+"search.backToList" = "リストに戻る";
+"search.results" = "検索結果";
+"search.searching" = "検索中…";
+"search.noResults" = "一致する項目はありません";
+
+/* Main window toolbar */
+"browser.listWidth" = "リストの幅";
+"browser.listWidth.value" = "%@ポイント";
+"browser.back.help" = "戻る（⌘[）";
+"browser.forward.help" = "進む（⌘]）";
+"browser.scanRunning" = "スキャン中";
+"browser.rescanRunning" = "部分的な再スキャン中";
+"browser.rescan" = "再スキャン";
+"browser.rescan.help" = "フォーカスしているフォルダを再スキャン（⇧⌘R）";
+"browser.search" = "検索";
+"browser.search.help" = "名前で検索（⌘F）";
+"browser.newScan" = "新規スキャン";
+"browser.newScan.help" = "開始画面に戻る";
+"browser.breadcrumb" = "パス";
+"browser.breadcrumb.current" = "%@、現在のフォルダ";
+
+/* Status bar and scan summary */
+"status.unassigned" = "未割り当て %@";
+"status.unassigned.help" = "ボリューム上で使用されているものの、どのフォルダにも表示されない領域：システム、ローカルのTime Machineスナップショット、パージ可能な領域。クローンやスナップショットによって差異が生じることがあります。";
+"status.deviation" = "クローンやスナップショットによって差異が生じることがあります";
+"status.deviation.help" = "クローンやスナップショットによって差異が生じることがあります：APFSクローンはブロックを共有しますが、個別に集計されます。ローカルのTime Machineスナップショットとパージ可能な領域はどのフォルダにも表示されず、「未割り当て」に含まれます。";
+"status.fda.help" = "フルディスクアクセスがない場合、~/Library/Mailなどのフォルダは読み込めず、「未割り当て」に含まれます。クリックするとシステム設定が開きます。";
+"status.scanSummary" = "スキャン：%1$@（%2$@）";
+"status.volume" = "%1$@：%2$@ · 使用済み %3$@ · 空き %4$@";
+"status.volume.purgeable" = "（うち%@がパージ可能）";
+"summary.finished" = "スキャン完了：%1$@、%2$@、%3$@（%4$@）";
+"summary.less" = "表示を減らす";
+"summary.close" = "概要を閉じる";
+"fda.grant" = "フルディスクアクセスを許可…";
+
+/* Detail list */
+"list.accessibility" = "%@の内容";
+"list.shareOfRoot" = "スキャンのルートの%@";
+"list.unassigned.help" = "未割り当て（システム、ローカルスナップショット、パージ可能な領域）：ボリューム上で使用されているものの、どのフォルダにも表示されない領域。";
+"list.row.accessibility" = "%1$@、%2$@、%3$@";
+"accessibility.zoomIn" = "ズームイン";
+
+/* Start screen */
+"start.subtitle" = "ボリュームまたはフォルダを選択すると、容量の使われ方を確認できます。";
+"start.volumes" = "ボリューム";
+"start.noVolumes" = "ボリュームが見つかりません。";
+"start.scanHome" = "ホームフォルダをスキャン";
+"start.fda.message" = "フルディスクアクセスがない場合、~/Library/Mail、Safari、ほかのアプリのコンテナなどのフォルダは読み込めません。これらはグラフに表示されず、「未割り当て」に含まれます。";
+"start.fda.openSettings" = "システム設定を開く…";
+"start.fda.checkAgain" = "再確認";
+"start.volume.used" = "%2$@中%1$@使用済み";
+"start.legend.used" = "使用済み %@";
+"start.legend.purgeable" = "パージ可能 %@";
+"start.legend.free" = "空き %@";
+"start.volume.accessibility" = "%1$@、%3$@中%2$@使用済み、空き%4$@";
+"start.volume.hint" = "このボリュームをスキャンします";
+"start.dropHint" = "またはここにフォルダをドラッグ";
+
+/* Scan progress */
+"scan.reading" = "フォルダを読み込み中…";
+"scan.title" = "%@をスキャン中";
+"scan.starting" = "開始中…";
+"scan.accessibility.starting" = "スキャンを開始しています";
+"scan.accessibility.running" = "スキャン中：%1$@、%2$@";
+"scan.stalled.title" = "macOSからの許可を待っている可能性があります…（システムのダイアログを確認してください）";
+"scan.stalled.message" = "macOSがフォルダやドライブへのアクセスを求めている可能性があります。ダイアログがほかのウインドウの後ろに隠れていることがあります。フルディスクアクセスがあれば、これらの確認は表示されません。";
+"scan.stalled.fda" = "フルディスクアクセス…";
+"scan.stalled.fda.help" = "システム設定の「プライバシーとセキュリティ → フルディスクアクセス」を開きます";
+
+/* Compare: list and chart */
+"compare.showInChart" = "グラフに表示";
+"compare.removedName" = "%@（削除済み）";
+"reason.noCompare" = "比較がありません";
+"compare.busy.updating" = "比較を更新中…";
+"compare.busy.computing" = "比較を計算中…";
+"compare.error" = "比較できません：%@";
+"compare.currentScan" = "現在のスキャン";
+"compare.list.accessibility" = "比較：%@の内容";
+"compare.column.name" = "名前";
+"compare.column.before" = "以前";
+"compare.column.now" = "現在";
+"compare.sortBy" = "%@で並べ替え";
+"compare.moreItems" = "その他の項目";
+"compare.direction" = "方向";
+"compare.direction.growth" = "増加";
+"compare.direction.shrink" = "減少";
+"compare.largest.noShrink" = "1 MB以上の減少はありません";
+"compare.largest.noGrowth" = "1 MB以上の増加はありません";
+"compare.tab.contents" = "内容";
+"compare.tab.largest" = "最大の変化";
+"compare.inScanRoot" = "スキャンのルート内";
+"compare.inFolder" = "%@内";
+"compare.largest.row.accessibility" = "%1$@. %2$@、%3$@、%4$@";
+"compare.chart.noGrowth" = "スナップショット以降の増加はありません";
+"compare.chart.noData" = "データがありません";
+"compare.chart.noGrowth.hint" = "「差分カラー」では、減少した項目や削除された項目も表示されます。";
+"compare.chart.accessibility" = "%2$@の比較グラフ（%1$@）";
+"compare.center.growth" = "増加";
+"compare.center.now" = "現在 %@";
+"compare.tooltip.folderGrowth" = "フォルダ内の増加：%@";
+"compare.tooltip.growthWithoutEntries" = "個別の項目がない増加";
+"compare.tooltip.smallFiles" = "%@未満の小さなファイルとフォルダ自体のサイズ";
+"compare.beforeNow" = "以前 %1$@  →  現在 %2$@";
+"compare.entry.accessibility" = "%1$@、%2$@、%3$@、差分%4$@";
+"compare.listPicker" = "リスト";
+"compare.viewPicker" = "表示";
+"compare.viewPicker.help" = "増加：セグメントのサイズ＝増加量。差分カラー：通常のサイズで、増加は赤、減少は緑。";
+"compare.end" = "比較を終了";
+"compare.end.help" = "通常の表示に戻る（Esc）";
+"compare.breadcrumb" = "比較内のパス";
+"compare.warning.footer" = "そのため、差異は設定の違いによる可能性もあります。";
+"compare.warning.accessibility" = "警告：%@";
+"compare.legend.growth" = "セグメントのサイズ＝%@以降の増加量";
+"compare.legend.intensity" = "濃いほど変化が大きい";
+
+/* Compare: picker */
+"compare.with" = "比較対象…";
+"compare.with.help" = "このスキャンを保存済みのスナップショットと比較";
+"compare.picker.empty" = "一致するスナップショットはありません";
+"compare.picker.empty.message" = "このボリュームには、このスキャンのルートの以前のスナップショットがまだありません。スナップショットは各スキャン後に自動的に作成されるほか、「ファイル → スナップショットを保存」（⌘S）でも作成できます。";
+"compare.button" = "比較";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@秒";
+"format.duration.minutes" = "%1$@分%2$@秒";

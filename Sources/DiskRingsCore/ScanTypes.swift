@@ -103,8 +103,8 @@ public enum ScanError: Error, Equatable, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .notFound(let p): "Pfad nicht gefunden: \(p)"
-        case .tooManyNodes: "Zu viele Einträge für einen Scan-Baum"
+        case .notFound(let p): L("error.scan.notFound", p)
+        case .tooManyNodes: L("error.scan.tooManyNodes")
         }
     }
 }

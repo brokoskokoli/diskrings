@@ -5,9 +5,10 @@ import SwiftUI
 /// Rendert Vorschaubilder der Oberfläche als PNG (CLAUDE.md: visuelle
 /// Prüfung über `ImageRenderer`). Aufruf:
 ///
-///     swift run DiskRings --render-snapshots build/snapshots [--scan /usr/share]
+///     swift run DiskRings --render-snapshots build/snapshots [--scan /usr/share] [--language fr]
 ///
-/// Erzeugt je Szene eine Hell- und eine Dunkel-Variante.
+/// Erzeugt je Szene eine Hell- und eine Dunkel-Variante. `--language` rendert
+/// in einer festen Sprache (Standard: Sprache des Systems).
 @MainActor
 enum SnapshotRenderer {
     static func run(outputDirectory: String, scanPath: String?) -> Int32 {
@@ -100,10 +101,10 @@ enum SnapshotRenderer {
             let demoProtection = ProtectedPaths(home: "/Users/demo", appBundlePath: nil, volumeRoots: ["/"])
             let s9 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
             s9.protection = demoProtection
-            if let file = demo.index(ofPath: "Documents/Rechnung 1.pdf"), let lib = demo.index(ofPath: "Library"),
+            if let file = demo.index(ofPath: "Documents/Invoice 1.pdf"), let lib = demo.index(ofPath: "Library"),
                let d1 = demo.index(ofPath: "Downloads/Installer 1.dmg"),
                let d2 = demo.index(ofPath: "Downloads/Installer 2.dmg"),
-               let d3 = demo.index(ofPath: "Downloads/Datei 1.zip") {
+               let d3 = demo.index(ofPath: "Downloads/File 1.zip") {
                 let s9b = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
                 s9b.protection = demoProtection
                 s9b.selection = NodeSelection([d1, d2, d3])
@@ -121,7 +122,7 @@ enum SnapshotRenderer {
                     .first { demo.node($0).allocatedSize < 1_000_000_000 } ?? file
                 if case .success(let p1) = TrashPlan.make(targets: [small], in: demo, protection: demoProtection),
                    case .success(let p2) = TrashPlan.make(
-                       targets: [demo.index(ofPath: "Documents/Archiv") ?? d1, d1, d2], in: demo,
+                       targets: [demo.index(ofPath: "Documents/Archive") ?? d1, d1, d2], in: demo,
                        protection: demoProtection) {
                     failures += renderWindow(
                         HStack(alignment: .top, spacing: 24) {
@@ -208,7 +209,7 @@ enum SnapshotRenderer {
                     failures += renderWindow(ScanningView(state: s8, frozenTime: .distantPast).frame(width: 1180, height: 700),
                                        scheme: scheme, to: dir, name: "scanning-stalled-\(suffix)")
                 } catch {
-                    FileHandle.standardError.write(Data("Scan von \(scanPath) fehlgeschlagen: \(error)\n".utf8))
+                    FileHandle.standardError.write(Data("scan of \(scanPath) failed: \(error)\n".utf8))
                     failures += 1
                 }
             }
@@ -232,6 +233,7 @@ enum SnapshotRenderer {
         appearance.performAsCurrentDrawingAppearance {
             let content = view
                 .environment(\.colorScheme, scheme)
+                .environment(\.locale, L10n.locale)
                 // ImageRenderer löst dynamische NSColors nicht nach dem Modus auf.
                 .background(scheme == .dark ? Color(white: 0.196) : Color(white: 0.925))
             let renderer = ImageRenderer(content: content)
@@ -245,7 +247,7 @@ enum SnapshotRenderer {
                 print(url.path)
                 ok = true
             } catch {
-                FileHandle.standardError.write(Data("Schreiben fehlgeschlagen: \(url.path)\n".utf8))
+                FileHandle.standardError.write(Data("write failed: \(url.path)\n".utf8))
             }
         }
         return ok ? 0 : 1
@@ -260,7 +262,7 @@ extension SnapshotRenderer {
     static func renderWindow<V: View>(_ view: V, scheme: ColorScheme, to dir: URL, name: String) -> Int {
         let appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)!
         NSApp.appearance = appearance
-        let host = NSHostingView(rootView: view.environment(\.colorScheme, scheme)
+        let host = NSHostingView(rootView: view.environment(\.colorScheme, scheme).environment(\.locale, L10n.locale)
             .background(Color(nsColor: .windowBackgroundColor)))
         host.appearance = appearance
         host.safeAreaRegions = []

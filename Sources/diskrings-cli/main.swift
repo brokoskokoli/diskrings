@@ -2,27 +2,28 @@ import DiskRingsCore
 import Foundation
 
 let usage = """
-Verwendung:
-  diskrings-cli scan <pfad> [--top N] [--depth D] [--json] [--logical]
-                            [--no-hidden] [--exclude PFAD]... [--workers N]
+Usage:
+  diskrings-cli scan <path> [--top N] [--depth D] [--json] [--logical]
+                            [--no-hidden] [--exclude PATH]... [--workers N]
                             [--cross-mounts] [--progress] [--live [--live-depth K]]
   diskrings-cli volumes [--json]
-  diskrings-cli snapshot save <pfad> [--name NAME] [--dir VERZ] [--min-size BYTE]
-                                     [--no-hidden] [--exclude PFAD]... [--workers N]
-  diskrings-cli snapshot list [--dir VERZ]
-  diskrings-cli diff <snapshotA> [<snapshotB> | --scan <pfad>] [--top N] [--dir VERZ]
+  diskrings-cli snapshot save <path> [--name NAME] [--dir DIR] [--min-size BYTES]
+                                     [--no-hidden] [--exclude PATH]... [--workers N]
+  diskrings-cli snapshot list [--dir DIR]
+  diskrings-cli diff <snapshotA> [<snapshotB> | --scan <path>] [--top N] [--dir DIR]
 
-  scan      Scannt <pfad> und gibt Gesamtsumme, Dateianzahl, Dauer und die
-            größten Ordner aus (Standard: --top 10 --depth 1).
-  volumes   Listet die eingehängten Volumes.
-  snapshot  save: scannt <pfad> und speichert einen Snapshot (Standard-Ablage
-            ~/Library/Application Support/DiskRings/Snapshots, Dateien unter
-            1 MB nur in der Ordnersumme). list: zeigt alle Snapshots.
-  diff      Vergleicht Snapshot A mit Snapshot B oder mit einem frischen Scan
-            (Standard: --scan mit der Scan-Wurzel von A) und zeigt die
-            größten Veränderungen (Standard: --top 20). Snapshots werden als
-            Datei (.drsnap) oder über den Anfang ihrer ID aus „snapshot list“
-            angegeben.
+  scan      Scans <path> and prints the total, file count, duration and the
+            largest folders (default: --top 10 --depth 1).
+  volumes   Lists the mounted volumes.
+  snapshot  save: scans <path> and saves a snapshot (default location
+            ~/Library/Application Support/DiskRings/Snapshots, files under
+            1 MB only in the folder total). list: shows all snapshots.
+  diff      Compares snapshot A with snapshot B or with a fresh scan
+            (default: --scan with the scan root of A) and shows the largest
+            changes (default: --top 20). Snapshots are given as a file
+            (.drsnap) or by the beginning of their ID from "snapshot list".
+
+Sizes and numbers are formatted for the system locale.
 """
 
 struct CLIError: Error, CustomStringConvertible {
@@ -30,7 +31,7 @@ struct CLIError: Error, CustomStringConvertible {
 }
 
 func fail(_ message: String) -> Never {
-    FileHandle.standardError.write(Data("Fehler: \(message)\n\n\(usage)\n".utf8))
+    FileHandle.standardError.write(Data("Error: \(message)\n\n\(usage)\n".utf8))
     exit(2)
 }
 
@@ -49,11 +50,11 @@ func parseScan(_ args: ArraySlice<String>) -> ScanArgs {
     var a = ScanArgs()
     var it = args.makeIterator()
     func value(_ flag: String) -> String {
-        guard let v = it.next() else { fail("\(flag) erwartet einen Wert") }
+        guard let v = it.next() else { fail("\(flag) expects a value") }
         return v
     }
     func int(_ flag: String) -> Int {
-        guard let v = Int(value(flag)), v >= 0 else { fail("\(flag) erwartet eine Zahl ≥ 0") }
+        guard let v = Int(value(flag)), v >= 0 else { fail("\(flag) expects a number ≥ 0") }
         return v
     }
     while let arg = it.next() {
@@ -71,8 +72,8 @@ func parseScan(_ args: ArraySlice<String>) -> ScanArgs {
         case "--workers": a.options.workerCount = max(1, int(arg))
         case "-h", "--help": print(usage); exit(0)
         default:
-            if arg.hasPrefix("--") { fail("Unbekannte Option \(arg)") }
-            if a.path != nil { fail("Nur ein Pfad erlaubt") }
+            if arg.hasPrefix("--") { fail("Unknown option \(arg)") }
+            if a.path != nil { fail("Only one path allowed") }
             a.path = arg
         }
     }
@@ -122,13 +123,13 @@ struct ScanJSON: Encodable {
 
 func flagNames(_ f: NodeFlags) -> [String] {
     var out: [String] = []
-    if f.contains(.package) { out.append("paket") }
+    if f.contains(.package) { out.append("package") }
     if f.contains(.symlink) { out.append("symlink") }
-    if f.contains(.unreadable) { out.append("nicht-lesbar") }
-    if f.contains(.dataless) { out.append("nur-in-cloud") }
-    if f.contains(.hardlinkDuplicate) { out.append("hardlink-duplikat") }
-    if f.contains(.mountPoint) { out.append("einhaengepunkt") }
-    if f.contains(.hidden) { out.append("versteckt") }
+    if f.contains(.unreadable) { out.append("unreadable") }
+    if f.contains(.dataless) { out.append("cloud-only") }
+    if f.contains(.hardlinkDuplicate) { out.append("hardlink-duplicate") }
+    if f.contains(.mountPoint) { out.append("mount-point") }
+    if f.contains(.hidden) { out.append("hidden") }
     return out
 }
 
@@ -153,7 +154,7 @@ func printTop(_ entries: [TopEntry], parentSize: UInt64, indent: Int, mode: Size
         let pad = String(repeating: "  ", count: indent)
         let marker = e.isDirectory ? "▸ " : "  "
         let extra = e.flags.isEmpty ? "" : "  [\(e.flags.joined(separator: ", "))]"
-        print("\(sizeText) \(pct) \(pad)\(marker)\(e.name)\(e.isDirectory ? "  (\(ByteFormat.count(e.fileCount)) Dateien)" : "")\(extra)")
+        print("\(sizeText) \(pct) \(pad)\(marker)\(e.name)\(e.isDirectory ? "  (\(ByteFormat.count(e.fileCount)) files)" : "")\(extra)")
         if let kids = e.children { printTop(kids, parentSize: size, indent: indent + 1, mode: mode) }
     }
 }
@@ -164,7 +165,7 @@ func volumeJSON(_ v: VolumeInfo) -> VolumeJSON {
 }
 
 func runScan(_ a: ScanArgs) -> Int32 {
-    guard let path = a.path else { fail("Pfad fehlt") }
+    guard let path = a.path else { fail("Path missing") }
     let engine = ScanEngine(options: a.options)
     let mode: SizeMode = a.logical ? .logical : .allocated
     let cancel = ScanCancellation()
@@ -179,17 +180,17 @@ func runScan(_ a: ScanArgs) -> Int32 {
     let live = LiveStats()
     do {
         result = try engine.scanBlocking(path, cancellation: cancel, onProgress: a.progress ? { p in
-            let line = "\r\(ByteFormat.count(p.filesScanned)) Dateien · \(ByteFormat.string(p.allocatedBytes)) · \(ByteFormat.duration(p.elapsed))   "
+            let line = "\r\(ByteFormat.count(p.filesScanned)) files · \(ByteFormat.string(p.allocatedBytes)) · \(ByteFormat.duration(p.elapsed))   "
             FileHandle.standardError.write(Data(line.utf8))
         } : nil, onSnapshot: a.live ? { t in
             live.count += 1
             live.lastNodes = t.count
         } : nil)
     } catch is CancellationError {
-        FileHandle.standardError.write(Data("\nAbgebrochen.\n".utf8))
+        FileHandle.standardError.write(Data("\nCancelled.\n".utf8))
         return 130
     } catch {
-        FileHandle.standardError.write(Data("Fehler: \(error)\n".utf8))
+        FileHandle.standardError.write(Data("Error: \(error)\n".utf8))
         return 1
     }
     if a.progress { FileHandle.standardError.write(Data("\n".utf8)) }
@@ -216,35 +217,35 @@ func runScan(_ a: ScanArgs) -> Int32 {
         return 0
     }
 
-    print("Scan von \(tree.rootPath)")
-    print("Belegt:        \(ByteFormat.string(result.allocatedSize))  (\(ByteFormat.count(result.allocatedSize)) Byte)")
-    print("Logisch:       \(ByteFormat.string(result.logicalSize))")
-    print("Dateien:       \(ByteFormat.count(result.fileCount))")
-    print("Ordner:        \(ByteFormat.count(result.directoryCount))")
-    print("Dauer:         \(ByteFormat.duration(result.duration)) (\(a.options.effectiveWorkerCount) Worker)")
-    print("Baum:          \(ByteFormat.count(tree.count)) Knoten, \(ByteFormat.string(UInt64(tree.memoryFootprint))) im Speicher")
+    print("Scan of \(tree.rootPath)")
+    print("Allocated:     \(ByteFormat.string(result.allocatedSize))  (\(ByteFormat.count(result.allocatedSize)) bytes)")
+    print("Logical:       \(ByteFormat.string(result.logicalSize))")
+    print("Files:         \(ByteFormat.count(result.fileCount))")
+    print("Folders:       \(ByteFormat.count(result.directoryCount))")
+    print("Duration:      \(ByteFormat.duration(result.duration)) (\(a.options.effectiveWorkerCount) workers)")
+    print("Tree:          \(ByteFormat.count(tree.count)) nodes, \(ByteFormat.string(UInt64(tree.memoryFootprint))) in memory")
     if a.live {
-        print("Live-Snapshots: \(live.count) (Tiefe \(a.options.snapshotDepth), zuletzt \(ByteFormat.count(live.lastNodes)) Knoten)")
+        print("Live snapshots: \(live.count) (depth \(a.options.snapshotDepth), last \(ByteFormat.count(live.lastNodes)) nodes)")
     }
     if result.hardlinkDuplicates > 0 {
-        print("Hardlinks:     \(ByteFormat.count(result.hardlinkDuplicates)) Duplikate nicht doppelt gezählt")
+        print("Hard links:    \(ByteFormat.count(result.hardlinkDuplicates)) duplicates not counted twice")
     }
     if !result.unreadablePaths.isEmpty {
-        print("Nicht lesbar:  \(ByteFormat.count(result.unreadablePaths.count)) Ordner")
+        print("Unreadable:    \(ByteFormat.count(result.unreadablePaths.count)) folders")
         for p in result.unreadablePaths.prefix(10) { print("               \(p)") }
         if result.unreadablePaths.count > 10 { print("               …") }
     }
     if !result.skippedMountPoints.isEmpty {
-        print("Andere Volumes (nicht betreten): \(result.skippedMountPoints.joined(separator: ", "))")
+        print("Other volumes (not entered): \(result.skippedMountPoints.joined(separator: ", "))")
     }
     if let v = volume {
-        print("Volume:        \(v.name) · \(ByteFormat.string(v.totalCapacity)) · belegt \(ByteFormat.string(v.usedCapacity)) · frei \(ByteFormat.string(v.availableCapacity))")
+        print("Volume:        \(v.name) · \(ByteFormat.string(v.totalCapacity)) · used \(ByteFormat.string(v.usedCapacity)) · free \(ByteFormat.string(v.availableCapacity))")
         if let u = unassigned {
-            print("Nicht zugeordnet (System, Snapshots, Purgeable): \(ByteFormat.string(u))")
+            print("Unassigned (system, snapshots, purgeable): \(ByteFormat.string(u))")
         }
     }
     print("")
-    print("Größte Einträge (\(mode == .allocated ? "belegt" : "logisch")):")
+    print("Largest entries (\(mode == .allocated ? "allocated" : "logical")):")
     printTop(top, parentSize: tree.root.size(mode), indent: 0, mode: mode)
     return 0
 }
@@ -260,7 +261,7 @@ func runVolumes(json: Bool) -> Int32 {
     }
     for v in vols {
         print("\(v.name) (\(v.path))")
-        print("  gesamt \(ByteFormat.string(v.totalCapacity)) · belegt \(ByteFormat.string(v.usedCapacity)) · frei \(ByteFormat.string(v.availableCapacity)) (für Wichtiges \(ByteFormat.string(v.availableForImportantUsage)))")
+        print("  total \(ByteFormat.string(v.totalCapacity)) · used \(ByteFormat.string(v.usedCapacity)) · free \(ByteFormat.string(v.availableCapacity)) (for important usage \(ByteFormat.string(v.availableForImportantUsage)))")
         if let u = v.uuid { print("  UUID \(u)") }
     }
     return 0
@@ -276,8 +277,8 @@ func makeStore(_ dir: String?, minSize: UInt64? = nil) -> SnapshotStore {
 
 func dateText(_ d: Date) -> String {
     let f = DateFormatter()
-    f.locale = Locale(identifier: "de_DE")
-    f.dateFormat = "dd.MM.yyyy HH:mm:ss"
+    f.locale = Locale(identifier: "en_US_POSIX")
+    f.dateFormat = "yyyy-MM-dd HH:mm:ss"
     return f.string(from: d)
 }
 
@@ -290,16 +291,16 @@ func scanWithSignal(_ path: String, options: ScanOptions) -> ScanResult {
     do {
         return try ScanEngine(options: options).scanBlocking(path, cancellation: cancel)
     } catch is CancellationError {
-        FileHandle.standardError.write(Data("\nAbgebrochen.\n".utf8))
+        FileHandle.standardError.write(Data("\nCancelled.\n".utf8))
         exit(130)
     } catch {
-        FileHandle.standardError.write(Data("Fehler: \(error)\n".utf8))
+        FileHandle.standardError.write(Data("Error: \(error)\n".utf8))
         exit(1)
     }
 }
 
 func runSnapshot(_ args: ArraySlice<String>) -> Int32 {
-    guard let sub = args.first else { fail("snapshot erwartet save oder list") }
+    guard let sub = args.first else { fail("snapshot expects save or list") }
     var it = args.dropFirst().makeIterator()
     var path: String?
     var name: String?
@@ -307,7 +308,7 @@ func runSnapshot(_ args: ArraySlice<String>) -> Int32 {
     var minSize: UInt64?
     var options = ScanOptions()
     func value(_ flag: String) -> String {
-        guard let v = it.next() else { fail("\(flag) erwartet einen Wert") }
+        guard let v = it.next() else { fail("\(flag) expects a value") }
         return v
     }
     while let arg = it.next() {
@@ -315,57 +316,57 @@ func runSnapshot(_ args: ArraySlice<String>) -> Int32 {
         case "--name": name = value(arg)
         case "--dir": dir = value(arg)
         case "--min-size":
-            guard let v = UInt64(value(arg)) else { fail("--min-size erwartet eine Zahl in Byte") }
+            guard let v = UInt64(value(arg)) else { fail("--min-size expects a number of bytes") }
             minSize = v
         case "--no-hidden": options.includeHidden = false
         case "--exclude": options.excludedPaths.append(value(arg))
         case "--workers":
-            guard let v = Int(value(arg)), v > 0 else { fail("--workers erwartet eine Zahl > 0") }
+            guard let v = Int(value(arg)), v > 0 else { fail("--workers expects a number > 0") }
             options.workerCount = v
         default:
-            if arg.hasPrefix("--") { fail("Unbekannte Option \(arg)") }
-            if path != nil { fail("Nur ein Pfad erlaubt") }
+            if arg.hasPrefix("--") { fail("Unknown option \(arg)") }
+            if path != nil { fail("Only one path allowed") }
             path = arg
         }
     }
     let store = makeStore(dir, minSize: minSize)
     switch sub {
     case "save":
-        guard let path else { fail("Pfad fehlt") }
+        guard let path else { fail("Path missing") }
         let result = scanWithSignal(path, options: options)
         let start = Date()
         do {
             let info = try store.save(result, name: name)
             let saveTime = Date().timeIntervalSince(start)
-            print("Snapshot gespeichert: \(info.url.path)")
+            print("Snapshot saved: \(info.url.path)")
             print("ID:            \(info.metadata.id.uuidString)")
-            print("Scan-Wurzel:   \(info.metadata.rootPath)")
-            print("Belegt:        \(ByteFormat.string(info.metadata.allocatedSize))")
-            print("Knoten:        \(ByteFormat.count(info.metadata.nodeCount)) von \(ByteFormat.count(result.tree.count)) (Dateien unter \(ByteFormat.string(store.minimumFileSize)) nur in der Ordnersumme)")
-            print("Dateigröße:    \(ByteFormat.string(info.fileSize))")
-            print("Dauer:         Scan \(ByteFormat.duration(result.duration)), Speichern \(ByteFormat.duration(saveTime))")
+            print("Scan root:     \(info.metadata.rootPath)")
+            print("Allocated:     \(ByteFormat.string(info.metadata.allocatedSize))")
+            print("Nodes:         \(ByteFormat.count(info.metadata.nodeCount)) of \(ByteFormat.count(result.tree.count)) (files under \(ByteFormat.string(store.minimumFileSize)) only in the folder total)")
+            print("File size:     \(ByteFormat.string(info.fileSize))")
+            print("Duration:      scan \(ByteFormat.duration(result.duration)), save \(ByteFormat.duration(saveTime))")
             return 0
         } catch {
-            FileHandle.standardError.write(Data("Fehler beim Speichern: \(error)\n".utf8))
+            FileHandle.standardError.write(Data("Error while saving: \(error)\n".utf8))
             return 1
         }
     case "list":
         do {
             let all = try store.list()
-            if all.isEmpty { print("Keine Snapshots in \(store.baseDirectory.path)") }
+            if all.isEmpty { print("No snapshots in \(store.baseDirectory.path)") }
             for info in all {
                 let m = info.metadata
-                let label = m.name.map { " „\($0)“" } ?? ""
+                let label = m.name.map { " \"\($0)\"" } ?? ""
                 print("\(dateText(m.date))\(label)  \(ByteFormat.string(m.allocatedSize))  \(m.rootPath)")
-                print("    ID \(m.id.uuidString) · \(ByteFormat.count(m.nodeCount)) Knoten · \(ByteFormat.string(info.fileSize)) · \(info.url.path)")
+                print("    ID \(m.id.uuidString) · \(ByteFormat.count(m.nodeCount)) nodes · \(ByteFormat.string(info.fileSize)) · \(info.url.path)")
             }
             return 0
         } catch {
-            FileHandle.standardError.write(Data("Fehler: \(error)\n".utf8))
+            FileHandle.standardError.write(Data("Error: \(error)\n".utf8))
             return 1
         }
     default:
-        fail("Unbekannter Unterbefehl snapshot \(sub)")
+        fail("Unknown subcommand snapshot \(sub)")
     }
 }
 
@@ -378,11 +379,11 @@ func loadSnapshot(_ ref: String, store: SnapshotStore) -> Snapshot {
         }
         let matches = try store.list().filter { $0.metadata.id.uuidString.lowercased().hasPrefix(ref.lowercased()) }
         guard matches.count == 1 else {
-            fail(matches.isEmpty ? "Snapshot \(ref) nicht gefunden" : "Snapshot-ID \(ref) ist nicht eindeutig")
+            fail(matches.isEmpty ? "Snapshot \(ref) not found" : "Snapshot ID \(ref) is ambiguous")
         }
         return try store.load(matches[0])
     } catch {
-        FileHandle.standardError.write(Data("Fehler beim Laden von \(ref): \(error)\n".utf8))
+        FileHandle.standardError.write(Data("Error while loading \(ref): \(error)\n".utf8))
         exit(1)
     }
 }
@@ -400,18 +401,18 @@ func runDiff(_ args: ArraySlice<String>) -> Int32 {
             scanFlag = true
             if let v = it.next() { scanPath = v }
         case "--top":
-            guard let v = it.next().flatMap({ Int($0) }), v >= 0 else { fail("--top erwartet eine Zahl ≥ 0") }
+            guard let v = it.next().flatMap({ Int($0) }), v >= 0 else { fail("--top expects a number ≥ 0") }
             top = v
         case "--dir":
-            guard let v = it.next() else { fail("--dir erwartet einen Wert") }
+            guard let v = it.next() else { fail("--dir expects a value") }
             dir = v
         default:
-            if arg.hasPrefix("--") { fail("Unbekannte Option \(arg)") }
+            if arg.hasPrefix("--") { fail("Unknown option \(arg)") }
             refs.append(arg)
         }
     }
-    guard let first = refs.first, refs.count <= 2 else { fail("diff erwartet einen oder zwei Snapshots") }
-    if refs.count == 2, scanFlag { fail("Entweder <snapshotB> oder --scan, nicht beides") }
+    guard let first = refs.first, refs.count <= 2 else { fail("diff expects one or two snapshots") }
+    if refs.count == 2, scanFlag { fail("Either <snapshotB> or --scan, not both") }
     let store = makeStore(dir)
     let old = loadSnapshot(first, store: store)
     let new: Snapshot
@@ -431,16 +432,16 @@ func runDiff(_ args: ArraySlice<String>) -> Int32 {
     let changes = diff.largestChanges(limit: top)
     let elapsed = Date().timeIntervalSince(start)
 
-    print("Vergleich \(dateText(old.metadata.date)) → \(dateText(new.metadata.date))")
+    print("Comparison \(dateText(old.metadata.date)) → \(dateText(new.metadata.date))")
     print(diff.summary.headline)
-    print("Scan-Summe:    \(ByteFormat.string(old.tree.root.allocatedSize)) → \(ByteFormat.string(new.tree.root.allocatedSize)) (\(ByteFormat.signed(diff.summary.scanDelta)))")
-    for w in diff.warnings { print("Warnung:       \(w)") }
-    print("Dauer:         \(ByteFormat.duration(elapsed)) für \(ByteFormat.count(diff.count)) Einträge")
+    print("Scan total:    \(ByteFormat.string(old.tree.root.allocatedSize)) → \(ByteFormat.string(new.tree.root.allocatedSize)) (\(ByteFormat.signed(diff.summary.scanDelta)))")
+    for w in diff.warnings { print("Warning:       \(w)") }
+    print("Duration:      \(ByteFormat.duration(elapsed)) for \(ByteFormat.count(diff.count)) entries")
     print("")
-    print("Größte Veränderungen:")
-    if changes.isEmpty { print("  (keine)") }
-    let statusText: [DiffStatus: String] = [.added: "neu", .removed: "entfernt", .grown: "gewachsen",
-                                            .shrunk: "geschrumpft", .unchanged: "unverändert"]
+    print("Largest changes:")
+    if changes.isEmpty { print("  (none)") }
+    let statusText: [DiffStatus: String] = [.added: "new", .removed: "removed", .grown: "grown",
+                                            .shrunk: "shrunk", .unchanged: "unchanged"]
     for c in changes {
         let d = ByteFormat.signed(c.delta).padding(toLength: 12, withPad: " ", startingAt: 0)
         let st = (statusText[c.status] ?? "").padding(toLength: 11, withPad: " ", startingAt: 0)
@@ -463,5 +464,5 @@ case "diff":
 case "-h", "--help", "help":
     print(usage)
 default:
-    fail("Unbekannter Befehl \(command)")
+    fail("Unknown command \(command)")
 }

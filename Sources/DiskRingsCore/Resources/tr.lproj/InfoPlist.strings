@@ -1,0 +1,10 @@
+/* DiskRings – tr: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "DiskRings, alanınızın nasıl kullanıldığını göstermek için masaüstünüzdeki dosyaların boyutlarını okur. Dosyalar açılmaz ve değiştirilmez.";
+"NSDocumentsFolderUsageDescription" = "DiskRings, alanınızın nasıl kullanıldığını göstermek için Belgeler klasörünüzdeki dosyaların boyutlarını okur. Dosyalar açılmaz ve değiştirilmez.";
+"NSDownloadsFolderUsageDescription" = "DiskRings, alanınızın nasıl kullanıldığını göstermek için İndirilenler klasörünüzdeki dosyaların boyutlarını okur. Dosyalar açılmaz ve değiştirilmez.";
+"NSRemovableVolumesUsageDescription" = "DiskRings, alanlarının nasıl kullanıldığını göstermek için çıkarılabilir bölümlerdeki (USB sürücüler gibi) dosyaların boyutlarını okur.";
+"NSNetworkVolumesUsageDescription" = "DiskRings, alanlarının nasıl kullanıldığını göstermek için ağ bölümlerindeki dosyaların boyutlarını okur.";
+"NSFileProviderDomainUsageDescription" = "DiskRings, alanınızın nasıl kullanıldığını göstermek için bulut depolamadaki (iCloud Drive veya Dropbox gibi) dosyaların boyutlarını okur. Hiçbir dosya indirilmez.";
+"NSPhotoLibraryUsageDescription" = "DiskRings, alanınızın nasıl kullanıldığını göstermek için fotoğraf arşivinizin boyutunu okur. Fotoğraflar açılmaz ve değiştirilmez.";
+"NSAppleMusicUsageDescription" = "DiskRings, alanınızın nasıl kullanıldığını göstermek için müzik ve medya klasörlerinizin boyutunu okur.";

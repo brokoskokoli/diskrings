@@ -29,26 +29,26 @@ struct TrashConfirmationView: View {
                             .truncationMode(.middle)
                             .textSelection(.enabled)
                     }
-                    Text("Die Objekte lassen sich mit ⌘Z oder im Finder aus dem Papierkorb zurücklegen.")
+                    Text(L("trash.confirm.undoHint"))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             if plan.allowsDontAskAgain {
-                Toggle("Nicht mehr fragen (nur für Objekte unter 1 GB)", isOn: $dontAskAgain)
+                Toggle(L("trash.confirm.dontAsk"), isOn: $dontAskAgain)
                     .toggleStyle(.checkbox)
                     .font(.system(size: 12))
             } else {
-                Label("Ab 1 GB wird immer nachgefragt.", systemImage: "info.circle")
+                Label(L("trash.confirm.alwaysAsk"), systemImage: "info.circle")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             HStack {
                 Spacer()
-                Button("Abbrechen", role: .cancel) { onCancel() }
+                Button(L("common.cancel"), role: .cancel) { onCancel() }
                     .keyboardShortcut(.cancelAction)
-                Button("In den Papierkorb legen") { onConfirm(dontAskAgain) }
+                Button(L("action.moveToTrash")) { onConfirm(dontAskAgain) }
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -80,22 +80,22 @@ struct NodeInfoView: View {
                     }
                 }
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 5) {
-                    row("Ort", n.path, selectable: true)
-                    row("Belegt", "\(ByteFormat.string(n.allocatedSize)) (\(ByteFormat.count(n.allocatedSize)) Byte)")
-                    row("Logisch", "\(ByteFormat.string(n.logicalSize)) (\(ByteFormat.count(n.logicalSize)) Byte)")
+                    row(L("info.where"), n.path, selectable: true)
+                    row(L("info.allocated"), L("info.sizeWithBytes", ByteFormat.string(n.allocatedSize), Int(clamping: n.allocatedSize), ByteFormat.count(n.allocatedSize)))
+                    row(L("info.logical"), L("info.sizeWithBytes", ByteFormat.string(n.logicalSize), Int(clamping: n.logicalSize), ByteFormat.count(n.logicalSize)))
                     if n.isDirectory {
-                        row("Inhalt", "\(filesText(n.fileCount)), \(ByteFormat.count(n.itemCount)) Einträge")
+                        row(L("info.contents"), L("info.contents.value", filesText(n.fileCount), L("count.entries", n.itemCount, ByteFormat.count(n.itemCount))))
                     }
-                    if let d = attrs[.modificationDate] as? Date { row("Geändert", Self.dateFormat.string(from: d)) }
-                    if let d = attrs[.creationDate] as? Date { row("Erstellt", Self.dateFormat.string(from: d)) }
-                    if !n.badges.isEmpty { row("Kennzeichen", n.badges.joined(separator: ", ")) }
-                    if let r = state.protection.reason(for: n.path) { row("Geschützt", r.message) }
+                    if let d = attrs[.modificationDate] as? Date { row(L("info.modified"), Self.dateFormat.string(from: d)) }
+                    if let d = attrs[.creationDate] as? Date { row(L("info.created"), Self.dateFormat.string(from: d)) }
+                    if !n.badges.isEmpty { row(L("info.badges"), n.badges.joined(separator: L("list.separator"))) }
+                    if let r = state.protection.reason(for: n.path) { row(L("info.protected"), r.message) }
                 }
                 .font(.system(size: 12))
                 HStack {
-                    Button("Im Finder zeigen") { FileActions.reveal([URL(fileURLWithPath: n.path)]) }
+                    Button(L("action.revealInFinder")) { FileActions.reveal([URL(fileURLWithPath: n.path)]) }
                     Spacer()
-                    Button("Fertig") { onClose() }.keyboardShortcut(.defaultAction)
+                    Button(L("common.done")) { onClose() }.keyboardShortcut(.defaultAction)
                 }
             }
             .padding(20)
@@ -105,17 +105,17 @@ struct NodeInfoView: View {
 
     static let dateFormat: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "de_DE")
+        f.locale = L10n.locale
         f.dateStyle = .medium
         f.timeStyle = .short
         return f
     }()
 
     private func kind(_ n: NodeRef) -> String {
-        if n.isPackage { return "Paket" }
-        if n.isSymlink { return "Symbolischer Link" }
-        if n.isDirectory { return "Ordner" }
-        return "Datei"
+        if n.isPackage { return L("kind.package") }
+        if n.isSymlink { return L("kind.symlink") }
+        if n.isDirectory { return L("kind.folder") }
+        return L("kind.file")
     }
 
     @ViewBuilder private func row(_ label: String, _ value: String, selectable: Bool = false) -> some View {
@@ -143,14 +143,14 @@ struct ToastView: View {
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
             if toast.offersUndo, state.canUndoTrash {
-                Button("Widerrufen") { state.undoTrash() }
+                Button(L("menu.undo")) { state.undoTrash() }
                     .buttonStyle(.link)
                     .font(.system(size: 12, weight: .medium))
             }
             Button { state.toast = nil } label: { Image(systemName: "xmark") }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .accessibilityLabel("Hinweis schließen")
+                .accessibilityLabel(L("toast.close"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
@@ -187,7 +187,7 @@ struct SearchField: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)
-            TextField("Name suchen", text: $state.searchQuery)
+            TextField(L("search.placeholder"), text: $state.searchQuery)
                 .textFieldStyle(.plain)
                 .focused($focused)
                 .onSubmit { if let first = state.searchResult?.matches.first { state.jump(to: first) } }
@@ -197,7 +197,7 @@ struct SearchField: View {
                 Button { state.searchQuery = "" } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Suche leeren")
+                    .accessibilityLabel(L("search.clear"))
             }
         }
         .padding(.horizontal, 7)
@@ -217,7 +217,7 @@ struct SearchResultsView: View {
                 HStack {
                     Text(header).font(.headline)
                     Spacer()
-                    Button("Zur Liste") { state.showSearchResults = false }
+                    Button(L("search.backToList")) { state.showSearchResults = false }
                         .buttonStyle(.link)
                         .font(.system(size: 12))
                 }
@@ -234,16 +234,16 @@ struct SearchResultsView: View {
                 }
             }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Suchergebnisse")
+            .accessibilityLabel(L("search.results"))
         }
     }
 
     private var header: String {
-        guard let r = state.searchResult else { return "Suche…" }
-        if r.total == 0 { return "Keine Treffer" }
+        guard let r = state.searchResult else { return L("search.searching") }
+        if r.total == 0 { return L("search.noResults") }
         let shown = r.matches.count
-        return r.total == 1 ? "1 Treffer" : (shown < r.total ? "\(ByteFormat.count(r.total)) Treffer (größte \(shown))"
-                                                               : "\(ByteFormat.count(r.total)) Treffer")
+        return shown < r.total ? L("search.results.limited", r.total, ByteFormat.count(r.total), ByteFormat.count(shown))
+            : L("search.results.count", r.total, ByteFormat.count(r.total))
     }
 }
 

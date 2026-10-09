@@ -1,0 +1,404 @@
+/* DiskRings – pl. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Pokaż w Finderze";
+"action.open" = "Otwórz";
+"action.quickLook" = "Szybki przegląd";
+"action.zoomIn" = "Powiększ tutaj";
+"action.copyPath" = "Kopiuj ścieżkę";
+"action.info" = "Pokaż info";
+"action.rescan" = "Skanuj ponownie ten folder";
+"action.moveToTrash" = "Przenieś do Kosza";
+"shortcut.space" = "Spacja";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "Nic nie zaznaczono";
+"reason.notInTree" = "Rzeczy nie ma już w drzewie";
+"reason.singleItemOnly" = "Tylko dla jednej rzeczy";
+"reason.foldersOnly" = "Tylko dla folderów";
+"reason.alreadyCenter" = "Już na środku";
+"reason.folderEmpty" = "Folder jest pusty";
+"reason.fullScanRunning" = "Niemożliwe podczas pełnego skanowania";
+"reason.otherVolume" = "Inny wolumin (pominięty podczas skanowania)";
+"reason.rescanRunning" = "Trwa ponowne skanowanie";
+"reason.rescanRunningIn" = "Ponownie skanowane w ramach „%@”";
+"reason.scanRunning" = "Niemożliwe podczas skanowania";
+"reason.notInCompare" = "Rzeczy nie ma już w porównaniu";
+"reason.removedSinceSnapshot" = "„%@” już nie istnieje (usunięto od czasu migawki)";
+"reason.containsRemoved" = "Zawiera usunięte rzeczy, które już nie istnieją";
+"reason.missingOnDisk" = "„%@” nie istnieje już na dysku";
+"reason.twoSnapshots" = "Niemożliwe przy porównywaniu dwóch migawek";
+"reason.notInCurrentScan" = "Nie ma już w bieżącym skanowaniu";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "Nie można przenieść do Kosza samego katalogu głównego skanowania";
+"trash.error.protected" = "Chronione: %@";
+"trash.error.protectedItem" = "Chronione: %1$@ – %2$@";
+"trash.error.protectedResolved" = "Chronione: %1$@ (rzeczywista ścieżka %2$@)";
+"trash.error.unresolvable" = "Nie można już ustalić ścieżki";
+"trash.error.outsideRoot" = "Już poza katalogiem głównym skanowania";
+"trash.error.outsideRootSymlink" = "Już poza katalogiem głównym skanowania (folder w ścieżce został zastąpiony dowiązaniem symbolicznym)";
+"trash.confirm.title.one" = "Przenieść „%@” do Kosza?";
+"trash.confirm.total" = "Łącznie %1$@ · %2$@";
+"trash.undo.unknownLocation" = "Nieznane położenie w Koszu";
+"trash.undo.notInTrash" = "Nie ma już w Koszu";
+"trash.undo.unrecognized" = "Nie można jednoznacznie zidentyfikować rzeczy w Koszu";
+"trash.undo.replacedInTrash" = "W Koszu jest teraz inna rzecz o tej nazwie (czy Kosz został opróżniony lub rzecz się zmieniła?)";
+"trash.undo.occupied" = "W pierwotnym położeniu znajduje się teraz inna rzecz";
+"trash.undo.parentMissing" = "Folder nadrzędny już nie istnieje";
+"trash.confirm.undoHint" = "Rzeczy możesz odłożyć z powrotem z Kosza za pomocą ⌘Z lub w Finderze.";
+"trash.confirm.dontAsk" = "Nie pytaj ponownie (tylko dla rzeczy poniżej 1 GB)";
+"trash.confirm.alwaysAsk" = "Rzeczy o rozmiarze 1 GB lub większym są zawsze potwierdzane.";
+
+/* Protected paths (reasons) */
+"protected.system" = "Obszar systemowy macOS (%@)";
+"protected.volumeRoot" = "Katalog główny woluminu";
+"protected.home" = "Cały folder domowy";
+"protected.homeLibrary" = "~/Library w całości";
+"protected.runningApp" = "Uruchomiona aplikacja DiskRings";
+"protected.contains" = "Zawiera chroniony obszar: %1$@ (%2$@)";
+
+/* Scan errors */
+"error.scan.notFound" = "Nie znaleziono ścieżki: %@";
+"error.scan.tooManyNodes" = "Zbyt wiele pozycji dla jednego drzewa skanowania";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "To nie jest plik migawki DiskRings";
+"error.snapshot.unsupportedVersion" = "Format migawki %@ nie jest obsługiwany (nowsza wersja?)";
+"error.snapshot.truncated" = "Plik migawki jest niekompletny";
+"error.snapshot.corrupted" = "Plik migawki jest uszkodzony: %@";
+"error.snapshot.outsideStore" = "Plik nie znajduje się w folderze migawek: %@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "nowsza wersja";
+"snapshots.damaged.damaged" = "uszkodzony";
+"snapshot.untitled" = "Migawka: %@";
+"snapshots.window.title" = "Migawki";
+"snapshots.empty" = "Brak migawek";
+"snapshots.empty.message" = "Migawki są tworzone automatycznie po każdym pełnym skanowaniu (można to wyłączyć w Ustawieniach) lub za pomocą polecenia „Plik → Zachowaj migawkę” (⌘S).";
+"snapshots.column.date" = "Data";
+"snapshots.column.name" = "Nazwa";
+"snapshots.column.root" = "Katalog główny";
+"snapshots.column.size" = "Łączny rozmiar";
+"snapshots.column.file" = "Plik";
+"snapshots.compareEachOther" = "Porównaj ze sobą";
+"snapshots.olderIsBefore" = "Starsza jest „wcześniej”";
+"snapshots.selectTwo" = "Zaznacz dwie migawki do porównania";
+"snapshots.rename.title" = "Zmień nazwę migawki";
+"snapshots.rename.message" = "Skanowanie: %1$@, %2$@";
+"snapshots.delete.message" = "Plik migawki zostanie trwale usunięty. Nie ma to wpływu na przeskanowane pliki i foldery.";
+"snapshots.delete.title.one" = "Usunąć migawkę?";
+"snapshots.damaged.deleteAll" = "Usuń wszystkie…";
+"snapshots.damaged.delete.title.one" = "Usunąć nieczytelny plik?";
+"snapshots.damaged.delete.newer" = "Niektóre z nich to migawki z nowszej wersji DiskRings, których ta wersja nie potrafi odczytać; nowsza aplikacja nadal mogłaby je otworzyć. Pliki zostaną trwale usunięte. Nie ma to wpływu na przeskanowane pliki i foldery.";
+"snapshots.damaged.delete.message" = "Pliku nie można już odczytać jako migawki i zostanie on trwale usunięty. Nie ma to wpływu na przeskanowane pliki i foldery.";
+"snapshots.name.placeholder" = "Nazwa (opcjonalnie), np. „przed uaktualnieniem Xcode”";
+"snapshots.save.title" = "Zachowaj migawkę";
+"snapshots.save.confirm" = "Zachowaj";
+"snapshots.save.message" = "Bieżące skanowanie: %@";
+"menu.saveSnapshot" = "Zachowaj migawkę…";
+"menu.snapshots" = "Migawki…";
+"snapshots.error.read" = "Nie można odczytać migawek: %@";
+"snapshots.saved" = "Zachowano migawkę „%@”";
+"snapshots.error.save" = "Nie można zachować migawki: %@";
+"snapshots.error.rename" = "Zmiana nazwy nie powiodła się: %@";
+"snapshots.error.delete" = "Usuwanie nie powiodło się: %@";
+
+/* General */
+"list.separator" = ", ";
+
+/* Compare: headline and warnings */
+"compare.since" = "Od %@";
+"compare.fromTo" = "Od %1$@ do %2$@";
+"compare.part.used" = "zajęte %@";
+"compare.part.free" = "wolne %@";
+"compare.part.scan" = "skanowanie %@";
+"compare.part.unassigned" = "w tym nieprzypisane %@";
+"compare.part.volumeUsed" = "zajęte na woluminie %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "wcześniej bez plików ukrytych";
+"compare.warning.hiddenNow" = "teraz bez plików ukrytych";
+"compare.warning.exclusions" = "inna lista wykluczeń";
+"compare.warning.volumes" = "inne ustawienie woluminów";
+"compare.warning.options" = "Migawka utworzona z innymi ustawieniami (%@)";
+"compare.warning.root" = "Inny katalog główny skanowania: %1$@ wobec %2$@";
+"compare.warning.volume" = "Inny wolumin";
+"compare.warning.minimumSize" = "Pliki mniejsze niż %@ są porównywane tylko przez sumy folderów";
+"compare.mode.growth" = "Przyrost";
+"compare.mode.delta" = "Kolory zmian";
+"diff.added" = "nowe";
+"diff.removed" = "usunięte";
+"diff.grown" = "większe";
+"diff.shrunk" = "mniejsze";
+"diff.unchanged" = "bez zmian";
+"compare.label.used" = "zajęte";
+"compare.label.free" = "wolne";
+"compare.label.unassigned" = "w tym nieprzypisane";
+"compare.label.volumeUsed" = "zajęte na woluminie";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@: już nie istnieje (%2$@)";
+"rescan.summary.unchanged" = "%1$@: %2$@ (bez zmian)";
+"rescan.summary.changed" = "%1$@: %2$@ → %3$@ (%4$@)";
+
+/* File type categories (legend) */
+"fileType.video" = "Wideo";
+"fileType.image" = "Obrazki";
+"fileType.audio" = "Audio";
+"fileType.archive" = "Archiwa";
+"fileType.application" = "Aplikacje";
+"fileType.code" = "Kod";
+"fileType.document" = "Dokumenty";
+"fileType.other" = "Inne";
+
+/* Common buttons */
+"common.cancel" = "Anuluj";
+"common.ok" = "OK";
+"common.done" = "Gotowe";
+"common.close" = "Zamknij";
+"common.delete" = "Usuń";
+"common.deleteEllipsis" = "Usuń…";
+"common.renameEllipsis" = "Zmień nazwę…";
+"common.rename" = "Zmień nazwę";
+
+/* Full Disk Access */
+"fda.alert.title" = "Brak pełnego dostępu do dysku";
+"fda.alert.setUp" = "Skonfiguruj pełny dostęp do dysku";
+"fda.alert.scanAnyway" = "Skanuj mimo to";
+"fda.alert.message" = "Bez pełnego dostępu do dysku macOS podczas skanowania pyta osobno o foldery takie jak Biurko, Dokumenty i Pobrane rzeczy, a obszary takie jak ~/Library/Mail pozostają nieczytelne. Skanowanie czeka, aż odpowiesz na okna dialogowe systemu.\n\nZalecane: W Ustawieniach systemowych włącz DiskRings w sekcji „Prywatność i ochrona → Pełny dostęp do dysku”, a następnie skanuj ponownie.";
+
+/* Menus */
+"menu.chooseFolder" = "Wybierz folder…";
+"menu.fullRescan" = "Skanuj wszystko ponownie";
+"menu.undo" = "Cofnij";
+"menu.redo" = "Powtórz";
+"menu.find" = "Znajdź…";
+"menu.item" = "Element";
+"menu.go" = "Idź";
+"menu.back" = "Wstecz";
+"menu.forward" = "Dalej";
+"menu.enclosingFolder" = "Folder nadrzędny";
+"menu.compareRoot" = "Katalog główny porównania";
+"menu.scanRoot" = "Katalog główny skanowania";
+"menu.startScreen" = "Ekran początkowy";
+
+/* Open panel */
+"panel.scan.prompt" = "Skanuj";
+"panel.scan.message" = "Wybierz folder lub wolumin do skanowania";
+"reason.noScan" = "Brak skanowania";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "Przeniesiono „%1$@” do Kosza (%2$@)";
+"toast.trashFailed" = "Nie przeniesiono „%1$@” do Kosza: %2$@";
+"menu.undo.putBack.one" = "Odłóż z powrotem „%@”";
+"toast.putBackFailed" = "Nie odłożono z powrotem „%1$@”: %2$@";
+"toast.putBack.one" = "Odłożono z powrotem „%@”";
+"toast.rescanBlocked" = "Częściowe ponowne skanowanie jest niemożliwe podczas pełnego skanowania";
+"toast.rescanCovered" = "Trwa już ponowne skanowanie „%@”";
+"toast.rescanFailed" = "Nie można ponownie przeskanować „%1$@”: %2$@";
+"toast.rootMissing" = "Katalog główny skanowania „%@” już nie istnieje";
+"toast.close" = "Zamknij powiadomienie";
+
+/* Item kinds and badges */
+"badge.package" = "pakiet";
+"badge.unreadable" = "nieczytelne";
+"badge.icloudOnly" = "tylko w iCloud";
+"badge.symlink" = "dowiązanie symboliczne";
+"badge.otherVolume" = "inny wolumin";
+"badge.hardlink" = "twarde dowiązanie";
+"kind.file" = "Plik";
+"kind.folder" = "Folder";
+"kind.package" = "Pakiet";
+"kind.symlink" = "Dowiązanie symboliczne";
+
+/* Chart segments */
+"arc.aggregate.detail" = "połączone, każde poniżej progu kąta";
+"arc.remainder.title" = "Pliki w tym folderze";
+"arc.remainder.detail" = "jeszcze nie policzone osobno";
+"arc.unassigned.title" = "Nieprzypisane";
+"arc.unassigned.detail" = "System, lokalne migawki, miejsce do zwolnienia";
+"sunburst.accessibility" = "Wykres pierścieniowy: %@";
+"sunburst.shareOf" = "%1$@ z %2$@";
+"sunburst.center.hint" = "Kliknij: poziom wyżej";
+
+/* Settings */
+"settings.section.chart" = "Wykres";
+"settings.rings" = "Liczba pierścieni";
+"settings.colorScheme" = "Schemat kolorów";
+"settings.colorScheme.branch" = "Według gałęzi";
+"settings.colorScheme.fileType" = "Według typu pliku";
+"settings.minAngle" = "Łącz segmenty poniżej";
+"settings.minAngle.accessibilityValue" = "%@ stopni";
+"settings.showLabels" = "Pokazuj etykiety segmentów";
+"settings.section.size" = "Rozmiar";
+"settings.sizeMode" = "Tryb rozmiaru";
+"settings.sizeMode.allocated" = "Zajęte na dysku";
+"settings.sizeMode.logical" = "Rozmiar logiczny";
+"settings.section.trash" = "Kosz";
+"settings.trash.confirm" = "Pytaj przed przeniesieniem do Kosza";
+"settings.trash.footer" = "Rzeczy o rozmiarze 1 GB lub większym są zawsze potwierdzane.";
+"settings.section.scan" = "Skanowanie";
+"settings.includeHidden" = "Uwzględniaj pliki ukryte";
+"settings.crossMounts" = "Przechodź do innych woluminów podczas skanowania";
+"settings.excluded" = "Wykluczone ścieżki";
+"settings.excluded.add" = "Dodaj ścieżkę";
+"settings.excluded.remove" = "Usuń zaznaczoną ścieżkę";
+"settings.excluded.prompt" = "Wyklucz";
+"settings.scan.footer" = "Te ustawienia zaczną obowiązywać przy następnym skanowaniu.";
+"settings.legend.accessibility" = "Legenda: %@";
+"settings.section.language" = "Język";
+"settings.language" = "Język";
+"settings.language.automatic" = "Automatycznie (systemowy)";
+"settings.language.restartNote" = "Nowy język zacznie obowiązywać po ponownym uruchomieniu DiskRings.";
+"settings.language.restartNow" = "Uruchom ponownie teraz";
+"settings.language.footer" = "Język możesz też wybrać w Ustawieniach systemowych → Ogólne → Język i region → Aplikacje.";
+"settings.section.snapshots" = "Migawki";
+"settings.snapshots.autoSave" = "Zachowuj automatycznie po każdym pełnym skanowaniu";
+"settings.snapshots.maxCount" = "Maksymalnie na katalog główny skanowania";
+"settings.snapshots.footer" = "Zachowywane są foldery i pliki o rozmiarze 1 MB lub większym. Jeśli migawek jest więcej niż wynosi maksimum, najstarsze są usuwane.";
+
+/* Get Info window */
+"info.where" = "Miejsce";
+"info.allocated" = "Zajęte";
+"info.logical" = "Logiczny";
+"info.contents" = "Zawartość";
+"info.contents.value" = "%1$@, %2$@";
+"info.modified" = "Zmodyfikowano";
+"info.created" = "Utworzono";
+"info.badges" = "Atrybuty";
+"info.protected" = "Chronione";
+
+/* Search */
+"search.placeholder" = "Szukaj według nazwy";
+"search.clear" = "Wyczyść wyszukiwanie";
+"search.backToList" = "Wróć do listy";
+"search.results" = "Wyniki wyszukiwania";
+"search.searching" = "Szukanie…";
+"search.noResults" = "Brak wyników";
+
+/* Main window toolbar */
+"browser.listWidth" = "Szerokość listy";
+"browser.listWidth.value" = "%@ pkt";
+"browser.back.help" = "Wstecz (⌘[)";
+"browser.forward.help" = "Dalej (⌘])";
+"browser.scanRunning" = "Trwa skanowanie";
+"browser.rescanRunning" = "Trwa częściowe ponowne skanowanie";
+"browser.rescan" = "Skanuj ponownie";
+"browser.rescan.help" = "Skanuj ponownie bieżący folder (⇧⌘R)";
+"browser.search" = "Szukaj";
+"browser.search.help" = "Szukaj według nazwy (⌘F)";
+"browser.newScan" = "Nowe skanowanie";
+"browser.newScan.help" = "Wróć do ekranu początkowego";
+"browser.breadcrumb" = "Ścieżka";
+"browser.breadcrumb.current" = "%@, bieżący folder";
+
+/* Status bar and scan summary */
+"status.unassigned" = "nieprzypisane %@";
+"status.unassigned.help" = "Miejsce zajęte na woluminie, które nie pojawia się w żadnym folderze: system, lokalne migawki Time Machine, miejsce do zwolnienia. Klony i migawki mogą powodować różnice.";
+"status.deviation" = "Klony i migawki mogą powodować różnice";
+"status.deviation.help" = "Klony i migawki mogą powodować różnice: klony APFS współdzielą bloki, ale są liczone osobno; lokalne migawki Time Machine i miejsce do zwolnienia nie pojawiają się w żadnym folderze i trafiają do kategorii „Nieprzypisane”.";
+"status.fda.help" = "Bez pełnego dostępu do dysku foldery takie jak ~/Library/Mail pozostają nieczytelne i trafiają do kategorii „Nieprzypisane”. Kliknij, aby otworzyć Ustawienia systemowe.";
+"status.scanSummary" = "Skanowanie: %1$@ w %2$@";
+"status.volume" = "%1$@: %2$@ · zajęte %3$@ · wolne %4$@";
+"status.volume.purgeable" = "(w tym %@ do zwolnienia)";
+"summary.finished" = "Skanowanie zakończone: %1$@, %2$@, %3$@ w %4$@";
+"summary.less" = "Mniej";
+"summary.close" = "Zamknij podsumowanie";
+"fda.grant" = "Przyznaj pełny dostęp do dysku…";
+
+/* Detail list */
+"list.accessibility" = "Zawartość: %@";
+"list.shareOfRoot" = "%@ katalogu głównego skanowania";
+"list.unassigned.help" = "Nieprzypisane (system, lokalne migawki, miejsce do zwolnienia): miejsce zajęte na woluminie, które nie pojawia się w żadnym folderze.";
+"list.row.accessibility" = "%1$@, %2$@, %3$@";
+"accessibility.zoomIn" = "Powiększ";
+
+/* Start screen */
+"start.subtitle" = "Wybierz wolumin lub folder, aby zobaczyć, co zajmuje miejsce.";
+"start.volumes" = "Woluminy";
+"start.noVolumes" = "Nie znaleziono woluminów.";
+"start.scanHome" = "Skanuj folder domowy";
+"start.fda.message" = "Bez pełnego dostępu do dysku foldery takie jak ~/Library/Mail, Safari czy kontenery innych aplikacji pozostają nieczytelne. Brakuje ich na wykresie i trafiają do kategorii „Nieprzypisane”.";
+"start.fda.openSettings" = "Otwórz Ustawienia systemowe…";
+"start.fda.checkAgain" = "Sprawdź ponownie";
+"start.volume.used" = "Zajęte %1$@ z %2$@";
+"start.legend.used" = "Zajęte %@";
+"start.legend.purgeable" = "Do zwolnienia %@";
+"start.legend.free" = "Wolne %@";
+"start.volume.accessibility" = "%1$@, zajęte %2$@ z %3$@, wolne %4$@";
+"start.volume.hint" = "Skanuje ten wolumin";
+"start.dropHint" = "lub przeciągnij tutaj folder";
+
+/* Scan progress */
+"scan.reading" = "Odczytywanie folderów…";
+"scan.title" = "Skanowanie: %@";
+"scan.starting" = "Uruchamianie…";
+"scan.accessibility.starting" = "Skanowanie się rozpoczyna";
+"scan.accessibility.running" = "Trwa skanowanie: %1$@, %2$@";
+"scan.stalled.title" = "Możliwe, że macOS czeka na zgodę … (sprawdź, czy jest okno dialogowe systemu)";
+"scan.stalled.message" = "macOS może prosić o dostęp do folderu lub dysku; okno dialogowe może być ukryte za innymi oknami. Przy pełnym dostępie do dysku te prośby się nie pojawiają.";
+"scan.stalled.fda" = "Pełny dostęp do dysku…";
+"scan.stalled.fda.help" = "Otwiera „Prywatność i ochrona → Pełny dostęp do dysku” w Ustawieniach systemowych";
+
+/* Compare: list and chart */
+"compare.showInChart" = "Pokaż na wykresie";
+"compare.removedName" = "%@ (usunięte)";
+"reason.noCompare" = "Brak porównania";
+"compare.busy.updating" = "Uaktualnianie porównania…";
+"compare.busy.computing" = "Obliczanie porównania…";
+"compare.error" = "Porównanie niemożliwe: %@";
+"compare.currentScan" = "Bieżące skanowanie";
+"compare.list.accessibility" = "Porównanie, zawartość: %@";
+"compare.column.name" = "Nazwa";
+"compare.column.before" = "Wcześniej";
+"compare.column.now" = "Teraz";
+"compare.sortBy" = "Sortuj według: %@";
+"compare.moreItems" = "więcej rzeczy";
+"compare.direction" = "Kierunek";
+"compare.direction.growth" = "Przyrost";
+"compare.direction.shrink" = "Spadek";
+"compare.largest.noShrink" = "Brak spadku o 1 MB lub więcej";
+"compare.largest.noGrowth" = "Brak przyrostu o 1 MB lub więcej";
+"compare.tab.contents" = "Zawartość";
+"compare.tab.largest" = "Największe zmiany";
+"compare.inScanRoot" = "w katalogu głównym skanowania";
+"compare.inFolder" = "w %@";
+"compare.largest.row.accessibility" = "%1$@. %2$@, %3$@, %4$@";
+"compare.chart.noGrowth" = "Brak przyrostu od czasu migawki";
+"compare.chart.noData" = "Brak danych";
+"compare.chart.noGrowth.hint" = "„Kolory zmian” pokazują także rzeczy, które zmalały lub zostały usunięte.";
+"compare.chart.accessibility" = "Wykres porównania (%1$@): %2$@";
+"compare.center.growth" = "Przyrost";
+"compare.center.now" = "teraz %@";
+"compare.tooltip.folderGrowth" = "Przyrost w folderze: %@";
+"compare.tooltip.growthWithoutEntries" = "Przyrost bez własnych pozycji";
+"compare.tooltip.smallFiles" = "małe pliki poniżej %@ i własny rozmiar folderu";
+"compare.beforeNow" = "Wcześniej %1$@  →  Teraz %2$@";
+"compare.entry.accessibility" = "%1$@, %2$@, %3$@, zmiana %4$@";
+"compare.listPicker" = "Lista";
+"compare.viewPicker" = "Widok";
+"compare.viewPicker.help" = "Przyrost: rozmiar segmentu = przyrost. Kolory zmian: normalne rozmiary, czerwony – większe, zielony – mniejsze.";
+"compare.end" = "Zakończ porównanie";
+"compare.end.help" = "Wróć do normalnego widoku (Esc)";
+"compare.breadcrumb" = "Ścieżka w porównaniu";
+"compare.warning.footer" = "Różnice mogą więc wynikać także z ustawień.";
+"compare.warning.accessibility" = "Ostrzeżenie: %@";
+"compare.legend.growth" = "Rozmiar segmentu = przyrost od %@";
+"compare.legend.intensity" = "Intensywniej = większa zmiana";
+
+/* Compare: picker */
+"compare.with" = "Porównaj z…";
+"compare.with.help" = "Porównaj to skanowanie z zachowaną migawką";
+"compare.picker.empty" = "Brak pasujących migawek";
+"compare.picker.empty.message" = "Na tym woluminie nie ma jeszcze starszej migawki tego katalogu głównego skanowania. Migawki są tworzone automatycznie po każdym skanowaniu lub za pomocą polecenia „Plik → Zachowaj migawkę” (⌘S).";
+"compare.button" = "Porównaj";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@ s";
+"format.duration.minutes" = "%1$@ min %2$@ s";

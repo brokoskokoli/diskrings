@@ -5,7 +5,7 @@ import Testing
 /// Abnahme-Befunde zum Papierkorb: Undo darf nur genau das Objekt
 /// zurücklegen, das verschoben wurde, und vor dem Verschieben wird der
 /// aufgelöste Pfad erneut geprüft. Alles läuft in temporären Verzeichnissen.
-@Suite("Papierkorb: Identität beim Undo, aufgelöste Pfade", .timeLimit(.minutes(1)))
+@Suite("Papierkorb: Identität beim Undo, aufgelöste Pfade", .timeLimit(.minutes(1)), .language("de"))
 struct TrashSafetyTests {
     let noProtection = ProtectedPaths(home: "/nonexistent-home", appBundlePath: nil, volumeRoots: [])
     let fm = FileManager.default

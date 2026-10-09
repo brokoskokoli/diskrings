@@ -44,10 +44,10 @@ enum CompareContextMenuSections {
     /// Für Zeilen aus „Größte Veränderungen“: in den Elternordner zoomen und auswählen.
     private static let showInDiagram = ContextMenuItem(
         id: "compare.showInDiagram",
-        title: { _, _ in "Im Diagramm zeigen" },
+        title: { _, _ in L("compare.showInChart") },
         systemImage: "scope",
         availability: { t, state in
-            guard state.compare != nil, t.compareEntries?.count == 1 else { return .disabled("Nur für ein einzelnes Element") }
+            guard state.compare != nil, t.compareEntries?.count == 1 else { return .disabled(L("reason.singleItemOnly")) }
             return .enabled
         },
         perform: { t, state in
@@ -67,7 +67,7 @@ extension AppState {
     func compareMenuHeader(_ entry: Int32) -> String {
         guard let d = compare?.diff, entry >= 0, Int(entry) < d.count else { return "" }
         let name = d.name(of: entry)
-        return d.status(entry) == .removed ? "\(name) (entfernt)" : name
+        return d.status(entry) == .removed ? L("compare.removedName", name) : name
     }
 
     var compareActionContext: CompareActionContext? {
@@ -78,7 +78,7 @@ extension AppState {
     }
 
     func compareAvailability(_ action: NodeAction, entries: [Int32]) -> ActionAvailability {
-        guard let c = compareActionContext else { return .disabled("Kein Vergleich") }
+        guard let c = compareActionContext else { return .disabled(L("reason.noCompare")) }
         return CompareActions.availability(action, entries: entries, context: c)
     }
 
@@ -167,7 +167,7 @@ extension AppState {
                   let current = currentSnapshot() else { return }
             let old = session.diff.old
             let mode = session.model.mode
-            snapshots.busy = "Vergleich wird aktualisiert…"
+            snapshots.busy = L("compare.busy.updating")
             let model = await Task.detached(priority: .userInitiated) {
                 CompareModel(diff: SnapshotDiff(old: old, new: current), mode: mode)
             }.value

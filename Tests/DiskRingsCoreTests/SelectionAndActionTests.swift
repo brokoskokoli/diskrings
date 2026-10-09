@@ -157,7 +157,7 @@ final class TempTrash: FileTrashing, @unchecked Sendable {
     func itemExists(atPath path: String) -> Bool { FileManager.default.itemExists(atPath: path) }
 }
 
-@Suite("Papierkorb: Plan, Bestätigung, Ausführung, Undo", .timeLimit(.minutes(2)))
+@Suite("Papierkorb: Plan, Bestätigung, Ausführung, Undo", .timeLimit(.minutes(2)), .language("de"))
 struct TrashTests {
     let noProtection = ProtectedPaths(home: "/nonexistent-home", appBundlePath: nil, volumeRoots: [])
 
@@ -358,12 +358,12 @@ struct TrashTests {
     }
 }
 
-@Suite("Verfügbarkeit der Kontextmenü-Einträge")
+@Suite("Verfügbarkeit der Kontextmenü-Einträge", .language("de"))
 struct NodeActionTests {
     @Test("Reihenfolge, Titel und Tastenkürzel wie SPEC 3.5")
     func catalog() {
         #expect(NodeAction.allCases.map(\.title) == [
-            "Im Finder zeigen", "Öffnen", "Quick Look", "Hier hineinzoomen", "Pfad kopieren", "Informationen",
+            "Im Finder zeigen", "Öffnen", "Übersicht", "Hier hineinzoomen", "Pfad kopieren", "Informationen",
             "Diesen Ordner neu scannen", "In den Papierkorb legen",
         ])
         #expect(NodeAction.revealInFinder.shortcut?.display == "⌘R")

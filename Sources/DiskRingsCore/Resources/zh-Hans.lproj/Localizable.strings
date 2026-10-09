@@ -1,0 +1,404 @@
+/* DiskRings – zh-Hans. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "在访达中显示";
+"action.open" = "打开";
+"action.quickLook" = "快速查看";
+"action.zoomIn" = "在此放大";
+"action.copyPath" = "拷贝路径";
+"action.info" = "显示简介";
+"action.rescan" = "重新扫描此文件夹";
+"action.moveToTrash" = "移到废纸篓";
+"shortcut.space" = "空格键";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "未选择任何内容";
+"reason.notInTree" = "该项目已不在树中";
+"reason.singleItemOnly" = "仅适用于单个项目";
+"reason.foldersOnly" = "仅适用于文件夹";
+"reason.alreadyCenter" = "已在中心";
+"reason.folderEmpty" = "文件夹为空";
+"reason.fullScanRunning" = "完整扫描期间无法执行";
+"reason.otherVolume" = "其他宗卷（扫描时未进入）";
+"reason.rescanRunning" = "正在重新扫描";
+"reason.rescanRunningIn" = "正作为“%@”的一部分重新扫描";
+"reason.scanRunning" = "扫描期间无法执行";
+"reason.notInCompare" = "该项目已不在比较中";
+"reason.removedSinceSnapshot" = "“%@”已不存在（在快照之后被移除）";
+"reason.containsRemoved" = "包含已不存在的已移除项目";
+"reason.missingOnDisk" = "“%@”已不在磁盘上";
+"reason.twoSnapshots" = "比较两个快照时无法执行";
+"reason.notInCurrentScan" = "已不在当前扫描中";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "无法将扫描根目录本身移到废纸篓";
+"trash.error.protected" = "受保护：%@";
+"trash.error.protectedItem" = "受保护：%1$@ – %2$@";
+"trash.error.protectedResolved" = "受保护：%1$@（解析后的路径：%2$@）";
+"trash.error.unresolvable" = "路径已无法解析";
+"trash.error.outsideRoot" = "已不在扫描根目录中";
+"trash.error.outsideRootSymlink" = "已不在扫描根目录中（路径中的某个文件夹被替换为符号链接）";
+"trash.confirm.title.one" = "要将“%@”移到废纸篓吗？";
+"trash.confirm.total" = "共 %1$@ · %2$@";
+"trash.undo.unknownLocation" = "在废纸篓中的位置未知";
+"trash.undo.notInTrash" = "已不在废纸篓中";
+"trash.undo.unrecognized" = "无法可靠识别废纸篓中的项目";
+"trash.undo.replacedInTrash" = "废纸篓中现在有另一个同名项目（废纸篓是否已清倒，或项目已更改？）";
+"trash.undo.occupied" = "原位置现在有另一个项目";
+"trash.undo.parentMissing" = "上级文件夹已不存在";
+"trash.confirm.undoHint" = "你可以使用 ⌘Z 或在访达中将项目从废纸篓放回原处。";
+"trash.confirm.dontAsk" = "不再询问（仅限小于 1 GB 的项目）";
+"trash.confirm.alwaysAsk" = "1 GB 及以上的项目始终需要确认。";
+
+/* Protected paths (reasons) */
+"protected.system" = "macOS 系统区域（%@）";
+"protected.volumeRoot" = "宗卷根目录";
+"protected.home" = "整个个人文件夹";
+"protected.homeLibrary" = "整个 ~/Library";
+"protected.runningApp" = "正在运行的 DiskRings App";
+"protected.contains" = "包含受保护区域：%1$@（%2$@）";
+
+/* Scan errors */
+"error.scan.notFound" = "找不到路径：%@";
+"error.scan.tooManyNodes" = "条目过多，无法放入一个扫描树";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "不是 DiskRings 快照文件";
+"error.snapshot.unsupportedVersion" = "不支持快照格式 %@（可能是较新版本？）";
+"error.snapshot.truncated" = "快照文件不完整";
+"error.snapshot.corrupted" = "快照文件已损坏：%@";
+"error.snapshot.outsideStore" = "该文件不在快照文件夹中：%@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "较新版本";
+"snapshots.damaged.damaged" = "已损坏";
+"snapshot.untitled" = "%@ 的快照";
+"snapshots.window.title" = "快照";
+"snapshots.empty" = "尚无快照";
+"snapshots.empty.message" = "每次完整扫描后会自动创建快照（可在设置中关闭），也可以通过“文件 → 存储快照”（⌘S）创建。";
+"snapshots.column.date" = "日期";
+"snapshots.column.name" = "名称";
+"snapshots.column.root" = "扫描根目录";
+"snapshots.column.size" = "总大小";
+"snapshots.column.file" = "文件";
+"snapshots.compareEachOther" = "相互比较";
+"snapshots.olderIsBefore" = "较早的快照作为“之前”";
+"snapshots.selectTwo" = "选择两个快照进行比较";
+"snapshots.rename.title" = "重新命名快照";
+"snapshots.rename.message" = "%1$@ 的扫描，%2$@";
+"snapshots.delete.message" = "快照文件将被永久删除。已扫描的文件和文件夹不受影响。";
+"snapshots.delete.title.one" = "要删除快照吗？";
+"snapshots.damaged.deleteAll" = "全部删除…";
+"snapshots.damaged.delete.title.one" = "要删除无法读取的文件吗？";
+"snapshots.damaged.delete.newer" = "其中一些是较新版本 DiskRings 创建的快照，此版本无法读取；较新的 App 仍可打开它们。这些文件将被永久删除。已扫描的文件和文件夹不受影响。";
+"snapshots.damaged.delete.message" = "该文件已无法作为快照读取，将被永久删除。已扫描的文件和文件夹不受影响。";
+"snapshots.name.placeholder" = "名称（可选），例如“Xcode 更新前”";
+"snapshots.save.title" = "存储快照";
+"snapshots.save.confirm" = "存储";
+"snapshots.save.message" = "%@ 的当前扫描";
+"menu.saveSnapshot" = "存储快照…";
+"menu.snapshots" = "快照…";
+"snapshots.error.read" = "无法读取快照：%@";
+"snapshots.saved" = "已存储快照“%@”";
+"snapshots.error.save" = "无法存储快照：%@";
+"snapshots.error.rename" = "重新命名失败：%@";
+"snapshots.error.delete" = "删除失败：%@";
+
+/* General */
+"list.separator" = "、";
+
+/* Compare: headline and warnings */
+"compare.since" = "自 %@ 以来";
+"compare.fromTo" = "从 %1$@ 到 %2$@";
+"compare.part.used" = "已用 %@";
+"compare.part.free" = "可用 %@";
+"compare.part.scan" = "扫描 %@";
+"compare.part.unassigned" = "其中未分配 %@";
+"compare.part.volumeUsed" = "宗卷已用 %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "之前不含隐藏文件";
+"compare.warning.hiddenNow" = "现在不含隐藏文件";
+"compare.warning.exclusions" = "排除列表不同";
+"compare.warning.volumes" = "宗卷设置不同";
+"compare.warning.options" = "快照是以不同设置创建的（%@）";
+"compare.warning.root" = "扫描根目录不同：%1$@ 与 %2$@";
+"compare.warning.volume" = "宗卷不同";
+"compare.warning.minimumSize" = "小于 %@ 的文件仅通过其文件夹总计进行比较";
+"compare.mode.growth" = "增长";
+"compare.mode.delta" = "差异颜色";
+"diff.added" = "新增";
+"diff.removed" = "已移除";
+"diff.grown" = "已增长";
+"diff.shrunk" = "已缩小";
+"diff.unchanged" = "未更改";
+"compare.label.used" = "已用";
+"compare.label.free" = "可用";
+"compare.label.unassigned" = "其中未分配";
+"compare.label.volumeUsed" = "宗卷已用";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@：已不存在（%2$@）";
+"rescan.summary.unchanged" = "%1$@：%2$@（未更改）";
+"rescan.summary.changed" = "%1$@：%2$@ → %3$@（%4$@）";
+
+/* File type categories (legend) */
+"fileType.video" = "视频";
+"fileType.image" = "图像";
+"fileType.audio" = "音频";
+"fileType.archive" = "归档";
+"fileType.application" = "App";
+"fileType.code" = "代码";
+"fileType.document" = "文稿";
+"fileType.other" = "其他";
+
+/* Common buttons */
+"common.cancel" = "取消";
+"common.ok" = "好";
+"common.done" = "完成";
+"common.close" = "关闭";
+"common.delete" = "删除";
+"common.deleteEllipsis" = "删除…";
+"common.renameEllipsis" = "重新命名…";
+"common.rename" = "重新命名";
+
+/* Full Disk Access */
+"fda.alert.title" = "没有完全磁盘访问权限";
+"fda.alert.setUp" = "设置完全磁盘访问权限";
+"fda.alert.scanAnyway" = "仍然扫描";
+"fda.alert.message" = "如果没有完全磁盘访问权限，macOS 会在扫描期间针对桌面、文稿和下载等文件夹分别请求权限，而 ~/Library/Mail 等区域仍无法读取。扫描会等待你回应系统对话框。\n\n建议：在系统设置的“隐私与安全性 → 完全磁盘访问权限”中打开 DiskRings，然后重新扫描。";
+
+/* Menus */
+"menu.chooseFolder" = "选择文件夹…";
+"menu.fullRescan" = "全部重新扫描";
+"menu.undo" = "撤销";
+"menu.redo" = "重做";
+"menu.find" = "查找…";
+"menu.item" = "项目";
+"menu.go" = "前往";
+"menu.back" = "返回";
+"menu.forward" = "前进";
+"menu.enclosingFolder" = "上层文件夹";
+"menu.compareRoot" = "比较根目录";
+"menu.scanRoot" = "扫描根目录";
+"menu.startScreen" = "开始屏幕";
+
+/* Open panel */
+"panel.scan.prompt" = "扫描";
+"panel.scan.message" = "选择要扫描的文件夹或宗卷";
+"reason.noScan" = "没有扫描";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "已将“%1$@”移到废纸篓（%2$@）";
+"toast.trashFailed" = "未能将“%1$@”移到废纸篓：%2$@";
+"menu.undo.putBack.one" = "放回“%@”";
+"toast.putBackFailed" = "未能放回“%1$@”：%2$@";
+"toast.putBack.one" = "已放回“%@”";
+"toast.rescanBlocked" = "完整扫描期间无法进行部分重新扫描";
+"toast.rescanCovered" = "“%@”已在重新扫描中";
+"toast.rescanFailed" = "无法重新扫描“%1$@”：%2$@";
+"toast.rootMissing" = "扫描根目录“%@”已不存在";
+"toast.close" = "关闭通知";
+
+/* Item kinds and badges */
+"badge.package" = "包";
+"badge.unreadable" = "无法读取";
+"badge.icloudOnly" = "仅在 iCloud 中";
+"badge.symlink" = "符号链接";
+"badge.otherVolume" = "其他宗卷";
+"badge.hardlink" = "硬链接";
+"kind.file" = "文件";
+"kind.folder" = "文件夹";
+"kind.package" = "包";
+"kind.symlink" = "符号链接";
+
+/* Chart segments */
+"arc.aggregate.detail" = "已合并，各自低于角度阈值";
+"arc.remainder.title" = "此文件夹中的文件";
+"arc.remainder.detail" = "尚未逐个统计";
+"arc.unassigned.title" = "未分配";
+"arc.unassigned.detail" = "系统、本地快照、可清除空间";
+"sunburst.accessibility" = "%@ 的旭日图";
+"sunburst.shareOf" = "%1$@，共 %2$@";
+"sunburst.center.hint" = "点按：上移一层";
+
+/* Settings */
+"settings.section.chart" = "图表";
+"settings.rings" = "环数";
+"settings.colorScheme" = "配色方案";
+"settings.colorScheme.branch" = "按分支";
+"settings.colorScheme.fileType" = "按文件类型";
+"settings.minAngle" = "合并小于此角度的扇区";
+"settings.minAngle.accessibilityValue" = "%@ 度";
+"settings.showLabels" = "标注扇区";
+"settings.section.size" = "大小";
+"settings.sizeMode" = "大小模式";
+"settings.sizeMode.allocated" = "磁盘上的占用";
+"settings.sizeMode.logical" = "逻辑大小";
+"settings.section.trash" = "废纸篓";
+"settings.trash.confirm" = "移到废纸篓前询问";
+"settings.trash.footer" = "1 GB 及以上的项目始终需要确认。";
+"settings.section.scan" = "扫描";
+"settings.includeHidden" = "统计隐藏文件";
+"settings.crossMounts" = "扫描时进入其他宗卷";
+"settings.excluded" = "排除的路径";
+"settings.excluded.add" = "添加路径";
+"settings.excluded.remove" = "移除所选路径";
+"settings.excluded.prompt" = "排除";
+"settings.scan.footer" = "这些设置将在下次扫描时生效。";
+"settings.legend.accessibility" = "图例：%@";
+"settings.section.language" = "语言";
+"settings.language" = "语言";
+"settings.language.automatic" = "自动（系统）";
+"settings.language.restartNote" = "新语言将在 DiskRings 重新启动后生效。";
+"settings.language.restartNow" = "立即重新启动";
+"settings.language.footer" = "你也可以在系统设置 → 通用 → 语言与地区 → 应用程序中选择语言。";
+"settings.section.snapshots" = "快照";
+"settings.snapshots.autoSave" = "每次完整扫描后自动存储";
+"settings.snapshots.maxCount" = "每个扫描根目录的最大数量";
+"settings.snapshots.footer" = "将存储 1 MB 及以上的文件夹和文件。如果超过最大数量，将删除最旧的快照。";
+
+/* Get Info window */
+"info.where" = "位置";
+"info.allocated" = "占用";
+"info.logical" = "逻辑";
+"info.contents" = "内容";
+"info.contents.value" = "%1$@，%2$@";
+"info.modified" = "修改时间";
+"info.created" = "创建时间";
+"info.badges" = "属性";
+"info.protected" = "受保护";
+
+/* Search */
+"search.placeholder" = "按名称搜索";
+"search.clear" = "清除搜索";
+"search.backToList" = "返回列表";
+"search.results" = "搜索结果";
+"search.searching" = "正在搜索…";
+"search.noResults" = "无匹配项";
+
+/* Main window toolbar */
+"browser.listWidth" = "列表宽度";
+"browser.listWidth.value" = "%@ 点";
+"browser.back.help" = "返回（⌘[）";
+"browser.forward.help" = "前进（⌘]）";
+"browser.scanRunning" = "正在扫描";
+"browser.rescanRunning" = "正在部分重新扫描";
+"browser.rescan" = "重新扫描";
+"browser.rescan.help" = "重新扫描当前聚焦的文件夹（⇧⌘R）";
+"browser.search" = "搜索";
+"browser.search.help" = "按名称搜索（⌘F）";
+"browser.newScan" = "新扫描";
+"browser.newScan.help" = "返回开始屏幕";
+"browser.breadcrumb" = "路径";
+"browser.breadcrumb.current" = "%@，当前文件夹";
+
+/* Status bar and scan summary */
+"status.unassigned" = "未分配 %@";
+"status.unassigned.help" = "宗卷上已使用但未显示在任何文件夹中的空间：系统、本地 Time Machine 快照、可清除空间。克隆和快照可能导致差异。";
+"status.deviation" = "克隆和快照可能导致差异";
+"status.deviation.help" = "克隆和快照可能导致差异：APFS 克隆共享数据块，但会被分别统计；本地 Time Machine 快照和可清除空间不会显示在任何文件夹中，而是显示在“未分配”下。";
+"status.fda.help" = "如果没有完全磁盘访问权限，~/Library/Mail 等文件夹将无法读取，并归入“未分配”。点按以打开系统设置。";
+"status.scanSummary" = "扫描：%1$@，用时 %2$@";
+"status.volume" = "%1$@：%2$@ · 已用 %3$@ · 可用 %4$@";
+"status.volume.purgeable" = "（其中 %@ 可清除）";
+"summary.finished" = "扫描完成：%1$@，%2$@，%3$@，用时 %4$@";
+"summary.less" = "收起";
+"summary.close" = "关闭摘要";
+"fda.grant" = "授予完全磁盘访问权限…";
+
+/* Detail list */
+"list.accessibility" = "%@ 的内容";
+"list.shareOfRoot" = "占扫描根目录的 %@";
+"list.unassigned.help" = "未分配（系统、本地快照、可清除空间）：宗卷上已使用但未显示在任何文件夹中的空间。";
+"list.row.accessibility" = "%1$@，%2$@，%3$@";
+"accessibility.zoomIn" = "放大";
+
+/* Start screen */
+"start.subtitle" = "选择一个宗卷或文件夹，查看空间的使用情况。";
+"start.volumes" = "宗卷";
+"start.noVolumes" = "未找到宗卷。";
+"start.scanHome" = "扫描个人文件夹";
+"start.fda.message" = "如果没有完全磁盘访问权限，~/Library/Mail、Safari或其他 App 的容器等文件夹将无法读取。它们不会出现在图表中，而是归入“未分配”。";
+"start.fda.openSettings" = "打开系统设置…";
+"start.fda.checkAgain" = "重新检查";
+"start.volume.used" = "已使用 %1$@，共 %2$@";
+"start.legend.used" = "已用 %@";
+"start.legend.purgeable" = "可清除 %@";
+"start.legend.free" = "可用 %@";
+"start.volume.accessibility" = "%1$@，已使用 %2$@，共 %3$@，可用 %4$@";
+"start.volume.hint" = "扫描此宗卷";
+"start.dropHint" = "或将文件夹拖到此处";
+
+/* Scan progress */
+"scan.reading" = "正在读取文件夹…";
+"scan.title" = "正在扫描 %@";
+"scan.starting" = "正在开始…";
+"scan.accessibility.starting" = "扫描正在开始";
+"scan.accessibility.running" = "正在扫描：%1$@，%2$@";
+"scan.stalled.title" = "可能正在等待 macOS 授予权限…（请检查是否有系统对话框）";
+"scan.stalled.message" = "macOS 可能正在请求访问某个文件夹或驱动器；该对话框可能被其他窗口遮挡。有了完全磁盘访问权限，就不会出现这些请求。";
+"scan.stalled.fda" = "完全磁盘访问权限…";
+"scan.stalled.fda.help" = "在系统设置中打开“隐私与安全性 → 完全磁盘访问权限”";
+
+/* Compare: list and chart */
+"compare.showInChart" = "在图表中显示";
+"compare.removedName" = "%@（已移除）";
+"reason.noCompare" = "没有比较";
+"compare.busy.updating" = "正在更新比较…";
+"compare.busy.computing" = "正在计算比较…";
+"compare.error" = "无法比较：%@";
+"compare.currentScan" = "当前扫描";
+"compare.list.accessibility" = "比较：%@ 的内容";
+"compare.column.name" = "名称";
+"compare.column.before" = "之前";
+"compare.column.now" = "现在";
+"compare.sortBy" = "按%@排序";
+"compare.moreItems" = "更多项目";
+"compare.direction" = "方向";
+"compare.direction.growth" = "增长";
+"compare.direction.shrink" = "缩小";
+"compare.largest.noShrink" = "没有 1 MB 及以上的缩小";
+"compare.largest.noGrowth" = "没有 1 MB 及以上的增长";
+"compare.tab.contents" = "内容";
+"compare.tab.largest" = "最大变化";
+"compare.inScanRoot" = "在扫描根目录中";
+"compare.inFolder" = "在 %@ 中";
+"compare.largest.row.accessibility" = "%1$@. %2$@，%3$@，%4$@";
+"compare.chart.noGrowth" = "自快照以来没有增长";
+"compare.chart.noData" = "无数据";
+"compare.chart.noGrowth.hint" = "“差异颜色”还会显示缩小或已移除的项目。";
+"compare.chart.accessibility" = "%2$@ 的比较图表（%1$@）";
+"compare.center.growth" = "增长";
+"compare.center.now" = "现在 %@";
+"compare.tooltip.folderGrowth" = "文件夹中的增长：%@";
+"compare.tooltip.growthWithoutEntries" = "无自身条目的增长";
+"compare.tooltip.smallFiles" = "小于 %@ 的小文件及文件夹自身的大小";
+"compare.beforeNow" = "之前 %1$@  →  现在 %2$@";
+"compare.entry.accessibility" = "%1$@，%2$@，%3$@，差值 %4$@";
+"compare.listPicker" = "列表";
+"compare.viewPicker" = "视图";
+"compare.viewPicker.help" = "增长：扇区大小 = 增长量。差异颜色：正常大小，红色为增长，绿色为缩小。";
+"compare.end" = "结束比较";
+"compare.end.help" = "返回正常视图（Esc）";
+"compare.breadcrumb" = "比较中的路径";
+"compare.warning.footer" = "因此，差异也可能来自设置。";
+"compare.warning.accessibility" = "警告：%@";
+"compare.legend.growth" = "扇区大小 = 自 %@ 以来的增长";
+"compare.legend.intensity" = "颜色越深 = 变化越大";
+
+/* Compare: picker */
+"compare.with" = "比较对象…";
+"compare.with.help" = "将此扫描与已存储的快照进行比较";
+"compare.picker.empty" = "没有匹配的快照";
+"compare.picker.empty.message" = "此宗卷上还没有该扫描根目录的较早快照。每次扫描后会自动创建快照，也可以通过“文件 → 存储快照”（⌘S）创建。";
+"compare.button" = "比较";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@秒";
+"format.duration.minutes" = "%1$@分%2$@秒";

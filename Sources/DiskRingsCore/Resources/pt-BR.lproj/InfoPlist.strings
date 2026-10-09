@@ -1,0 +1,10 @@
+/* DiskRings – pt-BR: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "O DiskRings lê os tamanhos dos arquivos na sua Mesa para mostrar como o seu espaço é usado. Os arquivos não são abertos nem alterados.";
+"NSDocumentsFolderUsageDescription" = "O DiskRings lê os tamanhos dos arquivos na sua pasta Documentos para mostrar como o seu espaço é usado. Os arquivos não são abertos nem alterados.";
+"NSDownloadsFolderUsageDescription" = "O DiskRings lê os tamanhos dos arquivos na sua pasta Downloads para mostrar como o seu espaço é usado. Os arquivos não são abertos nem alterados.";
+"NSRemovableVolumesUsageDescription" = "O DiskRings lê os tamanhos dos arquivos em volumes removíveis (como unidades USB) para mostrar como o espaço deles é usado.";
+"NSNetworkVolumesUsageDescription" = "O DiskRings lê os tamanhos dos arquivos em volumes de rede para mostrar como o espaço deles é usado.";
+"NSFileProviderDomainUsageDescription" = "O DiskRings lê os tamanhos dos arquivos no armazenamento em nuvem (como iCloud Drive ou Dropbox) para mostrar como o seu espaço é usado. Nenhum arquivo é baixado.";
+"NSPhotoLibraryUsageDescription" = "O DiskRings lê o tamanho da sua fototeca para mostrar como o seu espaço é usado. As fotos não são abertas nem alteradas.";
+"NSAppleMusicUsageDescription" = "O DiskRings lê o tamanho das suas pastas de música e mídia para mostrar como o seu espaço é usado.";

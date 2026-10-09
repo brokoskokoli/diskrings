@@ -1,0 +1,404 @@
+/* DiskRings – en. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Show in Finder";
+"action.open" = "Open";
+"action.quickLook" = "Quick Look";
+"action.zoomIn" = "Zoom In Here";
+"action.copyPath" = "Copy Path";
+"action.info" = "Get Info";
+"action.rescan" = "Rescan This Folder";
+"action.moveToTrash" = "Move to Trash";
+"shortcut.space" = "Space";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "Nothing selected";
+"reason.notInTree" = "The item is no longer in the tree";
+"reason.singleItemOnly" = "Only for a single item";
+"reason.foldersOnly" = "Only for folders";
+"reason.alreadyCenter" = "Already in the center";
+"reason.folderEmpty" = "The folder is empty";
+"reason.fullScanRunning" = "Not possible during a full scan";
+"reason.otherVolume" = "Another volume (not entered during the scan)";
+"reason.rescanRunning" = "Being rescanned right now";
+"reason.rescanRunningIn" = "Being rescanned as part of “%@”";
+"reason.scanRunning" = "Not possible during the scan";
+"reason.notInCompare" = "The item is no longer in the comparison";
+"reason.removedSinceSnapshot" = "“%@” no longer exists (removed since the snapshot)";
+"reason.containsRemoved" = "Contains removed items that no longer exist";
+"reason.missingOnDisk" = "“%@” no longer exists on the disk";
+"reason.twoSnapshots" = "Not possible when comparing two snapshots";
+"reason.notInCurrentScan" = "No longer in the current scan";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "The scan root itself can’t be moved to the Trash";
+"trash.error.protected" = "Protected: %@";
+"trash.error.protectedItem" = "Protected: %1$@ – %2$@";
+"trash.error.protectedResolved" = "Protected: %1$@ (resolved path %2$@)";
+"trash.error.unresolvable" = "The path can no longer be resolved";
+"trash.error.outsideRoot" = "No longer inside the scan root";
+"trash.error.outsideRootSymlink" = "No longer inside the scan root (a folder in the path was replaced by a symbolic link)";
+"trash.confirm.title.one" = "Move “%@” to the Trash?";
+"trash.confirm.total" = "Total %1$@ · %2$@";
+"trash.undo.unknownLocation" = "Location in the Trash unknown";
+"trash.undo.notInTrash" = "No longer in the Trash";
+"trash.undo.unrecognized" = "The item in the Trash can’t be reliably identified";
+"trash.undo.replacedInTrash" = "A different item with this name is now in the Trash (was the Trash emptied or the item changed?)";
+"trash.undo.occupied" = "A different item now exists at the original location";
+"trash.undo.parentMissing" = "The parent folder no longer exists";
+"trash.confirm.undoHint" = "You can put the items back from the Trash with ⌘Z or in the Finder.";
+"trash.confirm.dontAsk" = "Don’t ask again (only for items under 1 GB)";
+"trash.confirm.alwaysAsk" = "Items of 1 GB or more are always confirmed.";
+
+/* Protected paths (reasons) */
+"protected.system" = "macOS system area (%@)";
+"protected.volumeRoot" = "Root of a volume";
+"protected.home" = "The entire home folder";
+"protected.homeLibrary" = "~/Library as a whole";
+"protected.runningApp" = "The running DiskRings app";
+"protected.contains" = "Contains a protected area: %1$@ (%2$@)";
+
+/* Scan errors */
+"error.scan.notFound" = "Path not found: %@";
+"error.scan.tooManyNodes" = "Too many entries for one scan tree";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "Not a DiskRings snapshot file";
+"error.snapshot.unsupportedVersion" = "Snapshot format %@ is not supported (newer version?)";
+"error.snapshot.truncated" = "The snapshot file is incomplete";
+"error.snapshot.corrupted" = "The snapshot file is damaged: %@";
+"error.snapshot.outsideStore" = "The file is not in the snapshot folder: %@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "newer version";
+"snapshots.damaged.damaged" = "damaged";
+"snapshot.untitled" = "Snapshot of %@";
+"snapshots.window.title" = "Snapshots";
+"snapshots.empty" = "No Snapshots Yet";
+"snapshots.empty.message" = "Snapshots are created automatically after each full scan (can be turned off in Settings) or with “File → Save Snapshot” (⌘S).";
+"snapshots.column.date" = "Date";
+"snapshots.column.name" = "Name";
+"snapshots.column.root" = "Scan Root";
+"snapshots.column.size" = "Total Size";
+"snapshots.column.file" = "File";
+"snapshots.compareEachOther" = "Compare with Each Other";
+"snapshots.olderIsBefore" = "The older one is “before”";
+"snapshots.selectTwo" = "Select two snapshots to compare";
+"snapshots.rename.title" = "Rename Snapshot";
+"snapshots.rename.message" = "Scan of %1$@, %2$@";
+"snapshots.delete.message" = "The snapshot file will be deleted permanently. Scanned files and folders are not affected.";
+"snapshots.delete.title.one" = "Delete Snapshot?";
+"snapshots.damaged.deleteAll" = "Delete All…";
+"snapshots.damaged.delete.title.one" = "Delete Unreadable File?";
+"snapshots.damaged.delete.newer" = "Some of these are snapshots from a newer version of DiskRings that this version can’t read; a newer app could still open them. The files will be deleted permanently. Scanned files and folders are not affected.";
+"snapshots.damaged.delete.message" = "The file can no longer be read as a snapshot and will be deleted permanently. Scanned files and folders are not affected.";
+"snapshots.name.placeholder" = "Name (optional), e.g. “before Xcode update”";
+"snapshots.save.title" = "Save Snapshot";
+"snapshots.save.confirm" = "Save";
+"snapshots.save.message" = "Current scan of %@";
+"menu.saveSnapshot" = "Save Snapshot…";
+"menu.snapshots" = "Snapshots…";
+"snapshots.error.read" = "Snapshots could not be read: %@";
+"snapshots.saved" = "Snapshot “%@” saved";
+"snapshots.error.save" = "The snapshot could not be saved: %@";
+"snapshots.error.rename" = "Renaming failed: %@";
+"snapshots.error.delete" = "Deleting failed: %@";
+
+/* General */
+"list.separator" = ", ";
+
+/* Compare: headline and warnings */
+"compare.since" = "Since %@";
+"compare.fromTo" = "From %1$@ to %2$@";
+"compare.part.used" = "used %@";
+"compare.part.free" = "free %@";
+"compare.part.scan" = "scan %@";
+"compare.part.unassigned" = "of which unassigned %@";
+"compare.part.volumeUsed" = "volume used %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "previously without hidden files";
+"compare.warning.hiddenNow" = "now without hidden files";
+"compare.warning.exclusions" = "different exclusion list";
+"compare.warning.volumes" = "different setting for volumes";
+"compare.warning.options" = "Snapshot created with different settings (%@)";
+"compare.warning.root" = "Different scan root: %1$@ versus %2$@";
+"compare.warning.volume" = "Different volume";
+"compare.warning.minimumSize" = "Files under %@ are only compared through their folder totals";
+"compare.mode.growth" = "Growth";
+"compare.mode.delta" = "Delta Colors";
+"diff.added" = "new";
+"diff.removed" = "removed";
+"diff.grown" = "grown";
+"diff.shrunk" = "shrunk";
+"diff.unchanged" = "unchanged";
+"compare.label.used" = "used";
+"compare.label.free" = "free";
+"compare.label.unassigned" = "of which unassigned";
+"compare.label.volumeUsed" = "volume used";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@: no longer exists (%2$@)";
+"rescan.summary.unchanged" = "%1$@: %2$@ (unchanged)";
+"rescan.summary.changed" = "%1$@: %2$@ → %3$@ (%4$@)";
+
+/* File type categories (legend) */
+"fileType.video" = "Video";
+"fileType.image" = "Images";
+"fileType.audio" = "Audio";
+"fileType.archive" = "Archives";
+"fileType.application" = "Apps";
+"fileType.code" = "Code";
+"fileType.document" = "Documents";
+"fileType.other" = "Other";
+
+/* Common buttons */
+"common.cancel" = "Cancel";
+"common.ok" = "OK";
+"common.done" = "Done";
+"common.close" = "Close";
+"common.delete" = "Delete";
+"common.deleteEllipsis" = "Delete…";
+"common.renameEllipsis" = "Rename…";
+"common.rename" = "Rename";
+
+/* Full Disk Access */
+"fda.alert.title" = "No Full Disk Access";
+"fda.alert.setUp" = "Set Up Full Disk Access";
+"fda.alert.scanAnyway" = "Scan Anyway";
+"fda.alert.message" = "Without Full Disk Access, macOS asks separately for folders such as Desktop, Documents and Downloads during the scan, and areas such as ~/Library/Mail stay unreadable. The scan waits until you answer the system dialogs.\n\nRecommended: In System Settings, turn on DiskRings under “Privacy & Security → Full Disk Access”, then scan again.";
+
+/* Menus */
+"menu.chooseFolder" = "Choose Folder…";
+"menu.fullRescan" = "Rescan Everything";
+"menu.undo" = "Undo";
+"menu.redo" = "Redo";
+"menu.find" = "Find…";
+"menu.item" = "Item";
+"menu.go" = "Go";
+"menu.back" = "Back";
+"menu.forward" = "Forward";
+"menu.enclosingFolder" = "Enclosing Folder";
+"menu.compareRoot" = "Comparison Root";
+"menu.scanRoot" = "Scan Root";
+"menu.startScreen" = "Start Screen";
+
+/* Open panel */
+"panel.scan.prompt" = "Scan";
+"panel.scan.message" = "Choose a folder or volume to scan";
+"reason.noScan" = "No scan";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "Moved “%1$@” to the Trash (%2$@)";
+"toast.trashFailed" = "“%1$@” was not moved to the Trash: %2$@";
+"menu.undo.putBack.one" = "Put Back “%@”";
+"toast.putBackFailed" = "“%1$@” was not put back: %2$@";
+"toast.putBack.one" = "Put back “%@”";
+"toast.rescanBlocked" = "A partial rescan isn’t possible during a full scan";
+"toast.rescanCovered" = "“%@” is already being rescanned";
+"toast.rescanFailed" = "“%1$@” could not be rescanned: %2$@";
+"toast.rootMissing" = "The scan root “%@” no longer exists";
+"toast.close" = "Close Notice";
+
+/* Item kinds and badges */
+"badge.package" = "package";
+"badge.unreadable" = "unreadable";
+"badge.icloudOnly" = "only in iCloud";
+"badge.symlink" = "symbolic link";
+"badge.otherVolume" = "other volume";
+"badge.hardlink" = "hard link";
+"kind.file" = "File";
+"kind.folder" = "Folder";
+"kind.package" = "Package";
+"kind.symlink" = "Symbolic Link";
+
+/* Chart segments */
+"arc.aggregate.detail" = "combined, each below the angle threshold";
+"arc.remainder.title" = "Files in This Folder";
+"arc.remainder.detail" = "not yet counted individually";
+"arc.unassigned.title" = "Unassigned";
+"arc.unassigned.detail" = "System, local snapshots, purgeable space";
+"sunburst.accessibility" = "Sunburst chart of %@";
+"sunburst.shareOf" = "%1$@ of %2$@";
+"sunburst.center.hint" = "Click: up one level";
+
+/* Settings */
+"settings.section.chart" = "Chart";
+"settings.rings" = "Number of rings";
+"settings.colorScheme" = "Color scheme";
+"settings.colorScheme.branch" = "By branch";
+"settings.colorScheme.fileType" = "By file type";
+"settings.minAngle" = "Combine segments below";
+"settings.minAngle.accessibilityValue" = "%@ degrees";
+"settings.showLabels" = "Label segments";
+"settings.section.size" = "Size";
+"settings.sizeMode" = "Size mode";
+"settings.sizeMode.allocated" = "Allocated on disk";
+"settings.sizeMode.logical" = "Logical size";
+"settings.section.trash" = "Trash";
+"settings.trash.confirm" = "Ask before moving to the Trash";
+"settings.trash.footer" = "Items of 1 GB or more are always confirmed.";
+"settings.section.scan" = "Scan";
+"settings.includeHidden" = "Count hidden files";
+"settings.crossMounts" = "Cross into other volumes while scanning";
+"settings.excluded" = "Excluded paths";
+"settings.excluded.add" = "Add Path";
+"settings.excluded.remove" = "Remove Selected Path";
+"settings.excluded.prompt" = "Exclude";
+"settings.scan.footer" = "These settings take effect with the next scan.";
+"settings.legend.accessibility" = "Legend: %@";
+"settings.section.language" = "Language";
+"settings.language" = "Language";
+"settings.language.automatic" = "Automatic (System)";
+"settings.language.restartNote" = "The new language takes effect after DiskRings restarts.";
+"settings.language.restartNow" = "Restart Now";
+"settings.language.footer" = "You can also choose the language in System Settings → General → Language & Region → Applications.";
+"settings.section.snapshots" = "Snapshots";
+"settings.snapshots.autoSave" = "Save automatically after each full scan";
+"settings.snapshots.maxCount" = "Maximum per scan root";
+"settings.snapshots.footer" = "Folders and files of 1 MB or more are saved. If there are more than the maximum, the oldest are deleted.";
+
+/* Get Info window */
+"info.where" = "Where";
+"info.allocated" = "Allocated";
+"info.logical" = "Logical";
+"info.contents" = "Contents";
+"info.contents.value" = "%1$@, %2$@";
+"info.modified" = "Modified";
+"info.created" = "Created";
+"info.badges" = "Attributes";
+"info.protected" = "Protected";
+
+/* Search */
+"search.placeholder" = "Search by name";
+"search.clear" = "Clear Search";
+"search.backToList" = "Back to List";
+"search.results" = "Search Results";
+"search.searching" = "Searching…";
+"search.noResults" = "No matches";
+
+/* Main window toolbar */
+"browser.listWidth" = "List Width";
+"browser.listWidth.value" = "%@ points";
+"browser.back.help" = "Back (⌘[)";
+"browser.forward.help" = "Forward (⌘])";
+"browser.scanRunning" = "Scan in progress";
+"browser.rescanRunning" = "Partial rescan in progress";
+"browser.rescan" = "Rescan";
+"browser.rescan.help" = "Rescan the focused folder (⇧⌘R)";
+"browser.search" = "Search";
+"browser.search.help" = "Search by name (⌘F)";
+"browser.newScan" = "New Scan";
+"browser.newScan.help" = "Back to the start screen";
+"browser.breadcrumb" = "Path";
+"browser.breadcrumb.current" = "%@, current folder";
+
+/* Status bar and scan summary */
+"status.unassigned" = "unassigned %@";
+"status.unassigned.help" = "Space used on the volume that doesn’t show up in any folder: system, local Time Machine snapshots, purgeable space. Clones and snapshots can cause differences.";
+"status.deviation" = "Clones and snapshots can cause differences";
+"status.deviation.help" = "Clones and snapshots can cause differences: APFS clones share blocks but are counted separately; local Time Machine snapshots and purgeable space don’t show up in any folder and appear under “Unassigned”.";
+"status.fda.help" = "Without Full Disk Access, folders such as ~/Library/Mail stay unreadable and end up under “Unassigned”. Click to open System Settings.";
+"status.scanSummary" = "Scan: %1$@ in %2$@";
+"status.volume" = "%1$@: %2$@ · used %3$@ · free %4$@";
+"status.volume.purgeable" = "(of which %@ purgeable)";
+"summary.finished" = "Scan finished: %1$@, %2$@, %3$@ in %4$@";
+"summary.less" = "Less";
+"summary.close" = "Close Summary";
+"fda.grant" = "Grant Full Disk Access…";
+
+/* Detail list */
+"list.accessibility" = "Contents of %@";
+"list.shareOfRoot" = "%@ of the scan root";
+"list.unassigned.help" = "Unassigned (system, local snapshots, purgeable space): space used on the volume that doesn’t show up in any folder.";
+"list.row.accessibility" = "%1$@, %2$@, %3$@";
+"accessibility.zoomIn" = "Zoom In";
+
+/* Start screen */
+"start.subtitle" = "Choose a volume or folder to see where your space goes.";
+"start.volumes" = "Volumes";
+"start.noVolumes" = "No volumes found.";
+"start.scanHome" = "Scan Home Folder";
+"start.fda.message" = "Without Full Disk Access, folders such as ~/Library/Mail, Safari or other apps’ containers stay unreadable. They are missing from the chart and end up under “Unassigned”.";
+"start.fda.openSettings" = "Open System Settings…";
+"start.fda.checkAgain" = "Check Again";
+"start.volume.used" = "%1$@ of %2$@ used";
+"start.legend.used" = "Used %@";
+"start.legend.purgeable" = "Purgeable %@";
+"start.legend.free" = "Free %@";
+"start.volume.accessibility" = "%1$@, %2$@ of %3$@ used, %4$@ free";
+"start.volume.hint" = "Scans this volume";
+"start.dropHint" = "or drag a folder here";
+
+/* Scan progress */
+"scan.reading" = "Reading folders…";
+"scan.title" = "Scanning %@";
+"scan.starting" = "Starting…";
+"scan.accessibility.starting" = "Scan is starting";
+"scan.accessibility.running" = "Scan in progress: %1$@, %2$@";
+"scan.stalled.title" = "Possibly waiting for permission from macOS … (check for a system dialog)";
+"scan.stalled.message" = "macOS may be asking for access to a folder or drive; the dialog can be hidden behind other windows. With Full Disk Access, these requests don’t appear.";
+"scan.stalled.fda" = "Full Disk Access…";
+"scan.stalled.fda.help" = "Opens “Privacy & Security → Full Disk Access” in System Settings";
+
+/* Compare: list and chart */
+"compare.showInChart" = "Show in Chart";
+"compare.removedName" = "%@ (removed)";
+"reason.noCompare" = "No comparison";
+"compare.busy.updating" = "Updating comparison…";
+"compare.busy.computing" = "Computing comparison…";
+"compare.error" = "Comparison not possible: %@";
+"compare.currentScan" = "Current Scan";
+"compare.list.accessibility" = "Comparison: contents of %@";
+"compare.column.name" = "Name";
+"compare.column.before" = "Before";
+"compare.column.now" = "Now";
+"compare.sortBy" = "Sort by %@";
+"compare.moreItems" = "more items";
+"compare.direction" = "Direction";
+"compare.direction.growth" = "Growth";
+"compare.direction.shrink" = "Shrinkage";
+"compare.largest.noShrink" = "No shrinkage of 1 MB or more";
+"compare.largest.noGrowth" = "No growth of 1 MB or more";
+"compare.tab.contents" = "Contents";
+"compare.tab.largest" = "Largest Changes";
+"compare.inScanRoot" = "in the scan root";
+"compare.inFolder" = "in %@";
+"compare.largest.row.accessibility" = "%1$@. %2$@, %3$@, %4$@";
+"compare.chart.noGrowth" = "No growth since the snapshot";
+"compare.chart.noData" = "No data";
+"compare.chart.noGrowth.hint" = "“Delta Colors” also shows items that shrank or were removed.";
+"compare.chart.accessibility" = "Comparison chart (%1$@) of %2$@";
+"compare.center.growth" = "Growth";
+"compare.center.now" = "now %@";
+"compare.tooltip.folderGrowth" = "Growth in folder: %@";
+"compare.tooltip.growthWithoutEntries" = "Growth without its own entries";
+"compare.tooltip.smallFiles" = "small files under %@ and the folder’s own size";
+"compare.beforeNow" = "Before %1$@  →  Now %2$@";
+"compare.entry.accessibility" = "%1$@, %2$@, %3$@, delta %4$@";
+"compare.listPicker" = "List";
+"compare.viewPicker" = "View";
+"compare.viewPicker.help" = "Growth: segment size = growth. Delta Colors: normal sizes, red grown, green shrunk.";
+"compare.end" = "End Comparison";
+"compare.end.help" = "Back to the normal view (Esc)";
+"compare.breadcrumb" = "Path in Comparison";
+"compare.warning.footer" = "Differences may therefore also come from the settings.";
+"compare.warning.accessibility" = "Warning: %@";
+"compare.legend.growth" = "Segment size = growth since %@";
+"compare.legend.intensity" = "Stronger = larger change";
+
+/* Compare: picker */
+"compare.with" = "Compare With…";
+"compare.with.help" = "Compare this scan with a saved snapshot";
+"compare.picker.empty" = "No matching snapshots";
+"compare.picker.empty.message" = "There is no older snapshot of this scan root on this volume yet. Snapshots are created automatically after each scan or with “File → Save Snapshot” (⌘S).";
+"compare.button" = "Compare";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@ s";
+"format.duration.minutes" = "%1$@ min %2$@ s";

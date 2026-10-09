@@ -9,8 +9,8 @@ struct CompareToolbarButton: View {
     @ViewState private var showPicker = false
 
     var body: some View {
-        Button { showPicker = true } label: { Label("Vergleichen mit…", systemImage: "clock.arrow.2.circlepath") }
-            .help("Diesen Scan mit einem gespeicherten Snapshot vergleichen")
+        Button { showPicker = true } label: { Label(L("compare.with"), systemImage: "clock.arrow.2.circlepath") }
+            .help(L("compare.with.help"))
             .disabled(state.summary == nil || state.tree == nil || state.phase == .scanning)
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 CompareSnapshotPicker(state: state) { showPicker = false }
@@ -27,18 +27,18 @@ struct CompareSnapshotPicker: View {
     var body: some View {
         let candidates = currentCandidates
         VStack(alignment: .leading, spacing: 10) {
-            Text("Vergleichen mit…").font(.headline)
+            Text(L("compare.with")).font(.headline)
             if candidates.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Keine passenden Snapshots").font(.subheadline.weight(.medium))
-                    Text("Es gibt noch keinen älteren Snapshot dieser Scan-Wurzel auf diesem Volume. Snapshots entstehen automatisch nach jedem Scan oder mit „Ablage → Snapshot sichern“ (⌘S).")
+                    Text(L("compare.picker.empty")).font(.subheadline.weight(.medium))
+                    Text(L("compare.picker.empty.message"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 HStack {
                     Spacer()
-                    Button("Schließen") { dismiss() }.keyboardShortcut(.cancelAction)
+                    Button(L("common.close")) { dismiss() }.keyboardShortcut(.cancelAction)
                 }
             } else {
                 List(candidates, selection: $selection) { info in
@@ -48,10 +48,10 @@ struct CompareSnapshotPicker: View {
                 .alternatingRowBackgrounds()
                 .frame(height: min(CGFloat(candidates.count) * 50 + 10, 300))
                 HStack {
-                    Text("\(candidates.count) passend").font(.caption).foregroundStyle(.secondary)
+                    Text(L("compare.picker.count", candidates.count, ByteFormat.count(candidates.count))).font(.caption).foregroundStyle(.secondary)
                     Spacer()
-                    Button("Abbrechen") { dismiss() }.keyboardShortcut(.cancelAction)
-                    Button("Vergleichen") {
+                    Button(L("common.cancel")) { dismiss() }.keyboardShortcut(.cancelAction)
+                    Button(L("compare.button")) {
                         if let info = candidates.first(where: { $0.id == selection }) ?? candidates.first {
                             state.startCompare(with: info)
                         }

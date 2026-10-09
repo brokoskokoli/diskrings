@@ -1,0 +1,404 @@
+/* DiskRings – ru. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Показать в Finder";
+"action.open" = "Открыть";
+"action.quickLook" = "Быстрый просмотр";
+"action.zoomIn" = "Увеличить здесь";
+"action.copyPath" = "Скопировать путь";
+"action.info" = "Свойства";
+"action.rescan" = "Пересканировать эту папку";
+"action.moveToTrash" = "Переместить в Корзину";
+"shortcut.space" = "Пробел";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "Ничего не выбрано";
+"reason.notInTree" = "Объекта больше нет в дереве";
+"reason.singleItemOnly" = "Только для одного объекта";
+"reason.foldersOnly" = "Только для папок";
+"reason.alreadyCenter" = "Уже в центре";
+"reason.folderEmpty" = "Папка пуста";
+"reason.fullScanRunning" = "Невозможно во время полного сканирования";
+"reason.otherVolume" = "Другой том (не сканировался)";
+"reason.rescanRunning" = "Сейчас пересканируется";
+"reason.rescanRunningIn" = "Пересканируется в составе «%@»";
+"reason.scanRunning" = "Невозможно во время сканирования";
+"reason.notInCompare" = "Объекта больше нет в сравнении";
+"reason.removedSinceSnapshot" = "«%@» больше не существует (удалено после снимка)";
+"reason.containsRemoved" = "Содержит удаленные объекты, которых больше нет";
+"reason.missingOnDisk" = "«%@» больше нет на диске";
+"reason.twoSnapshots" = "Невозможно при сравнении двух снимков";
+"reason.notInCurrentScan" = "Больше нет в текущем сканировании";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "Корневую папку сканирования нельзя переместить в Корзину";
+"trash.error.protected" = "Защищено: %@";
+"trash.error.protectedItem" = "Защищено: %1$@ – %2$@";
+"trash.error.protectedResolved" = "Защищено: %1$@ (фактический путь %2$@)";
+"trash.error.unresolvable" = "Путь больше не удается определить";
+"trash.error.outsideRoot" = "Уже вне корневой папки сканирования";
+"trash.error.outsideRootSymlink" = "Уже вне корневой папки сканирования (папка в пути заменена символической ссылкой)";
+"trash.confirm.title.one" = "Переместить «%@» в Корзину?";
+"trash.confirm.total" = "Всего %1$@ · %2$@";
+"trash.undo.unknownLocation" = "Расположение в Корзине неизвестно";
+"trash.undo.notInTrash" = "Больше нет в Корзине";
+"trash.undo.unrecognized" = "Не удается надежно определить объект в Корзине";
+"trash.undo.replacedInTrash" = "В Корзине теперь другой объект с этим именем (Корзина была очищена или объект изменился?)";
+"trash.undo.occupied" = "В исходном расположении теперь находится другой объект";
+"trash.undo.parentMissing" = "Родительской папки больше нет";
+"trash.confirm.undoHint" = "Объекты можно восстановить из Корзины с помощью ⌘Z или в Finder.";
+"trash.confirm.dontAsk" = "Больше не спрашивать (только для объектов меньше 1 ГБ)";
+"trash.confirm.alwaysAsk" = "Для объектов размером от 1 ГБ подтверждение запрашивается всегда.";
+
+/* Protected paths (reasons) */
+"protected.system" = "Системная область macOS (%@)";
+"protected.volumeRoot" = "Корень тома";
+"protected.home" = "Вся папка пользователя";
+"protected.homeLibrary" = "~/Library целиком";
+"protected.runningApp" = "Запущенное приложение DiskRings";
+"protected.contains" = "Содержит защищенную область: %1$@ (%2$@)";
+
+/* Scan errors */
+"error.scan.notFound" = "Путь не найден: %@";
+"error.scan.tooManyNodes" = "Слишком много объектов для одного дерева сканирования";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "Это не файл снимка DiskRings";
+"error.snapshot.unsupportedVersion" = "Формат снимка %@ не поддерживается (более новая версия?)";
+"error.snapshot.truncated" = "Файл снимка неполный";
+"error.snapshot.corrupted" = "Файл снимка поврежден: %@";
+"error.snapshot.outsideStore" = "Файл не находится в папке снимков: %@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "более новая версия";
+"snapshots.damaged.damaged" = "поврежден";
+"snapshot.untitled" = "Снимок: %@";
+"snapshots.window.title" = "Снимки";
+"snapshots.empty" = "Снимков пока нет";
+"snapshots.empty.message" = "Снимки создаются автоматически после каждого полного сканирования (можно отключить в Настройках) или командой «Файл → Сохранить снимок» (⌘S).";
+"snapshots.column.date" = "Дата";
+"snapshots.column.name" = "Имя";
+"snapshots.column.root" = "Корневая папка";
+"snapshots.column.size" = "Общий размер";
+"snapshots.column.file" = "Файл";
+"snapshots.compareEachOther" = "Сравнить между собой";
+"snapshots.olderIsBefore" = "Более старый — «было»";
+"snapshots.selectTwo" = "Выберите два снимка для сравнения";
+"snapshots.rename.title" = "Переименовать снимок";
+"snapshots.rename.message" = "Сканирование: %1$@, %2$@";
+"snapshots.delete.message" = "Файл снимка будет удален безвозвратно. Просканированные файлы и папки не затрагиваются.";
+"snapshots.delete.title.one" = "Удалить снимок?";
+"snapshots.damaged.deleteAll" = "Удалить все…";
+"snapshots.damaged.delete.title.one" = "Удалить нечитаемый файл?";
+"snapshots.damaged.delete.newer" = "Некоторые из них — снимки из более новой версии DiskRings, которые эта версия не может прочитать; более новое приложение еще сможет их открыть. Файлы будут удалены безвозвратно. Просканированные файлы и папки не затрагиваются.";
+"snapshots.damaged.delete.message" = "Файл больше не читается как снимок и будет удален безвозвратно. Просканированные файлы и папки не затрагиваются.";
+"snapshots.name.placeholder" = "Имя (необязательно), например «до обновления Xcode»";
+"snapshots.save.title" = "Сохранить снимок";
+"snapshots.save.confirm" = "Сохранить";
+"snapshots.save.message" = "Текущее сканирование: %@";
+"menu.saveSnapshot" = "Сохранить снимок…";
+"menu.snapshots" = "Снимки…";
+"snapshots.error.read" = "Не удалось прочитать снимки: %@";
+"snapshots.saved" = "Снимок «%@» сохранен";
+"snapshots.error.save" = "Не удалось сохранить снимок: %@";
+"snapshots.error.rename" = "Не удалось переименовать: %@";
+"snapshots.error.delete" = "Не удалось удалить: %@";
+
+/* General */
+"list.separator" = ", ";
+
+/* Compare: headline and warnings */
+"compare.since" = "С %@";
+"compare.fromTo" = "С %1$@ по %2$@";
+"compare.part.used" = "занято %@";
+"compare.part.free" = "свободно %@";
+"compare.part.scan" = "сканирование %@";
+"compare.part.unassigned" = "из них не распределено %@";
+"compare.part.volumeUsed" = "занято на томе %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "ранее без скрытых файлов";
+"compare.warning.hiddenNow" = "теперь без скрытых файлов";
+"compare.warning.exclusions" = "другой список исключений";
+"compare.warning.volumes" = "другая настройка для томов";
+"compare.warning.options" = "Снимок создан с другими настройками (%@)";
+"compare.warning.root" = "Другая корневая папка сканирования: %1$@ и %2$@";
+"compare.warning.volume" = "Другой том";
+"compare.warning.minimumSize" = "Файлы меньше %@ сравниваются только по суммам папок";
+"compare.mode.growth" = "Рост";
+"compare.mode.delta" = "Цвета изменений";
+"diff.added" = "новое";
+"diff.removed" = "удалено";
+"diff.grown" = "выросло";
+"diff.shrunk" = "уменьшилось";
+"diff.unchanged" = "без изменений";
+"compare.label.used" = "занято";
+"compare.label.free" = "свободно";
+"compare.label.unassigned" = "из них не распределено";
+"compare.label.volumeUsed" = "занято на томе";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@: больше не существует (%2$@)";
+"rescan.summary.unchanged" = "%1$@: %2$@ (без изменений)";
+"rescan.summary.changed" = "%1$@: %2$@ → %3$@ (%4$@)";
+
+/* File type categories (legend) */
+"fileType.video" = "Видео";
+"fileType.image" = "Изображения";
+"fileType.audio" = "Аудио";
+"fileType.archive" = "Архивы";
+"fileType.application" = "Приложения";
+"fileType.code" = "Код";
+"fileType.document" = "Документы";
+"fileType.other" = "Другое";
+
+/* Common buttons */
+"common.cancel" = "Отменить";
+"common.ok" = "OK";
+"common.done" = "Готово";
+"common.close" = "Закрыть";
+"common.delete" = "Удалить";
+"common.deleteEllipsis" = "Удалить…";
+"common.renameEllipsis" = "Переименовать…";
+"common.rename" = "Переименовать";
+
+/* Full Disk Access */
+"fda.alert.title" = "Нет доступа ко всему диску";
+"fda.alert.setUp" = "Настроить доступ ко всему диску";
+"fda.alert.scanAnyway" = "Все равно сканировать";
+"fda.alert.message" = "Без доступа ко всему диску macOS во время сканирования отдельно запрашивает доступ к таким папкам, как «Рабочий стол», «Документы» и «Загрузки», а области вроде ~/Library/Mail остаются недоступными для чтения. Сканирование ждет, пока вы не ответите на системные запросы.\n\nРекомендуется: в Системных настройках включите DiskRings в разделе «Конфиденциальность и безопасность → Доступ ко всему диску», затем запустите сканирование снова.";
+
+/* Menus */
+"menu.chooseFolder" = "Выбрать папку…";
+"menu.fullRescan" = "Пересканировать все";
+"menu.undo" = "Отменить";
+"menu.redo" = "Повторить";
+"menu.find" = "Найти…";
+"menu.item" = "Объект";
+"menu.go" = "Переход";
+"menu.back" = "Назад";
+"menu.forward" = "Вперед";
+"menu.enclosingFolder" = "Папка уровнем выше";
+"menu.compareRoot" = "Корневая папка сравнения";
+"menu.scanRoot" = "Корневая папка сканирования";
+"menu.startScreen" = "Начальный экран";
+
+/* Open panel */
+"panel.scan.prompt" = "Сканировать";
+"panel.scan.message" = "Выберите папку или том для сканирования";
+"reason.noScan" = "Нет сканирования";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "Перемещено в Корзину: «%1$@» (%2$@)";
+"toast.trashFailed" = "Не удалось переместить «%1$@» в Корзину: %2$@";
+"menu.undo.putBack.one" = "Восстановить «%@»";
+"toast.putBackFailed" = "Не удалось восстановить «%1$@»: %2$@";
+"toast.putBack.one" = "Восстановлено: «%@»";
+"toast.rescanBlocked" = "Частичное пересканирование невозможно во время полного сканирования";
+"toast.rescanCovered" = "«%@» уже пересканируется";
+"toast.rescanFailed" = "Не удалось пересканировать «%1$@»: %2$@";
+"toast.rootMissing" = "Корневая папка сканирования «%@» больше не существует";
+"toast.close" = "Закрыть уведомление";
+
+/* Item kinds and badges */
+"badge.package" = "пакет";
+"badge.unreadable" = "нечитаемо";
+"badge.icloudOnly" = "только в iCloud";
+"badge.symlink" = "символическая ссылка";
+"badge.otherVolume" = "другой том";
+"badge.hardlink" = "жесткая ссылка";
+"kind.file" = "Файл";
+"kind.folder" = "Папка";
+"kind.package" = "Пакет";
+"kind.symlink" = "Символическая ссылка";
+
+/* Chart segments */
+"arc.aggregate.detail" = "объединены, каждый меньше порога угла";
+"arc.remainder.title" = "Файлы в этой папке";
+"arc.remainder.detail" = "еще не подсчитаны по отдельности";
+"arc.unassigned.title" = "Не распределено";
+"arc.unassigned.detail" = "Система, локальные снимки, очищаемое пространство";
+"sunburst.accessibility" = "Кольцевая диаграмма: %@";
+"sunburst.shareOf" = "%1$@ от %2$@";
+"sunburst.center.hint" = "Нажмите: на уровень выше";
+
+/* Settings */
+"settings.section.chart" = "Диаграмма";
+"settings.rings" = "Количество колец";
+"settings.colorScheme" = "Цветовая схема";
+"settings.colorScheme.branch" = "По ветвям";
+"settings.colorScheme.fileType" = "По типу файла";
+"settings.minAngle" = "Объединять сегменты меньше";
+"settings.minAngle.accessibilityValue" = "%@ градусов";
+"settings.showLabels" = "Подписывать сегменты";
+"settings.section.size" = "Размер";
+"settings.sizeMode" = "Режим размера";
+"settings.sizeMode.allocated" = "Занято на диске";
+"settings.sizeMode.logical" = "Логический размер";
+"settings.section.trash" = "Корзина";
+"settings.trash.confirm" = "Спрашивать перед перемещением в Корзину";
+"settings.trash.footer" = "Для объектов размером от 1 ГБ подтверждение запрашивается всегда.";
+"settings.section.scan" = "Сканирование";
+"settings.includeHidden" = "Учитывать скрытые файлы";
+"settings.crossMounts" = "Переходить на другие тома при сканировании";
+"settings.excluded" = "Исключенные пути";
+"settings.excluded.add" = "Добавить путь";
+"settings.excluded.remove" = "Удалить выбранный путь";
+"settings.excluded.prompt" = "Исключить";
+"settings.scan.footer" = "Эти настройки вступят в силу при следующем сканировании.";
+"settings.legend.accessibility" = "Легенда: %@";
+"settings.section.language" = "Язык";
+"settings.language" = "Язык";
+"settings.language.automatic" = "Автоматически (системный)";
+"settings.language.restartNote" = "Новый язык будет применен после перезапуска DiskRings.";
+"settings.language.restartNow" = "Перезапустить";
+"settings.language.footer" = "Язык также можно выбрать в Системных настройках → Основные → Язык и регион → Приложения.";
+"settings.section.snapshots" = "Снимки";
+"settings.snapshots.autoSave" = "Сохранять автоматически после каждого полного сканирования";
+"settings.snapshots.maxCount" = "Максимум на корневую папку";
+"settings.snapshots.footer" = "Сохраняются папки и файлы размером от 1 МБ. Если снимков больше максимума, самые старые удаляются.";
+
+/* Get Info window */
+"info.where" = "Где";
+"info.allocated" = "Занято";
+"info.logical" = "Логический";
+"info.contents" = "Содержимое";
+"info.contents.value" = "%1$@, %2$@";
+"info.modified" = "Изменен";
+"info.created" = "Создан";
+"info.badges" = "Атрибуты";
+"info.protected" = "Защищено";
+
+/* Search */
+"search.placeholder" = "Поиск по имени";
+"search.clear" = "Очистить поиск";
+"search.backToList" = "Назад к списку";
+"search.results" = "Результаты поиска";
+"search.searching" = "Поиск…";
+"search.noResults" = "Нет совпадений";
+
+/* Main window toolbar */
+"browser.listWidth" = "Ширина списка";
+"browser.listWidth.value" = "%@ пт";
+"browser.back.help" = "Назад (⌘[)";
+"browser.forward.help" = "Вперед (⌘])";
+"browser.scanRunning" = "Идет сканирование";
+"browser.rescanRunning" = "Идет частичное пересканирование";
+"browser.rescan" = "Пересканировать";
+"browser.rescan.help" = "Пересканировать текущую папку (⇧⌘R)";
+"browser.search" = "Поиск";
+"browser.search.help" = "Поиск по имени (⌘F)";
+"browser.newScan" = "Новое сканирование";
+"browser.newScan.help" = "Назад к начальному экрану";
+"browser.breadcrumb" = "Путь";
+"browser.breadcrumb.current" = "%@, текущая папка";
+
+/* Status bar and scan summary */
+"status.unassigned" = "не распределено %@";
+"status.unassigned.help" = "Занятое на томе пространство, которое не отображается ни в одной папке: система, локальные снимки Time Machine, очищаемое пространство. Клоны и снимки могут вызывать расхождения.";
+"status.deviation" = "Клоны и снимки могут вызывать расхождения";
+"status.deviation.help" = "Клоны и снимки могут вызывать расхождения: клоны APFS совместно используют блоки, но учитываются отдельно; локальные снимки Time Machine и очищаемое пространство не отображаются ни в одной папке и попадают в «Не распределено».";
+"status.fda.help" = "Без доступа ко всему диску такие папки, как ~/Library/Mail, остаются недоступными для чтения и попадают в «Не распределено». Нажмите, чтобы открыть Системные настройки.";
+"status.scanSummary" = "Сканирование: %1$@ за %2$@";
+"status.volume" = "%1$@: %2$@ · занято %3$@ · свободно %4$@";
+"status.volume.purgeable" = "(из них %@ можно очистить)";
+"summary.finished" = "Сканирование завершено: %1$@, %2$@, %3$@ за %4$@";
+"summary.less" = "Меньше";
+"summary.close" = "Закрыть сводку";
+"fda.grant" = "Предоставить доступ ко всему диску…";
+
+/* Detail list */
+"list.accessibility" = "Содержимое: %@";
+"list.shareOfRoot" = "%@ от корневой папки сканирования";
+"list.unassigned.help" = "Не распределено (система, локальные снимки, очищаемое пространство): занятое на томе пространство, которое не отображается ни в одной папке.";
+"list.row.accessibility" = "%1$@, %2$@, %3$@";
+"accessibility.zoomIn" = "Увеличить";
+
+/* Start screen */
+"start.subtitle" = "Выберите том или папку, чтобы узнать, чем занято место.";
+"start.volumes" = "Тома";
+"start.noVolumes" = "Тома не найдены.";
+"start.scanHome" = "Сканировать папку пользователя";
+"start.fda.message" = "Без доступа ко всему диску такие папки, как ~/Library/Mail, Safari или контейнеры других приложений, остаются недоступными для чтения. Их нет на диаграмме, и они попадают в «Не распределено».";
+"start.fda.openSettings" = "Открыть Системные настройки…";
+"start.fda.checkAgain" = "Проверить снова";
+"start.volume.used" = "Занято %1$@ из %2$@";
+"start.legend.used" = "Занято %@";
+"start.legend.purgeable" = "Очищаемое %@";
+"start.legend.free" = "Свободно %@";
+"start.volume.accessibility" = "%1$@, занято %2$@ из %3$@, свободно %4$@";
+"start.volume.hint" = "Сканирует этот том";
+"start.dropHint" = "или перетащите папку сюда";
+
+/* Scan progress */
+"scan.reading" = "Чтение папок…";
+"scan.title" = "Сканирование: %@";
+"scan.starting" = "Запуск…";
+"scan.accessibility.starting" = "Сканирование запускается";
+"scan.accessibility.running" = "Идет сканирование: %1$@, %2$@";
+"scan.stalled.title" = "Возможно, macOS ожидает разрешения … (проверьте, нет ли системного запроса)";
+"scan.stalled.message" = "macOS может запрашивать доступ к папке или диску; окно запроса может быть скрыто за другими окнами. При наличии доступа ко всему диску такие запросы не появляются.";
+"scan.stalled.fda" = "Доступ ко всему диску…";
+"scan.stalled.fda.help" = "Открывает «Конфиденциальность и безопасность → Доступ ко всему диску» в Системных настройках";
+
+/* Compare: list and chart */
+"compare.showInChart" = "Показать на диаграмме";
+"compare.removedName" = "%@ (удалено)";
+"reason.noCompare" = "Нет сравнения";
+"compare.busy.updating" = "Обновление сравнения…";
+"compare.busy.computing" = "Вычисление сравнения…";
+"compare.error" = "Сравнение невозможно: %@";
+"compare.currentScan" = "Текущее сканирование";
+"compare.list.accessibility" = "Сравнение, содержимое: %@";
+"compare.column.name" = "Имя";
+"compare.column.before" = "Было";
+"compare.column.now" = "Сейчас";
+"compare.sortBy" = "Сортировать по: %@";
+"compare.moreItems" = "другие объекты";
+"compare.direction" = "Направление";
+"compare.direction.growth" = "Рост";
+"compare.direction.shrink" = "Уменьшение";
+"compare.largest.noShrink" = "Нет уменьшения на 1 МБ и более";
+"compare.largest.noGrowth" = "Нет роста на 1 МБ и более";
+"compare.tab.contents" = "Содержимое";
+"compare.tab.largest" = "Крупнейшие изменения";
+"compare.inScanRoot" = "в корневой папке сканирования";
+"compare.inFolder" = "в %@";
+"compare.largest.row.accessibility" = "%1$@. %2$@, %3$@, %4$@";
+"compare.chart.noGrowth" = "Нет роста с момента снимка";
+"compare.chart.noData" = "Нет данных";
+"compare.chart.noGrowth.hint" = "«Цвета изменений» также показывают объекты, которые уменьшились или были удалены.";
+"compare.chart.accessibility" = "Диаграмма сравнения (%1$@): %2$@";
+"compare.center.growth" = "Рост";
+"compare.center.now" = "сейчас %@";
+"compare.tooltip.folderGrowth" = "Рост в папке: %@";
+"compare.tooltip.growthWithoutEntries" = "Рост без собственных объектов";
+"compare.tooltip.smallFiles" = "мелкие файлы меньше %@ и собственный размер папки";
+"compare.beforeNow" = "Было %1$@  →  Сейчас %2$@";
+"compare.entry.accessibility" = "%1$@, %2$@, %3$@, изменение %4$@";
+"compare.listPicker" = "Список";
+"compare.viewPicker" = "Вид";
+"compare.viewPicker.help" = "Рост: размер сегмента = рост. Цвета изменений: обычные размеры, красный — выросло, зеленый — уменьшилось.";
+"compare.end" = "Завершить сравнение";
+"compare.end.help" = "Назад к обычному виду (Esc)";
+"compare.breadcrumb" = "Путь в сравнении";
+"compare.warning.footer" = "Поэтому различия могут быть вызваны и настройками.";
+"compare.warning.accessibility" = "Предупреждение: %@";
+"compare.legend.growth" = "Размер сегмента = рост с %@";
+"compare.legend.intensity" = "Ярче = сильнее изменение";
+
+/* Compare: picker */
+"compare.with" = "Сравнить с…";
+"compare.with.help" = "Сравнить это сканирование с сохраненным снимком";
+"compare.picker.empty" = "Нет подходящих снимков";
+"compare.picker.empty.message" = "Более старого снимка этой корневой папки сканирования на этом томе пока нет. Снимки создаются автоматически после каждого сканирования или командой «Файл → Сохранить снимок» (⌘S).";
+"compare.button" = "Сравнить";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "КБ";
+"unit.mb" = "МБ";
+"unit.gb" = "ГБ";
+"unit.tb" = "ТБ";
+"unit.pb" = "ПБ";
+"unit.eb" = "ЭБ";
+"format.duration.seconds" = "%@ с";
+"format.duration.minutes" = "%1$@ мин %2$@ с";

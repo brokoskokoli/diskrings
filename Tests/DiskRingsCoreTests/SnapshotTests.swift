@@ -89,7 +89,7 @@ struct SnapshotTests {
         // Einzelne Bytes in den Nutzdaten kippen → Prüfsumme.
         var flipped = data
         flipped[data.count - 10] ^= 0xFF
-        #expect(throws: SnapshotError.corrupted("Prüfsumme")) { try SnapshotFile.decode(flipped) }
+        #expect(throws: SnapshotError.corrupted("checksum")) { try SnapshotFile.decode(flipped) }
         // Kopf kaputt
         var badHeader = data
         badHeader[20] = UInt8(ascii: "#")

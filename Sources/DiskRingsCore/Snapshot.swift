@@ -133,11 +133,11 @@ public enum SnapshotError: Error, Equatable, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .notASnapshot: "Keine DiskRings-Snapshot-Datei"
-        case .unsupportedVersion(let v): "Snapshot-Format \(v) wird nicht unterstützt (neuere Version?)"
-        case .truncated: "Snapshot-Datei ist unvollständig"
-        case .corrupted(let why): "Snapshot-Datei ist beschädigt: \(why)"
-        case .outsideStore(let p): "Datei liegt nicht im Snapshot-Verzeichnis: \(p)"
+        case .notASnapshot: L("error.snapshot.notASnapshot")
+        case .unsupportedVersion(let v): L("error.snapshot.unsupportedVersion", String(v))
+        case .truncated: L("error.snapshot.truncated")
+        case .corrupted(let why): L("error.snapshot.corrupted", why)
+        case .outsideStore(let p): L("error.snapshot.outsideStore", p)
         }
     }
 }
@@ -249,7 +249,7 @@ public enum SnapshotFile {
         var l = Reader(lengths)
         let rawLength = try l.u64()
         let compressedLength = try l.u64()
-        guard rawLength < 1 << 36, compressedLength < 1 << 36 else { throw SnapshotError.corrupted("Längenangaben") }
+        guard rawLength < 1 << 36, compressedLength < 1 << 36 else { throw SnapshotError.corrupted("length fields") }
         return (metadata, 16 + UInt64(headerLength) + 24 + compressedLength)
     }
 
@@ -271,14 +271,14 @@ public enum SnapshotFile {
         _ = try r.u64()
         let compressedLength = try r.u64()
         _ = try r.u64()
-        guard compressedLength < 1 << 36 else { throw SnapshotError.corrupted("Längenangaben") }
+        guard compressedLength < 1 << 36 else { throw SnapshotError.corrupted("length fields") }
         let expected = range.upperBound + 24 + Int(compressedLength)
         guard data.count >= expected else { throw SnapshotError.truncated }
-        guard data.count == expected else { throw SnapshotError.corrupted("Dateilänge") }
+        guard data.count == expected else { throw SnapshotError.corrupted("file length") }
         var meta = metadata
         meta.date = normalized(meta.date)
         let header = try jsonEncoder.encode(meta)
-        guard header.count < 1 << 24 else { throw SnapshotError.corrupted("Kopflänge") }
+        guard header.count < 1 << 24 else { throw SnapshotError.corrupted("header length") }
         var out = Data()
         out.reserveCapacity(data.count - range.count + header.count)
         out.append(data.subdata(in: 0 ..< 12))
@@ -295,9 +295,9 @@ public enum SnapshotFile {
         let rawLength = try r.u64()
         let compressedLength = try r.u64()
         let checksum = try r.u64()
-        guard rawLength < 1 << 36, compressedLength < 1 << 36 else { throw SnapshotError.corrupted("Längenangaben") }
+        guard rawLength < 1 << 36, compressedLength < 1 << 36 else { throw SnapshotError.corrupted("length fields") }
         let compressed = try r.bytes(Int(compressedLength))
-        guard fnv1a(compressed) == checksum else { throw SnapshotError.corrupted("Prüfsumme") }
+        guard fnv1a(compressed) == checksum else { throw SnapshotError.corrupted("checksum") }
         let payload = try decompress(compressed, expectedLength: Int(rawLength))
         let tree = try decodePayload(payload, rootPath: metadata.rootPath)
         return Snapshot(metadata: metadata, tree: tree)
@@ -313,7 +313,7 @@ public enum SnapshotFile {
         _ = try r.u16()
         guard version == formatVersion else { throw SnapshotError.unsupportedVersion(version) }
         let headerLength = try r.u32()
-        guard headerLength < 1 << 24 else { throw SnapshotError.corrupted("Kopflänge") }
+        guard headerLength < 1 << 24 else { throw SnapshotError.corrupted("header length") }
         return headerLength
     }
 
@@ -321,7 +321,7 @@ public enum SnapshotFile {
         do {
             return try jsonDecoder.decode(SnapshotMetadata.self, from: data)
         } catch {
-            throw SnapshotError.corrupted("Kopf: \(error)")
+            throw SnapshotError.corrupted("header: \(error)")
         }
     }
 
@@ -331,7 +331,7 @@ public enum SnapshotFile {
         let nameLength = Int(try r.u32())
         let flags = try r.u32()
         guard count > 0, count < Int(Int32.max), r.remaining == count * nodeRecordSize + nameLength else {
-            throw SnapshotError.corrupted("Größe der Nutzdaten")
+            throw SnapshotError.corrupted("payload size")
         }
         let nodeBytes = try r.bytes(count * nodeRecordSize)
         let nodes = nodeBytes.withUnsafeBytes { raw in
@@ -358,7 +358,7 @@ public enum SnapshotFile {
                 && n.childCount >= 0 && (n.childCount == 0 || (Int(n.firstChild) > i
                     && Int(n.firstChild) + Int(n.childCount) <= count))
                 && Int(n.nameOffset) + Int(n.nameLength) <= nameLength
-            guard ok else { throw SnapshotError.corrupted("Knoten \(i)") }
+            guard ok else { throw SnapshotError.corrupted("node \(i)") }
         }
         let tree = ScanTree(rootPath: rootPath, nodes: nodes, names: names, isComplete: flags & 1 != 0)
         let problems = tree.validate(limit: 1)
@@ -380,14 +380,14 @@ public enum SnapshotFile {
                     src.bindMemory(to: UInt8.self).baseAddress!, data.count, nil, COMPRESSION_LZFSE)
             }
         }
-        guard written > 0 else { throw SnapshotError.corrupted("Kompression fehlgeschlagen") }
+        guard written > 0 else { throw SnapshotError.corrupted("compression failed") }
         out.count = written
         return out
     }
 
     static func decompress(_ data: Data, expectedLength: Int) throws -> Data {
         guard expectedLength > 0 else { return Data() }
-        guard !data.isEmpty else { throw SnapshotError.corrupted("leere Nutzdaten") }
+        guard !data.isEmpty else { throw SnapshotError.corrupted("empty payload") }
         // Ein Byte mehr Platz: So fällt auf, wenn die Daten länger wären.
         var out = Data(count: expectedLength + 1)
         let written = out.withUnsafeMutableBytes { dst in
@@ -398,7 +398,7 @@ public enum SnapshotFile {
             }
         }
         guard written == expectedLength else {
-            throw SnapshotError.corrupted("Dekompression ergab \(written) statt \(expectedLength) Byte")
+            throw SnapshotError.corrupted("decompression yielded \(written) instead of \(expectedLength) bytes")
         }
         out.count = expectedLength
         return out

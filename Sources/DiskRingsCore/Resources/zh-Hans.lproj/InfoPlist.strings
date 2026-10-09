@@ -1,0 +1,10 @@
+/* DiskRings – zh-Hans: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "DiskRings 会读取桌面上文件的大小，以显示空间的使用情况。不会打开或更改文件。";
+"NSDocumentsFolderUsageDescription" = "DiskRings 会读取“文稿”文件夹中文件的大小，以显示空间的使用情况。不会打开或更改文件。";
+"NSDownloadsFolderUsageDescription" = "DiskRings 会读取“下载”文件夹中文件的大小，以显示空间的使用情况。不会打开或更改文件。";
+"NSRemovableVolumesUsageDescription" = "DiskRings 会读取可移除宗卷（如 USB 驱动器）上文件的大小，以显示其空间的使用情况。";
+"NSNetworkVolumesUsageDescription" = "DiskRings 会读取网络宗卷上文件的大小，以显示其空间的使用情况。";
+"NSFileProviderDomainUsageDescription" = "DiskRings 会读取云存储（如 iCloud Drive或 Dropbox）中文件的大小，以显示空间的使用情况。不会下载任何文件。";
+"NSPhotoLibraryUsageDescription" = "DiskRings 会读取照片图库的大小，以显示空间的使用情况。不会打开或更改照片。";
+"NSAppleMusicUsageDescription" = "DiskRings 会读取音乐和媒体文件夹的大小，以显示空间的使用情况。";

@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>action.copyPath.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Скопировать %2$@ путь</string>
+			<key>few</key>
+			<string>Скопировать %2$@ пути</string>
+			<key>many</key>
+			<string>Скопировать %2$@ путей</string>
+			<key>other</key>
+			<string>Скопировать %2$@ пути</string>
+		</dict>
+	</dict>
+	<key>action.moveToTrash.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Переместить %2$@ объект в Корзину</string>
+			<key>few</key>
+			<string>Переместить %2$@ объекта в Корзину</string>
+			<key>many</key>
+			<string>Переместить %2$@ объектов в Корзину</string>
+			<key>other</key>
+			<string>Переместить %2$@ объекта в Корзину</string>
+		</dict>
+	</dict>
+	<key>action.revealInFinder.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Показать %2$@ объект в Finder</string>
+			<key>few</key>
+			<string>Показать %2$@ объекта в Finder</string>
+			<key>many</key>
+			<string>Показать %2$@ объектов в Finder</string>
+			<key>other</key>
+			<string>Показать %2$@ объекта в Finder</string>
+		</dict>
+	</dict>
+	<key>action.open.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Открыть %2$@ объект</string>
+			<key>few</key>
+			<string>Открыть %2$@ объекта</string>
+			<key>many</key>
+			<string>Открыть %2$@ объектов</string>
+			<key>other</key>
+			<string>Открыть %2$@ объекта</string>
+		</dict>
+	</dict>
+	<key>trash.confirm.title.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Переместить %2$@ объект в Корзину?</string>
+			<key>few</key>
+			<string>Переместить %2$@ объекта в Корзину?</string>
+			<key>many</key>
+			<string>Переместить %2$@ объектов в Корзину?</string>
+			<key>other</key>
+			<string>Переместить %2$@ объекта в Корзину?</string>
+		</dict>
+	</dict>
+	<key>count.files</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ файл</string>
+			<key>few</key>
+			<string>%2$@ файла</string>
+			<key>many</key>
+			<string>%2$@ файлов</string>
+			<key>other</key>
+			<string>%2$@ файла</string>
+		</dict>
+	</dict>
+	<key>toast.trashed.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ объект перемещен в Корзину (%3$@)</string>
+			<key>few</key>
+			<string>%2$@ объекта перемещены в Корзину (%3$@)</string>
+			<key>many</key>
+			<string>%2$@ объектов перемещено в Корзину (%3$@)</string>
+			<key>other</key>
+			<string>%2$@ объекта перемещено в Корзину (%3$@)</string>
+		</dict>
+	</dict>
+	<key>menu.undo.putBack.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Восстановить %2$@ объект</string>
+			<key>few</key>
+			<string>Восстановить %2$@ объекта</string>
+			<key>many</key>
+			<string>Восстановить %2$@ объектов</string>
+			<key>other</key>
+			<string>Восстановить %2$@ объекта</string>
+		</dict>
+	</dict>
+	<key>toast.putBack.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ объект восстановлен</string>
+			<key>few</key>
+			<string>%2$@ объекта восстановлены</string>
+			<key>many</key>
+			<string>%2$@ объектов восстановлено</string>
+			<key>other</key>
+			<string>%2$@ объекта восстановлено</string>
+		</dict>
+	</dict>
+	<key>count.smallerItems</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ мелкий объект</string>
+			<key>few</key>
+			<string>%2$@ мелких объекта</string>
+			<key>many</key>
+			<string>%2$@ мелких объектов</string>
+			<key>other</key>
+			<string>%2$@ мелкого объекта</string>
+		</dict>
+	</dict>
+	<key>info.sizeWithBytes</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%1$@ (%3$@ байт)</string>
+			<key>few</key>
+			<string>%1$@ (%3$@ байта)</string>
+			<key>many</key>
+			<string>%1$@ (%3$@ байт)</string>
+			<key>other</key>
+			<string>%1$@ (%3$@ байта)</string>
+		</dict>
+	</dict>
+	<key>count.entries</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ элемент</string>
+			<key>few</key>
+			<string>%2$@ элемента</string>
+			<key>many</key>
+			<string>%2$@ элементов</string>
+			<key>other</key>
+			<string>%2$@ элемента</string>
+		</dict>
+	</dict>
+	<key>search.results.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ совпадение</string>
+			<key>few</key>
+			<string>%2$@ совпадения</string>
+			<key>many</key>
+			<string>%2$@ совпадений</string>
+			<key>other</key>
+			<string>%2$@ совпадения</string>
+		</dict>
+	</dict>
+	<key>search.results.limited</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ совпадение (крупнейшие %3$@)</string>
+			<key>few</key>
+			<string>%2$@ совпадения (крупнейшие %3$@)</string>
+			<key>many</key>
+			<string>%2$@ совпадений (крупнейшие %3$@)</string>
+			<key>other</key>
+			<string>%2$@ совпадения (крупнейшие %3$@)</string>
+		</dict>
+	</dict>
+	<key>count.folders</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ папка</string>
+			<key>few</key>
+			<string>%2$@ папки</string>
+			<key>many</key>
+			<string>%2$@ папок</string>
+			<key>other</key>
+			<string>%2$@ папки</string>
+		</dict>
+	</dict>
+	<key>summary.unreadable</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ нечитаемый</string>
+			<key>few</key>
+			<string>%2$@ нечитаемых</string>
+			<key>many</key>
+			<string>%2$@ нечитаемых</string>
+			<key>other</key>
+			<string>%2$@ нечитаемого</string>
+		</dict>
+	</dict>
+	<key>count.items</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ объект</string>
+			<key>few</key>
+			<string>%2$@ объекта</string>
+			<key>many</key>
+			<string>%2$@ объектов</string>
+			<key>other</key>
+			<string>%2$@ объекта</string>
+		</dict>
+	</dict>
+	<key>count.moreItems</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>еще %2$@ объект</string>
+			<key>few</key>
+			<string>еще %2$@ объекта</string>
+			<key>many</key>
+			<string>еще %2$@ объектов</string>
+			<key>other</key>
+			<string>еще %2$@ объекта</string>
+		</dict>
+	</dict>
+	<key>compare.picker.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ совпадение</string>
+			<key>few</key>
+			<string>%2$@ совпадения</string>
+			<key>many</key>
+			<string>%2$@ совпадений</string>
+			<key>other</key>
+			<string>%2$@ совпадения</string>
+		</dict>
+	</dict>
+	<key>snapshots.delete.title.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Удалить %2$@ снимок?</string>
+			<key>few</key>
+			<string>Удалить %2$@ снимка?</string>
+			<key>many</key>
+			<string>Удалить %2$@ снимков?</string>
+			<key>other</key>
+			<string>Удалить %2$@ снимка?</string>
+		</dict>
+	</dict>
+	<key>snapshots.damaged.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ нечитаемый файл</string>
+			<key>few</key>
+			<string>%2$@ нечитаемых файла</string>
+			<key>many</key>
+			<string>%2$@ нечитаемых файлов</string>
+			<key>other</key>
+			<string>%2$@ нечитаемого файла</string>
+		</dict>
+	</dict>
+	<key>snapshots.damaged.delete.title.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Удалить %2$@ нечитаемый файл?</string>
+			<key>few</key>
+			<string>Удалить %2$@ нечитаемых файла?</string>
+			<key>many</key>
+			<string>Удалить %2$@ нечитаемых файлов?</string>
+			<key>other</key>
+			<string>Удалить %2$@ нечитаемого файла?</string>
+		</dict>
+	</dict>
+	<key>format.bytes</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ байт</string>
+			<key>few</key>
+			<string>%2$@ байта</string>
+			<key>many</key>
+			<string>%2$@ байт</string>
+			<key>other</key>
+			<string>%2$@ байта</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

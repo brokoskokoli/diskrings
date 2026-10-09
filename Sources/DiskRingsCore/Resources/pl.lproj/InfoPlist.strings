@@ -1,0 +1,10 @@
+/* DiskRings – pl: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "DiskRings odczytuje rozmiary plików na biurku, aby pokazać, jak wykorzystywane jest miejsce. Pliki nie są otwierane ani zmieniane.";
+"NSDocumentsFolderUsageDescription" = "DiskRings odczytuje rozmiary plików w folderze Dokumenty, aby pokazać, jak wykorzystywane jest miejsce. Pliki nie są otwierane ani zmieniane.";
+"NSDownloadsFolderUsageDescription" = "DiskRings odczytuje rozmiary plików w folderze Pobrane rzeczy, aby pokazać, jak wykorzystywane jest miejsce. Pliki nie są otwierane ani zmieniane.";
+"NSRemovableVolumesUsageDescription" = "DiskRings odczytuje rozmiary plików na woluminach wymiennych (takich jak dyski USB), aby pokazać, jak wykorzystywane jest na nich miejsce.";
+"NSNetworkVolumesUsageDescription" = "DiskRings odczytuje rozmiary plików na woluminach sieciowych, aby pokazać, jak wykorzystywane jest na nich miejsce.";
+"NSFileProviderDomainUsageDescription" = "DiskRings odczytuje rozmiary plików w pamięci w chmurze (takiej jak iCloud Drive lub Dropbox), aby pokazać, jak wykorzystywane jest miejsce. Żadne pliki nie są pobierane.";
+"NSPhotoLibraryUsageDescription" = "DiskRings odczytuje rozmiar biblioteki zdjęć, aby pokazać, jak wykorzystywane jest miejsce. Zdjęcia nie są otwierane ani zmieniane.";
+"NSAppleMusicUsageDescription" = "DiskRings odczytuje rozmiar folderów z muzyką i multimediami, aby pokazać, jak wykorzystywane jest miejsce.";

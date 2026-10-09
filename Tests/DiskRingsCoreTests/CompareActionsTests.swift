@@ -6,7 +6,7 @@ import Testing
 /// „Kontextmenü im Vergleichsmodus“): Vergleichseinträge werden über den
 /// Pfad auf den aktuellen Baum abgebildet; entfernte Elemente erlauben nur
 /// „Pfad kopieren“ und „Hineinzoomen“.
-@Suite("Aktionen im Vergleichsmodus")
+@Suite("Aktionen im Vergleichsmodus", .language("de"))
 struct CompareActionsTests {
     let noProtection = ProtectedPaths(home: "/nonexistent-home", appBundlePath: nil, volumeRoots: [])
 

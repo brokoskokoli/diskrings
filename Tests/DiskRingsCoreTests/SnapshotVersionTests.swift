@@ -5,7 +5,7 @@ import Testing
 
 /// Nachprüfung: Snapshots einer neueren Formatversion nie automatisch löschen,
 /// verwaiste temporäre Dateien aufräumen.
-@Suite("Nachprüfung: neuere Formatversion, temporäre Dateien", .timeLimit(.minutes(2)))
+@Suite("Nachprüfung: neuere Formatversion, temporäre Dateien", .timeLimit(.minutes(2)), .language("de"))
 struct SnapshotVersionTests {
     let fm = FileManager.default
 

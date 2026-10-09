@@ -1,0 +1,404 @@
+/* DiskRings – tr. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Finder’da Göster";
+"action.open" = "Aç";
+"action.quickLook" = "Hızlı Bakış";
+"action.zoomIn" = "Buraya Yakınlaştır";
+"action.copyPath" = "Yolu Kopyala";
+"action.info" = "Bilgi Al";
+"action.rescan" = "Bu Klasörü Yeniden Tara";
+"action.moveToTrash" = "Çöp Sepeti’ne Taşı";
+"shortcut.space" = "Boşluk";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "Hiçbir şey seçili değil";
+"reason.notInTree" = "Öğe artık ağaçta değil";
+"reason.singleItemOnly" = "Yalnızca tek bir öğe için";
+"reason.foldersOnly" = "Yalnızca klasörler için";
+"reason.alreadyCenter" = "Zaten merkezde";
+"reason.folderEmpty" = "Klasör boş";
+"reason.fullScanRunning" = "Tam tarama sırasında olanaklı değil";
+"reason.otherVolume" = "Başka bir bölüm (tarama sırasında girilmedi)";
+"reason.rescanRunning" = "Şu anda yeniden taranıyor";
+"reason.rescanRunningIn" = "“%@” kapsamında yeniden taranıyor";
+"reason.scanRunning" = "Tarama sırasında olanaklı değil";
+"reason.notInCompare" = "Öğe artık karşılaştırmada değil";
+"reason.removedSinceSnapshot" = "“%@” artık yok (anlık görüntüden bu yana silindi)";
+"reason.containsRemoved" = "Artık var olmayan, silinmiş öğeler içeriyor";
+"reason.missingOnDisk" = "“%@” artık diskte yok";
+"reason.twoSnapshots" = "İki anlık görüntü karşılaştırılırken olanaklı değil";
+"reason.notInCurrentScan" = "Artık geçerli taramada değil";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "Tarama kökünün kendisi Çöp Sepeti’ne taşınamaz";
+"trash.error.protected" = "Korumalı: %@";
+"trash.error.protectedItem" = "Korumalı: %1$@ – %2$@";
+"trash.error.protectedResolved" = "Korumalı: %1$@ (çözümlenen yol: %2$@)";
+"trash.error.unresolvable" = "Yol artık çözümlenemiyor";
+"trash.error.outsideRoot" = "Artık tarama kökünün içinde değil";
+"trash.error.outsideRootSymlink" = "Artık tarama kökünün içinde değil (yoldaki bir klasörün yerini sembolik bir bağlantı aldı)";
+"trash.confirm.title.one" = "“%@” adlı öğe Çöp Sepeti’ne taşınsın mı?";
+"trash.confirm.total" = "Toplam %1$@ · %2$@";
+"trash.undo.unknownLocation" = "Çöp Sepeti’ndeki konumu bilinmiyor";
+"trash.undo.notInTrash" = "Artık Çöp Sepeti’nde değil";
+"trash.undo.unrecognized" = "Çöp Sepeti’ndeki öğe güvenilir biçimde tanımlanamıyor";
+"trash.undo.replacedInTrash" = "Çöp Sepeti’nde artık bu adla farklı bir öğe var (Çöp Sepeti boşaltıldı mı veya öğe değişti mi?)";
+"trash.undo.occupied" = "Özgün konumda artık farklı bir öğe var";
+"trash.undo.parentMissing" = "Üst klasör artık yok";
+"trash.confirm.undoHint" = "Öğeleri ⌘Z ile veya Finder’da Çöp Sepeti’nden geri koyabilirsiniz.";
+"trash.confirm.dontAsk" = "Bir daha sorma (yalnızca 1 GB’tan küçük öğeler için)";
+"trash.confirm.alwaysAsk" = "1 GB veya daha büyük öğeler her zaman onaylatılır.";
+
+/* Protected paths (reasons) */
+"protected.system" = "macOS sistem alanı (%@)";
+"protected.volumeRoot" = "Bir bölümün kökü";
+"protected.home" = "Ana klasörün tamamı";
+"protected.homeLibrary" = "~/Library’nin tamamı";
+"protected.runningApp" = "Çalışan DiskRings uygulaması";
+"protected.contains" = "Korumalı bir alan içeriyor: %1$@ (%2$@)";
+
+/* Scan errors */
+"error.scan.notFound" = "Yol bulunamadı: %@";
+"error.scan.tooManyNodes" = "Bir tarama ağacı için çok fazla öğe";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "DiskRings anlık görüntü dosyası değil";
+"error.snapshot.unsupportedVersion" = "%@ anlık görüntü biçimi desteklenmiyor (daha yeni bir sürüm mü?)";
+"error.snapshot.truncated" = "Anlık görüntü dosyası eksik";
+"error.snapshot.corrupted" = "Anlık görüntü dosyası hasarlı: %@";
+"error.snapshot.outsideStore" = "Dosya anlık görüntü klasöründe değil: %@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "daha yeni sürüm";
+"snapshots.damaged.damaged" = "hasarlı";
+"snapshot.untitled" = "Anlık görüntü: %@";
+"snapshots.window.title" = "Anlık Görüntüler";
+"snapshots.empty" = "Henüz Anlık Görüntü Yok";
+"snapshots.empty.message" = "Anlık görüntüler her tam taramadan sonra otomatik olarak (Ayarlar’da kapatılabilir) veya “Dosya → Anlık Görüntüyü Kaydet” (⌘S) ile oluşturulur.";
+"snapshots.column.date" = "Tarih";
+"snapshots.column.name" = "Ad";
+"snapshots.column.root" = "Tarama Kökü";
+"snapshots.column.size" = "Toplam Boyut";
+"snapshots.column.file" = "Dosya";
+"snapshots.compareEachOther" = "Birbiriyle Karşılaştır";
+"snapshots.olderIsBefore" = "Daha eski olan “önce” sayılır";
+"snapshots.selectTwo" = "Karşılaştırmak için iki anlık görüntü seçin";
+"snapshots.rename.title" = "Anlık Görüntüyü Yeniden Adlandır";
+"snapshots.rename.message" = "%1$@ taraması, %2$@";
+"snapshots.delete.message" = "Anlık görüntü dosyası kalıcı olarak silinecek. Taranan dosyalar ve klasörler bundan etkilenmez.";
+"snapshots.delete.title.one" = "Anlık görüntü silinsin mi?";
+"snapshots.damaged.deleteAll" = "Tümünü Sil…";
+"snapshots.damaged.delete.title.one" = "Okunamayan dosya silinsin mi?";
+"snapshots.damaged.delete.newer" = "Bunların bazıları, DiskRings’in bu sürümünün okuyamadığı daha yeni bir sürümden gelen anlık görüntülerdir; daha yeni bir uygulama bunları yine de açabilir. Dosyalar kalıcı olarak silinecek. Taranan dosyalar ve klasörler bundan etkilenmez.";
+"snapshots.damaged.delete.message" = "Dosya artık anlık görüntü olarak okunamıyor ve kalıcı olarak silinecek. Taranan dosyalar ve klasörler bundan etkilenmez.";
+"snapshots.name.placeholder" = "Ad (isteğe bağlı), örn. “Xcode güncellemesinden önce”";
+"snapshots.save.title" = "Anlık Görüntüyü Kaydet";
+"snapshots.save.confirm" = "Kaydet";
+"snapshots.save.message" = "%@ için geçerli tarama";
+"menu.saveSnapshot" = "Anlık Görüntüyü Kaydet…";
+"menu.snapshots" = "Anlık Görüntüler…";
+"snapshots.error.read" = "Anlık görüntüler okunamadı: %@";
+"snapshots.saved" = "“%@” anlık görüntüsü kaydedildi";
+"snapshots.error.save" = "Anlık görüntü kaydedilemedi: %@";
+"snapshots.error.rename" = "Yeniden adlandırma başarısız oldu: %@";
+"snapshots.error.delete" = "Silme başarısız oldu: %@";
+
+/* General */
+"list.separator" = ", ";
+
+/* Compare: headline and warnings */
+"compare.since" = "%@ tarihinden bu yana";
+"compare.fromTo" = "%1$@ ile %2$@ arası";
+"compare.part.used" = "kullanılan %@";
+"compare.part.free" = "boş %@";
+"compare.part.scan" = "tarama %@";
+"compare.part.unassigned" = "bunun atanmamış kısmı %@";
+"compare.part.volumeUsed" = "bölümde kullanılan %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "önceden gizli dosyalar olmadan";
+"compare.warning.hiddenNow" = "şimdi gizli dosyalar olmadan";
+"compare.warning.exclusions" = "farklı hariç tutma listesi";
+"compare.warning.volumes" = "bölümler için farklı ayar";
+"compare.warning.options" = "Anlık görüntü farklı ayarlarla oluşturuldu (%@)";
+"compare.warning.root" = "Farklı tarama kökü: %1$@ ile %2$@";
+"compare.warning.volume" = "Farklı bölüm";
+"compare.warning.minimumSize" = "%@ altındaki dosyalar yalnızca klasör toplamları üzerinden karşılaştırılır";
+"compare.mode.growth" = "Büyüme";
+"compare.mode.delta" = "Fark Renkleri";
+"diff.added" = "yeni";
+"diff.removed" = "silindi";
+"diff.grown" = "büyüdü";
+"diff.shrunk" = "küçüldü";
+"diff.unchanged" = "değişmedi";
+"compare.label.used" = "kullanılan";
+"compare.label.free" = "boş";
+"compare.label.unassigned" = "bunun atanmamış kısmı";
+"compare.label.volumeUsed" = "bölümde kullanılan";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@: artık yok (%2$@)";
+"rescan.summary.unchanged" = "%1$@: %2$@ (değişmedi)";
+"rescan.summary.changed" = "%1$@: %2$@ → %3$@ (%4$@)";
+
+/* File type categories (legend) */
+"fileType.video" = "Video";
+"fileType.image" = "Görüntüler";
+"fileType.audio" = "Ses";
+"fileType.archive" = "Arşivler";
+"fileType.application" = "Uygulamalar";
+"fileType.code" = "Kod";
+"fileType.document" = "Belgeler";
+"fileType.other" = "Diğer";
+
+/* Common buttons */
+"common.cancel" = "Vazgeç";
+"common.ok" = "Tamam";
+"common.done" = "Bitti";
+"common.close" = "Kapat";
+"common.delete" = "Sil";
+"common.deleteEllipsis" = "Sil…";
+"common.renameEllipsis" = "Yeniden Adlandır…";
+"common.rename" = "Yeniden Adlandır";
+
+/* Full Disk Access */
+"fda.alert.title" = "Tam Disk Erişimi Yok";
+"fda.alert.setUp" = "Tam Disk Erişimi’ni Ayarla";
+"fda.alert.scanAnyway" = "Yine de Tara";
+"fda.alert.message" = "Tam Disk Erişimi olmadan macOS, tarama sırasında Masaüstü, Belgeler ve İndirilenler gibi klasörler için ayrı ayrı izin ister ve ~/Library/Mail gibi alanlar okunamaz kalır. Tarama, sistem iletişim kutularını yanıtlayana kadar bekler.\n\nÖnerilen: Sistem Ayarları’nda “Gizlilik ve Güvenlik → Tam Disk Erişimi” altında DiskRings’i açın, ardından yeniden tarayın.";
+
+/* Menus */
+"menu.chooseFolder" = "Klasör Seç…";
+"menu.fullRescan" = "Her Şeyi Yeniden Tara";
+"menu.undo" = "Geri Al";
+"menu.redo" = "Yinele";
+"menu.find" = "Bul…";
+"menu.item" = "Öğe";
+"menu.go" = "Git";
+"menu.back" = "Geri";
+"menu.forward" = "İleri";
+"menu.enclosingFolder" = "Kapsayan Klasör";
+"menu.compareRoot" = "Karşılaştırma Kökü";
+"menu.scanRoot" = "Tarama Kökü";
+"menu.startScreen" = "Başlangıç Ekranı";
+
+/* Open panel */
+"panel.scan.prompt" = "Tara";
+"panel.scan.message" = "Taranacak bir klasör veya bölüm seçin";
+"reason.noScan" = "Tarama yok";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "“%1$@” adlı öğe Çöp Sepeti’ne taşındı (%2$@)";
+"toast.trashFailed" = "“%1$@” adlı öğe Çöp Sepeti’ne taşınmadı: %2$@";
+"menu.undo.putBack.one" = "“%@” Öğesini Geri Koy";
+"toast.putBackFailed" = "“%1$@” adlı öğe geri konmadı: %2$@";
+"toast.putBack.one" = "“%@” adlı öğe geri kondu";
+"toast.rescanBlocked" = "Tam tarama sırasında kısmi yeniden tarama olanaklı değil";
+"toast.rescanCovered" = "“%@” zaten yeniden taranıyor";
+"toast.rescanFailed" = "“%1$@” yeniden taranamadı: %2$@";
+"toast.rootMissing" = "“%@” tarama kökü artık yok";
+"toast.close" = "Bildirimi Kapat";
+
+/* Item kinds and badges */
+"badge.package" = "paket";
+"badge.unreadable" = "okunamıyor";
+"badge.icloudOnly" = "yalnızca iCloud’da";
+"badge.symlink" = "sembolik bağlantı";
+"badge.otherVolume" = "başka bölüm";
+"badge.hardlink" = "sabit bağlantı";
+"kind.file" = "Dosya";
+"kind.folder" = "Klasör";
+"kind.package" = "Paket";
+"kind.symlink" = "Sembolik Bağlantı";
+
+/* Chart segments */
+"arc.aggregate.detail" = "birleştirildi, her biri açı eşiğinin altında";
+"arc.remainder.title" = "Bu Klasördeki Dosyalar";
+"arc.remainder.detail" = "henüz tek tek sayılmadı";
+"arc.unassigned.title" = "Atanmamış";
+"arc.unassigned.detail" = "Sistem, yerel anlık görüntüler, temizlenebilir alan";
+"sunburst.accessibility" = "%@ için güneş patlaması grafiği";
+"sunburst.shareOf" = "%1$@ / %2$@";
+"sunburst.center.hint" = "Tıklama: bir düzey yukarı";
+
+/* Settings */
+"settings.section.chart" = "Grafik";
+"settings.rings" = "Halka sayısı";
+"settings.colorScheme" = "Renk şeması";
+"settings.colorScheme.branch" = "Dala göre";
+"settings.colorScheme.fileType" = "Dosya türüne göre";
+"settings.minAngle" = "Şunun altındaki dilimleri birleştir";
+"settings.minAngle.accessibilityValue" = "%@ derece";
+"settings.showLabels" = "Dilimleri etiketle";
+"settings.section.size" = "Boyut";
+"settings.sizeMode" = "Boyut kipi";
+"settings.sizeMode.allocated" = "Diskte ayrılan";
+"settings.sizeMode.logical" = "Mantıksal boyut";
+"settings.section.trash" = "Çöp Sepeti";
+"settings.trash.confirm" = "Çöp Sepeti’ne taşımadan önce sor";
+"settings.trash.footer" = "1 GB veya daha büyük öğeler her zaman onaylatılır.";
+"settings.section.scan" = "Tarama";
+"settings.includeHidden" = "Gizli dosyaları say";
+"settings.crossMounts" = "Tarama sırasında başka bölümlere geç";
+"settings.excluded" = "Hariç tutulan yollar";
+"settings.excluded.add" = "Yol Ekle";
+"settings.excluded.remove" = "Seçili Yolu Kaldır";
+"settings.excluded.prompt" = "Hariç Tut";
+"settings.scan.footer" = "Bu ayarlar bir sonraki taramada geçerli olur.";
+"settings.legend.accessibility" = "Açıklama: %@";
+"settings.section.language" = "Dil";
+"settings.language" = "Dil";
+"settings.language.automatic" = "Otomatik (Sistem)";
+"settings.language.restartNote" = "Yeni dil, DiskRings yeniden başlatıldıktan sonra geçerli olur.";
+"settings.language.restartNow" = "Şimdi Yeniden Başlat";
+"settings.language.footer" = "Dili Sistem Ayarları → Genel → Dil ve Bölge → Uygulamalar bölümünde de seçebilirsiniz.";
+"settings.section.snapshots" = "Anlık Görüntüler";
+"settings.snapshots.autoSave" = "Her tam taramadan sonra otomatik olarak kaydet";
+"settings.snapshots.maxCount" = "Tarama kökü başına en fazla";
+"settings.snapshots.footer" = "1 MB veya daha büyük klasörler ve dosyalar kaydedilir. Sayı en fazla değeri aşarsa en eskileri silinir.";
+
+/* Get Info window */
+"info.where" = "Yeri";
+"info.allocated" = "Ayrılan";
+"info.logical" = "Mantıksal";
+"info.contents" = "İçerik";
+"info.contents.value" = "%1$@, %2$@";
+"info.modified" = "Değiştirilme";
+"info.created" = "Oluşturulma";
+"info.badges" = "Öznitelikler";
+"info.protected" = "Korumalı";
+
+/* Search */
+"search.placeholder" = "Ada göre ara";
+"search.clear" = "Aramayı Temizle";
+"search.backToList" = "Listeye Dön";
+"search.results" = "Arama Sonuçları";
+"search.searching" = "Aranıyor…";
+"search.noResults" = "Eşleşme yok";
+
+/* Main window toolbar */
+"browser.listWidth" = "Liste Genişliği";
+"browser.listWidth.value" = "%@ punto";
+"browser.back.help" = "Geri (⌘[)";
+"browser.forward.help" = "İleri (⌘])";
+"browser.scanRunning" = "Tarama sürüyor";
+"browser.rescanRunning" = "Kısmi yeniden tarama sürüyor";
+"browser.rescan" = "Yeniden Tara";
+"browser.rescan.help" = "Odaklanılan klasörü yeniden tara (⇧⌘R)";
+"browser.search" = "Ara";
+"browser.search.help" = "Ada göre ara (⌘F)";
+"browser.newScan" = "Yeni Tarama";
+"browser.newScan.help" = "Başlangıç ekranına dön";
+"browser.breadcrumb" = "Yol";
+"browser.breadcrumb.current" = "%@, geçerli klasör";
+
+/* Status bar and scan summary */
+"status.unassigned" = "atanmamış %@";
+"status.unassigned.help" = "Bölümde kullanılan ancak hiçbir klasörde görünmeyen alan: sistem, yerel Time Machine anlık görüntüleri, temizlenebilir alan. Klonlar ve anlık görüntüler farklılıklara neden olabilir.";
+"status.deviation" = "Klonlar ve anlık görüntüler farklılıklara neden olabilir";
+"status.deviation.help" = "Klonlar ve anlık görüntüler farklılıklara neden olabilir: APFS klonları blokları paylaşır ancak ayrı ayrı sayılır; yerel Time Machine anlık görüntüleri ve temizlenebilir alan hiçbir klasörde görünmez ve “Atanmamış” altında yer alır.";
+"status.fda.help" = "Tam Disk Erişimi olmadan ~/Library/Mail gibi klasörler okunamaz kalır ve “Atanmamış” altında yer alır. Sistem Ayarları’nı açmak için tıklayın.";
+"status.scanSummary" = "Tarama: %1$@, süre: %2$@";
+"status.volume" = "%1$@: %2$@ · kullanılan %3$@ · boş %4$@";
+"status.volume.purgeable" = "(bunun %@ kadarı temizlenebilir)";
+"summary.finished" = "Tarama bitti: %1$@, %2$@, %3$@, süre: %4$@";
+"summary.less" = "Daha Az";
+"summary.close" = "Özeti Kapat";
+"fda.grant" = "Tam Disk Erişimi Ver…";
+
+/* Detail list */
+"list.accessibility" = "%@ içeriği";
+"list.shareOfRoot" = "Tarama kökünün %@ kadarı";
+"list.unassigned.help" = "Atanmamış (sistem, yerel anlık görüntüler, temizlenebilir alan): bölümde kullanılan ancak hiçbir klasörde görünmeyen alan.";
+"list.row.accessibility" = "%1$@, %2$@, %3$@";
+"accessibility.zoomIn" = "Yakınlaştır";
+
+/* Start screen */
+"start.subtitle" = "Alanınızın nereye gittiğini görmek için bir bölüm veya klasör seçin.";
+"start.volumes" = "Bölümler";
+"start.noVolumes" = "Bölüm bulunamadı.";
+"start.scanHome" = "Ana Klasörü Tara";
+"start.fda.message" = "Tam Disk Erişimi olmadan ~/Library/Mail, Safari veya diğer uygulamaların kapsayıcıları gibi klasörler okunamaz kalır. Bunlar grafikte yer almaz ve “Atanmamış” altında görünür.";
+"start.fda.openSettings" = "Sistem Ayarları’nı Aç…";
+"start.fda.checkAgain" = "Yeniden Denetle";
+"start.volume.used" = "%2$@ alanın %1$@ kadarı kullanılıyor";
+"start.legend.used" = "Kullanılan %@";
+"start.legend.purgeable" = "Temizlenebilir %@";
+"start.legend.free" = "Boş %@";
+"start.volume.accessibility" = "%1$@, %3$@ alanın %2$@ kadarı kullanılıyor, %4$@ boş";
+"start.volume.hint" = "Bu bölümü tarar";
+"start.dropHint" = "veya bir klasörü buraya sürükleyin";
+
+/* Scan progress */
+"scan.reading" = "Klasörler okunuyor…";
+"scan.title" = "Taranıyor: %@";
+"scan.starting" = "Başlatılıyor…";
+"scan.accessibility.starting" = "Tarama başlatılıyor";
+"scan.accessibility.running" = "Tarama sürüyor: %1$@, %2$@";
+"scan.stalled.title" = "macOS’ten izin bekleniyor olabilir … (bir sistem iletişim kutusu olup olmadığına bakın)";
+"scan.stalled.message" = "macOS bir klasöre veya sürücüye erişim istiyor olabilir; iletişim kutusu başka pencerelerin arkasında gizlenmiş olabilir. Tam Disk Erişimi ile bu istekler görünmez.";
+"scan.stalled.fda" = "Tam Disk Erişimi…";
+"scan.stalled.fda.help" = "Sistem Ayarları’nda “Gizlilik ve Güvenlik → Tam Disk Erişimi”ni açar";
+
+/* Compare: list and chart */
+"compare.showInChart" = "Grafikte Göster";
+"compare.removedName" = "%@ (silindi)";
+"reason.noCompare" = "Karşılaştırma yok";
+"compare.busy.updating" = "Karşılaştırma güncelleniyor…";
+"compare.busy.computing" = "Karşılaştırma hesaplanıyor…";
+"compare.error" = "Karşılaştırma olanaklı değil: %@";
+"compare.currentScan" = "Geçerli Tarama";
+"compare.list.accessibility" = "Karşılaştırma: %@ içeriği";
+"compare.column.name" = "Ad";
+"compare.column.before" = "Önce";
+"compare.column.now" = "Şimdi";
+"compare.sortBy" = "Sıralama ölçütü: %@";
+"compare.moreItems" = "öğe daha";
+"compare.direction" = "Yön";
+"compare.direction.growth" = "Büyüme";
+"compare.direction.shrink" = "Küçülme";
+"compare.largest.noShrink" = "1 MB veya daha fazla küçülme yok";
+"compare.largest.noGrowth" = "1 MB veya daha fazla büyüme yok";
+"compare.tab.contents" = "İçerik";
+"compare.tab.largest" = "En Büyük Değişiklikler";
+"compare.inScanRoot" = "tarama kökünde";
+"compare.inFolder" = "%@ klasöründe";
+"compare.largest.row.accessibility" = "%1$@. %2$@, %3$@, %4$@";
+"compare.chart.noGrowth" = "Anlık görüntüden bu yana büyüme yok";
+"compare.chart.noData" = "Veri yok";
+"compare.chart.noGrowth.hint" = "“Fark Renkleri” küçülen veya silinen öğeleri de gösterir.";
+"compare.chart.accessibility" = "%2$@ için karşılaştırma grafiği (%1$@)";
+"compare.center.growth" = "Büyüme";
+"compare.center.now" = "şimdi %@";
+"compare.tooltip.folderGrowth" = "Klasördeki büyüme: %@";
+"compare.tooltip.growthWithoutEntries" = "Kendi öğeleri olmayan büyüme";
+"compare.tooltip.smallFiles" = "%@ altındaki küçük dosyalar ve klasörün kendi boyutu";
+"compare.beforeNow" = "Önce %1$@  →  Şimdi %2$@";
+"compare.entry.accessibility" = "%1$@, %2$@, %3$@, fark %4$@";
+"compare.listPicker" = "Liste";
+"compare.viewPicker" = "Görünüm";
+"compare.viewPicker.help" = "Büyüme: dilim boyutu = büyüme. Fark Renkleri: normal boyutlar, kırmızı büyüdü, yeşil küçüldü.";
+"compare.end" = "Karşılaştırmayı Bitir";
+"compare.end.help" = "Normal görünüme dön (Esc)";
+"compare.breadcrumb" = "Karşılaştırmadaki Yol";
+"compare.warning.footer" = "Bu nedenle farklılıklar ayarlardan da kaynaklanıyor olabilir.";
+"compare.warning.accessibility" = "Uyarı: %@";
+"compare.legend.growth" = "Dilim boyutu = %@ tarihinden bu yana büyüme";
+"compare.legend.intensity" = "Daha koyu = daha büyük değişiklik";
+
+/* Compare: picker */
+"compare.with" = "Şununla Karşılaştır…";
+"compare.with.help" = "Bu taramayı kaydedilmiş bir anlık görüntüyle karşılaştır";
+"compare.picker.empty" = "Eşleşen anlık görüntü yok";
+"compare.picker.empty.message" = "Bu bölümde bu tarama kökünün henüz daha eski bir anlık görüntüsü yok. Anlık görüntüler her taramadan sonra otomatik olarak veya “Dosya → Anlık Görüntüyü Kaydet” (⌘S) ile oluşturulur.";
+"compare.button" = "Karşılaştır";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@ sn";
+"format.duration.minutes" = "%1$@ dk %2$@ sn";

@@ -47,18 +47,20 @@ public enum SnapshotNaming {
         return t
     }
 
-    /// „02.10.2026, 09:14“
-    public static func longDate(_ date: Date, timeZone: TimeZone = .current) -> String {
+    /// Datum mit Uhrzeit im Stil des Locales (de „02.10.2026, 09:14“,
+    /// en „Oct 2, 2026 at 9:14 AM“).
+    public static func longDate(_ date: Date, timeZone: TimeZone = .current, locale: Locale = L10n.locale) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "de_DE")
+        f.locale = locale
         f.timeZone = timeZone
-        f.dateFormat = "dd.MM.yyyy, HH:mm"
+        f.dateStyle = .medium
+        f.timeStyle = .short
         return f.string(from: date)
     }
 
-    /// Name des Snapshots, sonst „Snapshot vom 02.10.2026, 09:14“.
-    public static func title(_ m: SnapshotMetadata, timeZone: TimeZone = .current) -> String {
-        normalized(m.name) ?? "Snapshot vom \(longDate(m.date, timeZone: timeZone))"
+    /// Name des Snapshots, sonst „Snapshot of Oct 2, 2026 at 9:14 AM“.
+    public static func title(_ m: SnapshotMetadata, timeZone: TimeZone = .current, locale: Locale = L10n.locale) -> String {
+        normalized(m.name) ?? L("snapshot.untitled", longDate(m.date, timeZone: timeZone, locale: locale))
     }
 }
 

@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>action.copyPath.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Copiar %2$@ Caminho</string>
+			<key>many</key>
+			<string>Copiar %2$@ Caminhos</string>
+			<key>other</key>
+			<string>Copiar %2$@ Caminhos</string>
+		</dict>
+	</dict>
+	<key>action.moveToTrash.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Mover %2$@ Item para o Lixo</string>
+			<key>many</key>
+			<string>Mover %2$@ Itens para o Lixo</string>
+			<key>other</key>
+			<string>Mover %2$@ Itens para o Lixo</string>
+		</dict>
+	</dict>
+	<key>action.revealInFinder.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Mostrar %2$@ Item no Finder</string>
+			<key>many</key>
+			<string>Mostrar %2$@ Itens no Finder</string>
+			<key>other</key>
+			<string>Mostrar %2$@ Itens no Finder</string>
+		</dict>
+	</dict>
+	<key>action.open.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Abrir %2$@ Item</string>
+			<key>many</key>
+			<string>Abrir %2$@ Itens</string>
+			<key>other</key>
+			<string>Abrir %2$@ Itens</string>
+		</dict>
+	</dict>
+	<key>trash.confirm.title.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Mover %2$@ Item para o Lixo?</string>
+			<key>many</key>
+			<string>Mover %2$@ Itens para o Lixo?</string>
+			<key>other</key>
+			<string>Mover %2$@ Itens para o Lixo?</string>
+		</dict>
+	</dict>
+	<key>count.files</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ arquivo</string>
+			<key>many</key>
+			<string>%2$@ arquivos</string>
+			<key>other</key>
+			<string>%2$@ arquivos</string>
+		</dict>
+	</dict>
+	<key>toast.trashed.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ item movido para o Lixo (%3$@)</string>
+			<key>many</key>
+			<string>%2$@ itens movidos para o Lixo (%3$@)</string>
+			<key>other</key>
+			<string>%2$@ itens movidos para o Lixo (%3$@)</string>
+		</dict>
+	</dict>
+	<key>menu.undo.putBack.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Recolocar %2$@ Item</string>
+			<key>many</key>
+			<string>Recolocar %2$@ Itens</string>
+			<key>other</key>
+			<string>Recolocar %2$@ Itens</string>
+		</dict>
+	</dict>
+	<key>toast.putBack.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ item recolocado</string>
+			<key>many</key>
+			<string>%2$@ itens recolocados</string>
+			<key>other</key>
+			<string>%2$@ itens recolocados</string>
+		</dict>
+	</dict>
+	<key>count.smallerItems</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ item menor</string>
+			<key>many</key>
+			<string>%2$@ itens menores</string>
+			<key>other</key>
+			<string>%2$@ itens menores</string>
+		</dict>
+	</dict>
+	<key>info.sizeWithBytes</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%1$@ (%3$@ byte)</string>
+			<key>many</key>
+			<string>%1$@ (%3$@ bytes)</string>
+			<key>other</key>
+			<string>%1$@ (%3$@ bytes)</string>
+		</dict>
+	</dict>
+	<key>count.entries</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ item</string>
+			<key>many</key>
+			<string>%2$@ itens</string>
+			<key>other</key>
+			<string>%2$@ itens</string>
+		</dict>
+	</dict>
+	<key>search.results.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ resultado</string>
+			<key>many</key>
+			<string>%2$@ resultados</string>
+			<key>other</key>
+			<string>%2$@ resultados</string>
+		</dict>
+	</dict>
+	<key>search.results.limited</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ resultado (maiores %3$@)</string>
+			<key>many</key>
+			<string>%2$@ resultados (maiores %3$@)</string>
+			<key>other</key>
+			<string>%2$@ resultados (maiores %3$@)</string>
+		</dict>
+	</dict>
+	<key>count.folders</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ pasta</string>
+			<key>many</key>
+			<string>%2$@ pastas</string>
+			<key>other</key>
+			<string>%2$@ pastas</string>
+		</dict>
+	</dict>
+	<key>summary.unreadable</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ ilegível</string>
+			<key>many</key>
+			<string>%2$@ ilegíveis</string>
+			<key>other</key>
+			<string>%2$@ ilegíveis</string>
+		</dict>
+	</dict>
+	<key>count.items</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ item</string>
+			<key>many</key>
+			<string>%2$@ itens</string>
+			<key>other</key>
+			<string>%2$@ itens</string>
+		</dict>
+	</dict>
+	<key>count.moreItems</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>mais %2$@ item</string>
+			<key>many</key>
+			<string>mais %2$@ itens</string>
+			<key>other</key>
+			<string>mais %2$@ itens</string>
+		</dict>
+	</dict>
+	<key>compare.picker.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ correspondência</string>
+			<key>many</key>
+			<string>%2$@ correspondências</string>
+			<key>other</key>
+			<string>%2$@ correspondências</string>
+		</dict>
+	</dict>
+	<key>snapshots.delete.title.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Apagar %2$@ Instantâneo?</string>
+			<key>many</key>
+			<string>Apagar %2$@ Instantâneos?</string>
+			<key>other</key>
+			<string>Apagar %2$@ Instantâneos?</string>
+		</dict>
+	</dict>
+	<key>snapshots.damaged.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ arquivo ilegível</string>
+			<key>many</key>
+			<string>%2$@ arquivos ilegíveis</string>
+			<key>other</key>
+			<string>%2$@ arquivos ilegíveis</string>
+		</dict>
+	</dict>
+	<key>snapshots.damaged.delete.title.count</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>Apagar %2$@ Arquivo Ilegível?</string>
+			<key>many</key>
+			<string>Apagar %2$@ Arquivos Ilegíveis?</string>
+			<key>other</key>
+			<string>Apagar %2$@ Arquivos Ilegíveis?</string>
+		</dict>
+	</dict>
+	<key>format.bytes</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%2$@ byte</string>
+			<key>many</key>
+			<string>%2$@ bytes</string>
+			<key>other</key>
+			<string>%2$@ bytes</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

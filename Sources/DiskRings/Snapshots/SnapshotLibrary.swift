@@ -65,7 +65,7 @@ final class SnapshotLibrary {
         do {
             (infos, damaged) = try store.listAll()
         } catch {
-            errorMessage = "Snapshots konnten nicht gelesen werden: \(error)"
+            errorMessage = L("snapshots.error.read", L10n.describe(error))
         }
     }
 
@@ -109,10 +109,10 @@ final class SnapshotLibrary {
                 }.value
                 refresh()
                 if announce {
-                    showNotice("Snapshot „\(SnapshotNaming.title(out.saved.metadata))“ gesichert")
+                    showNotice(L("snapshots.saved", SnapshotNaming.title(out.saved.metadata)))
                 }
             } catch {
-                errorMessage = "Snapshot konnte nicht gespeichert werden: \(error)"
+                errorMessage = L("snapshots.error.save", L10n.describe(error))
             }
         }
     }
@@ -138,7 +138,7 @@ final class SnapshotLibrary {
                     try store.rename(info, to: newName)
                 }.value
             } catch {
-                errorMessage = "Umbenennen fehlgeschlagen: \(error)"
+                errorMessage = L("snapshots.error.rename", L10n.describe(error))
             }
             refresh()
         }
@@ -150,7 +150,7 @@ final class SnapshotLibrary {
             do {
                 try store.delete(d)
             } catch {
-                errorMessage = "Löschen fehlgeschlagen: \(error)"
+                errorMessage = L("snapshots.error.delete", L10n.describe(error))
             }
         }
         refresh()
@@ -163,7 +163,7 @@ final class SnapshotLibrary {
             do {
                 try store.delete(info)
             } catch {
-                errorMessage = "Löschen fehlgeschlagen: \(error)"
+                errorMessage = L("snapshots.error.delete", L10n.describe(error))
             }
         }
         refresh()

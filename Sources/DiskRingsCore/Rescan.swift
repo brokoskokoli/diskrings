@@ -29,7 +29,7 @@ extension ScanEngine {
         subtree index: Int32, in tree: ScanTree, cancellation: ScanCancellation = ScanCancellation()
     ) throws -> RescanResult {
         precondition(Int(index) < tree.count && !tree.nodes[Int(index)].flags.contains(.dead),
-                     "Knoten \(index) lebt nicht")
+                     "node \(index) is not live")
         let path = tree.path(of: index)
         let node = tree.nodes[Int(index)]
         let start = DispatchTime.now().uptimeNanoseconds

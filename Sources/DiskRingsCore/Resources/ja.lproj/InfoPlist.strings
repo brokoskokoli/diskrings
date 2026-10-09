@@ -1,0 +1,10 @@
+/* DiskRings – ja: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "DiskRingsは、容量の使われ方を表示するために、デスクトップ上のファイルのサイズを読み取ります。ファイルを開いたり変更したりすることはありません。";
+"NSDocumentsFolderUsageDescription" = "DiskRingsは、容量の使われ方を表示するために、「書類」フォルダ内のファイルのサイズを読み取ります。ファイルを開いたり変更したりすることはありません。";
+"NSDownloadsFolderUsageDescription" = "DiskRingsは、容量の使われ方を表示するために、「ダウンロード」フォルダ内のファイルのサイズを読み取ります。ファイルを開いたり変更したりすることはありません。";
+"NSRemovableVolumesUsageDescription" = "DiskRingsは、取り外し可能なボリューム（USBドライブなど）の容量の使われ方を表示するために、そのファイルのサイズを読み取ります。";
+"NSNetworkVolumesUsageDescription" = "DiskRingsは、ネットワークボリュームの容量の使われ方を表示するために、そのファイルのサイズを読み取ります。";
+"NSFileProviderDomainUsageDescription" = "DiskRingsは、容量の使われ方を表示するために、クラウドストレージ（iCloud DriveやDropboxなど）内のファイルのサイズを読み取ります。ファイルはダウンロードされません。";
+"NSPhotoLibraryUsageDescription" = "DiskRingsは、容量の使われ方を表示するために、写真ライブラリのサイズを読み取ります。写真を開いたり変更したりすることはありません。";
+"NSAppleMusicUsageDescription" = "DiskRingsは、容量の使われ方を表示するために、ミュージックフォルダとメディアフォルダのサイズを読み取ります。";

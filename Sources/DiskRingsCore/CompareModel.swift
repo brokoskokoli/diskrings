@@ -11,21 +11,21 @@ public enum CompareViewMode: String, Sendable, CaseIterable, Identifiable {
 
     public var title: String {
         switch self {
-        case .growth: "Wachstum"
-        case .delta: "Delta-Färbung"
+        case .growth: L("compare.mode.growth")
+        case .delta: L("compare.mode.delta")
         }
     }
 }
 
 extension DiffStatus {
-    /// Deutsche Bezeichnung für Liste und Tooltip.
+    /// Bezeichnung für Liste und Tooltip.
     public var label: String {
         switch self {
-        case .added: "neu"
-        case .removed: "entfernt"
-        case .grown: "gewachsen"
-        case .shrunk: "geschrumpft"
-        case .unchanged: "unverändert"
+        case .added: L("diff.added")
+        case .removed: L("diff.removed")
+        case .grown: L("diff.grown")
+        case .shrunk: L("diff.shrunk")
+        case .unchanged: L("diff.unchanged")
         }
     }
 }
@@ -295,8 +295,8 @@ public final class CompareModel: Sendable {
     }
 }
 
-/// Kopfzeile des Vergleichsmodus (SPEC 3.9), z. B. „Seit 02.10., 09:14:
-/// belegt +38,2 GB · frei −38,2 GB · davon nicht zugeordnet +4,1 GB“.
+/// Kopfzeile des Vergleichsmodus (SPEC 3.9), z. B. „Since 10/02, 9:14 AM:
+/// used +38.2 GB · free −38.2 GB · of which unassigned +4.1 GB“.
 ///
 /// - Volume-Wurzel auf beiden Seiten: belegt, frei, davon nicht zugeordnet.
 /// - Ordner-Scan: zuerst die Änderung des Ordners (Scan-Summe), dann belegt
@@ -306,38 +306,54 @@ public struct CompareHeadline: Sendable, Equatable {
     public struct Part: Sendable, Equatable {
         public let label: String
         public let delta: Int64
-        /// Formatierter Wert, z. B. „+38,2 GB“.
+        /// Schlüssel der Formatvorlage („compare.part.used“: „used %@“).
+        let format: String
+        /// Formatierter Wert, z. B. „+38.2 GB“.
         public var text: String { ByteFormat.signed(delta) }
+        /// Bezeichnung mit Wert, z. B. „used +38.2 GB“.
+        public var labeledText: String {
+            format == "compare.part.folder" ? L(format, label, text) : L(format, text)
+        }
+
+        init(_ format: String, label: String, delta: Int64) {
+            self.format = format
+            self.label = label
+            self.delta = delta
+        }
     }
 
-    /// „Seit 02.10., 09:14“ bzw. „Von 02.10., 09:14 bis 09.10., 17:20“.
+    /// „Since 10/02, 9:14 AM“ bzw. „From 10/02, 9:14 AM to 10/09, 5:20 PM“.
     public let prefix: String
     public let parts: [Part]
 
-    public var text: String { prefix + ": " + parts.map { "\($0.label) \($0.text)" }.joined(separator: " · ") }
+    public var text: String { prefix + ": " + parts.map(\.labeledText).joined(separator: " · ") }
 
     public init(diff: SnapshotDiff, comparesSnapshots: Bool, timeZone: TimeZone = .current) {
         let s = diff.summary
         let from = Self.shortDate(s.oldDate, timeZone: timeZone)
-        prefix = comparesSnapshots ? "Von \(from) bis \(Self.shortDate(s.newDate, timeZone: timeZone))" : "Seit \(from)"
+        prefix = comparesSnapshots ? L("compare.fromTo", from, Self.shortDate(s.newDate, timeZone: timeZone))
+            : L("compare.since", from)
         var p: [Part] = []
         if let u = s.unassignedDelta, let used = s.usedDelta, let free = s.freeDelta {
-            p = [Part(label: "belegt", delta: used), Part(label: "frei", delta: free),
-                 Part(label: "davon nicht zugeordnet", delta: u)]
+            p = [Part("compare.part.used", label: L("compare.label.used"), delta: used),
+                 Part("compare.part.free", label: L("compare.label.free"), delta: free),
+                 Part("compare.part.unassigned", label: L("compare.label.unassigned"), delta: u)]
         } else {
-            p.append(Part(label: diff.name(of: 0), delta: s.scanDelta))
-            if let used = s.usedDelta { p.append(Part(label: "Volume belegt", delta: used)) }
-            if let free = s.freeDelta { p.append(Part(label: "frei", delta: free)) }
+            p.append(Part("compare.part.folder", label: diff.name(of: 0), delta: s.scanDelta))
+            if let used = s.usedDelta {
+                p.append(Part("compare.part.volumeUsed", label: L("compare.label.volumeUsed"), delta: used))
+            }
+            if let free = s.freeDelta { p.append(Part("compare.part.free", label: L("compare.label.free"), delta: free)) }
         }
         parts = p
     }
 
-    /// „02.10., 09:14“
-    public static func shortDate(_ date: Date, timeZone: TimeZone = .current) -> String {
+    /// Tag, Monat und Uhrzeit im Stil des Locales (de „02.10., 09:14“, en „10/02, 9:14 AM“).
+    public static func shortDate(_ date: Date, timeZone: TimeZone = .current, locale: Locale = L10n.locale) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "de_DE")
+        f.locale = locale
         f.timeZone = timeZone
-        f.dateFormat = "dd.MM., HH:mm"
+        f.setLocalizedDateFormatFromTemplate("ddMMjjmm")
         return f.string(from: date)
     }
 }

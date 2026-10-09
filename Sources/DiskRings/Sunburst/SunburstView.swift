@@ -47,7 +47,7 @@ struct SunburstView: View {
                     }
                 }
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("Sunburst-Diagramm von \(tree.name(of: state.focus))")
+                .accessibilityLabel(L("sunburst.accessibility", tree.name(of: state.focus)))
                 .accessibilityChildren {
                     SunburstAccessibilityChildren(state: state, tree: tree, layout: layout)
                 }
@@ -119,9 +119,9 @@ private struct SunburstAccessibilityChildren: View {
         ForEach(Array(layout.arcs(inRing: 1).enumerated()), id: \.offset) { _, arc in
             let d = describe(arc, tree: tree, layout: layout)
             Rectangle()
-                .accessibilityLabel("\(d.title), \(ByteFormat.string(d.size)), \(ByteFormat.percent(d.share))")
+                .accessibilityLabel(L("list.row.accessibility", d.title, ByteFormat.string(d.size), ByteFormat.percent(d.share)))
                 .accessibilityAddTraits(arc.kind == .node && arc.isDirectory ? .isButton : [])
-                .accessibilityAction(named: "Hineinzoomen") {
+                .accessibilityAction(named: L("accessibility.zoomIn")) {
                     if arc.kind == .node { state.navigate(to: arc.nodeIndex) }
                 }
         }
@@ -147,7 +147,7 @@ private struct SunburstTooltip: View {
                 }
                 HStack(spacing: 6) {
                     Text(ByteFormat.string(content.size)).font(.system(size: 11, weight: .medium).monospacedDigit())
-                    Text("\(ByteFormat.percent(content.share)) von \(focusName)").font(.system(size: 11).monospacedDigit())
+                    Text(L("sunburst.shareOf", ByteFormat.percent(content.share), focusName)).font(.system(size: 11).monospacedDigit())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -175,7 +175,7 @@ private struct SunburstTooltip: View {
     private var content: ArcDescription? {
         if state.hoverCenter {
             let n = tree[state.focus]
-            let parentHint = n.parent == nil ? "" : " · Klick: eine Ebene nach oben"
+            let parentHint = n.parent == nil ? "" : " · " + L("sunburst.center.hint")
             return ArcDescription(title: n.name, path: n.path, size: n.size(state.prefs.sizeMode), share: 1,
                                   detail: filesText(n.fileCount) + parentHint)
         }

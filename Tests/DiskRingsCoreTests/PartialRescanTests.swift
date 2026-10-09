@@ -2,7 +2,7 @@
 import Foundation
 import Testing
 
-@Suite("Teil-Rescan in der Oberfläche: Warteschlange, Einhängen, Hinweis", .timeLimit(.minutes(2)))
+@Suite("Teil-Rescan in der Oberfläche: Warteschlange, Einhängen, Hinweis", .timeLimit(.minutes(2)), .language("de"))
 struct PartialRescanTests {
     @Test("Warteschlange: voller Scan blockiert, doppelte und abgedeckte Pfade, Vorfahr ersetzt Nachfahren")
     func queue() {

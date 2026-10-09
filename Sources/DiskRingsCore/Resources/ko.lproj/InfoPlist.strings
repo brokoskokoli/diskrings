@@ -1,0 +1,10 @@
+/* DiskRings – ko: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "DiskRings는 공간 사용 현황을 표시하기 위해 데스크탑에 있는 파일의 크기를 읽습니다. 파일을 열거나 변경하지 않습니다.";
+"NSDocumentsFolderUsageDescription" = "DiskRings는 공간 사용 현황을 표시하기 위해 문서 폴더에 있는 파일의 크기를 읽습니다. 파일을 열거나 변경하지 않습니다.";
+"NSDownloadsFolderUsageDescription" = "DiskRings는 공간 사용 현황을 표시하기 위해 다운로드 폴더에 있는 파일의 크기를 읽습니다. 파일을 열거나 변경하지 않습니다.";
+"NSRemovableVolumesUsageDescription" = "DiskRings는 이동식 볼륨(예: USB 드라이브)의 공간 사용 현황을 표시하기 위해 해당 볼륨에 있는 파일의 크기를 읽습니다.";
+"NSNetworkVolumesUsageDescription" = "DiskRings는 네트워크 볼륨의 공간 사용 현황을 표시하기 위해 해당 볼륨에 있는 파일의 크기를 읽습니다.";
+"NSFileProviderDomainUsageDescription" = "DiskRings는 공간 사용 현황을 표시하기 위해 클라우드 저장 공간(예: iCloud Drive 또는 Dropbox)에 있는 파일의 크기를 읽습니다. 파일을 다운로드하지 않습니다.";
+"NSPhotoLibraryUsageDescription" = "DiskRings는 공간 사용 현황을 표시하기 위해 사진 보관함의 크기를 읽습니다. 사진을 열거나 변경하지 않습니다.";
+"NSAppleMusicUsageDescription" = "DiskRings는 공간 사용 현황을 표시하기 위해 음악 및 미디어 폴더의 크기를 읽습니다.";

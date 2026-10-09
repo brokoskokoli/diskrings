@@ -12,25 +12,25 @@ public enum NodeAction: String, CaseIterable, Sendable, Identifiable {
 
     public var title: String {
         switch self {
-        case .revealInFinder: "Im Finder zeigen"
-        case .open: "Öffnen"
-        case .quickLook: "Quick Look"
-        case .zoomIn: "Hier hineinzoomen"
-        case .copyPath: "Pfad kopieren"
-        case .info: "Informationen"
-        case .rescan: "Diesen Ordner neu scannen"
-        case .moveToTrash: "In den Papierkorb legen"
+        case .revealInFinder: L("action.revealInFinder")
+        case .open: L("action.open")
+        case .quickLook: L("action.quickLook")
+        case .zoomIn: L("action.zoomIn")
+        case .copyPath: L("action.copyPath")
+        case .info: L("action.info")
+        case .rescan: L("action.rescan")
+        case .moveToTrash: L("action.moveToTrash")
         }
     }
 
-    /// Titel für mehrere Ziele („3 Pfade kopieren“).
+    /// Titel für mehrere Ziele („Copy 3 Paths“).
     public func title(count: Int) -> String {
         guard count > 1 else { return title }
         switch self {
-        case .copyPath: return "\(count) Pfade kopieren"
-        case .moveToTrash: return "\(count) Objekte in den Papierkorb legen"
-        case .revealInFinder: return "\(count) Objekte im Finder zeigen"
-        case .open: return "\(count) Objekte öffnen"
+        case .copyPath: return L("action.copyPath.count", count, ByteFormat.count(count))
+        case .moveToTrash: return L("action.moveToTrash.count", count, ByteFormat.count(count))
+        case .revealInFinder: return L("action.revealInFinder.count", count, ByteFormat.count(count))
+        case .open: return L("action.open.count", count, ByteFormat.count(count))
         default: return title
         }
     }
@@ -98,7 +98,7 @@ public struct ActionShortcut: Sendable, Equatable {
         self.modifiers = modifiers
     }
 
-    /// Anzeige wie im Menü („⌥⌘C“, „⌘⌫“, „Leertaste“).
+    /// Anzeige wie im Menü („⌥⌘C“, „⌘⌫“, „Space“).
     public var display: String {
         var s = ""
         if modifiers.contains(.control) { s += "⌃" }
@@ -107,7 +107,7 @@ public struct ActionShortcut: Sendable, Equatable {
         if modifiers.contains(.command) { s += "⌘" }
         switch key {
         case .character(let c): s += c.uppercased()
-        case .space: s += "Leertaste"
+        case .space: s += L("shortcut.space")
         case .delete: s += "⌫"
         }
         return s
@@ -158,35 +158,35 @@ extension NodeAction {
     /// Pfade ist kein Löschen möglich, auch nicht per Tastenkürzel“).
     public func availability(targets: [Int32], context c: ActionContext) -> ActionAvailability {
         let tree = c.tree
-        guard !targets.isEmpty else { return .disabled("Nichts ausgewählt") }
+        guard !targets.isEmpty else { return .disabled(L("reason.nothingSelected")) }
         for t in targets where t < 0 || Int(t) >= tree.count || tree.nodes[Int(t)].flags.contains(.dead) {
-            return .disabled("Element ist nicht mehr im Baum")
+            return .disabled(L("reason.notInTree"))
         }
-        if targets.count > 1, !allowsMultipleTargets { return .disabled("Nur für ein einzelnes Element") }
+        if targets.count > 1, !allowsMultipleTargets { return .disabled(L("reason.singleItemOnly")) }
         let first = targets[0]
         let node = tree.node(first)
         switch self {
         case .revealInFinder, .open, .quickLook, .copyPath, .info:
             return .enabled
         case .zoomIn:
-            if !node.isDirectory { return .disabled("Nur für Ordner") }
-            if first == c.focus { return .disabled("Ist bereits die Mitte") }
-            if node.size(c.sizeMode) == 0 { return .disabled("Ordner ist leer") }
+            if !node.isDirectory { return .disabled(L("reason.foldersOnly")) }
+            if first == c.focus { return .disabled(L("reason.alreadyCenter")) }
+            if node.size(c.sizeMode) == 0 { return .disabled(L("reason.folderEmpty")) }
             return .enabled
         case .rescan:
-            if !node.isDirectory { return .disabled("Nur für Ordner") }
-            if c.isFullScanRunning { return .disabled("Während eines vollständigen Scans nicht möglich") }
+            if !node.isDirectory { return .disabled(L("reason.foldersOnly")) }
+            if c.isFullScanRunning { return .disabled(L("reason.fullScanRunning")) }
             if node.flags.contains(.mountPoint), !c.crossMountPoints {
-                return .disabled("Anderes Volume (wird beim Scan nicht betreten)")
+                return .disabled(L("reason.otherVolume"))
             }
             let path = tree.path(of: first)
             if let running = c.rescanningPaths.first(where: { RescanQueue.covers($0, path) }) {
-                return .disabled(running == path ? "Wird gerade neu gescannt"
-                                 : "Wird gerade mit „\((running as NSString).lastPathComponent)“ neu gescannt")
+                return .disabled(running == path ? L("reason.rescanRunning")
+                                 : L("reason.rescanRunningIn", (running as NSString).lastPathComponent))
             }
             return .enabled
         case .moveToTrash:
-            if c.isFullScanRunning { return .disabled("Während des Scans nicht möglich") }
+            if c.isFullScanRunning { return .disabled(L("reason.scanRunning")) }
             switch TrashPlan.make(targets: targets, in: tree, protection: c.protection, sizeMode: c.sizeMode) {
             case .success: return .enabled
             case .failure(let e): return .disabled(e.message)

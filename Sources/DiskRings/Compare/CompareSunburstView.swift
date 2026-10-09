@@ -20,10 +20,10 @@ struct CompareSunburstView: View {
             if layout.isEmpty {
                 VStack(spacing: 6) {
                     Image(systemName: "equal.circle").font(.system(size: 34)).foregroundStyle(.secondary)
-                    Text(session.view == .growth ? "Kein Zuwachs seit dem Snapshot" : "Keine Daten")
+                    Text(session.view == .growth ? L("compare.chart.noGrowth") : L("compare.chart.noData"))
                         .font(.headline)
                     if session.view == .growth {
-                        Text("Unter „Delta-Färbung“ sind auch geschrumpfte und entfernte Elemente zu sehen.")
+                        Text(L("compare.chart.noGrowth.hint"))
                             .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }
                 }
@@ -57,7 +57,7 @@ struct CompareSunburstView: View {
                     CompareTooltip(session: session, size: size)
                 }
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("Vergleichsdiagramm (\(session.view.title)) von \(center.title)")
+                .accessibilityLabel(L("compare.chart.accessibility", session.view.title, center.title))
                 .accessibilityChildren {
                     ForEach(Array(layout.arcs(inRing: 1).enumerated()), id: \.offset) { _, arc in
                         if let e = session.model.entry(for: arc, view: session.view) {
@@ -81,12 +81,12 @@ struct CompareSunburstView: View {
             : model.diff.name(of: e)
         switch session.view {
         case .growth:
-            return .init(title: title, value: "+" + ByteFormat.string(layout.focusSize), caption: "Zuwachs",
+            return .init(title: title, value: "+" + ByteFormat.string(layout.focusSize), caption: L("compare.center.growth"),
                          valueIsGrowth: true)
         case .delta:
             let d = model.diff.delta(e, model.mode)
             return .init(title: title, value: ByteFormat.signed(d),
-                         caption: "jetzt " + ByteFormat.string(model.diff.newSize(e, model.mode)),
+                         caption: L("compare.center.now", ByteFormat.string(model.diff.newSize(e, model.mode))),
                          valueIsGrowth: d > 0)
         }
     }
@@ -247,16 +247,16 @@ private struct CompareTooltip: View {
                 Text(status.label).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             if session.view == .growth, arc.isDirectory {
-                Text("Zuwachs im Ordner: \(ByteFormat.string(arc.size))").font(.system(size: 10))
+                Text(L("compare.tooltip.folderGrowth", ByteFormat.string(arc.size))).font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
         } else {
             let title = arc.kind == .aggregate ? itemsText(Int(arc.itemCount))
-                : (session.view == .growth ? "Zuwachs ohne eigene Einträge" : "Dateien in diesem Ordner")
+                : (session.view == .growth ? L("compare.tooltip.growthWithoutEntries") : L("arc.remainder.title"))
             Text(title).font(.system(size: 12, weight: .semibold))
             Text(ByteFormat.string(arc.size)).font(.system(size: 11).monospacedDigit())
-            Text(arc.kind == .aggregate ? "zusammengefasst, jeweils unter der Winkelschwelle"
-                : "kleine Dateien unter \(ByteFormat.string(max(session.model.diff.minimumFileSize, 1))) und Ordner-Eigengröße")
+            Text(arc.kind == .aggregate ? L("arc.aggregate.detail")
+                : L("compare.tooltip.smallFiles", ByteFormat.string(max(session.model.diff.minimumFileSize, 1))))
                 .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2)
         }
     }
@@ -268,11 +268,11 @@ enum CompareText {
         let s = m.diff.status(e, m.mode)
         let before = s == .added ? "–" : ByteFormat.string(m.diff.oldSize(e, m.mode))
         let now = s == .removed ? "–" : ByteFormat.string(m.diff.newSize(e, m.mode))
-        return "Vorher \(before)  →  Jetzt \(now)"
+        return L("compare.beforeNow", before, now)
     }
 
     static func accessibility(_ m: CompareModel, _ e: Int32) -> String {
         let s = m.diff.status(e, m.mode)
-        return "\(m.diff.name(of: e)), \(s.label), \(beforeNow(m, e)), Delta \(ByteFormat.signed(m.diff.delta(e, m.mode)))"
+        return L("compare.entry.accessibility", m.diff.name(of: e), s.label, beforeNow(m, e), ByteFormat.signed(m.diff.delta(e, m.mode)))
     }
 }

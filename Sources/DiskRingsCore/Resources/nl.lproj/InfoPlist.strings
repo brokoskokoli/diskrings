@@ -1,0 +1,10 @@
+/* DiskRings – nl: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "DiskRings leest de grootte van de bestanden op je bureaublad om te laten zien hoe je ruimte wordt gebruikt. Bestanden worden niet geopend of gewijzigd.";
+"NSDocumentsFolderUsageDescription" = "DiskRings leest de grootte van de bestanden in je map Documenten om te laten zien hoe je ruimte wordt gebruikt. Bestanden worden niet geopend of gewijzigd.";
+"NSDownloadsFolderUsageDescription" = "DiskRings leest de grootte van de bestanden in je map Downloads om te laten zien hoe je ruimte wordt gebruikt. Bestanden worden niet geopend of gewijzigd.";
+"NSRemovableVolumesUsageDescription" = "DiskRings leest de grootte van de bestanden op verwisselbare volumes (zoals USB-sticks) om te laten zien hoe hun ruimte wordt gebruikt.";
+"NSNetworkVolumesUsageDescription" = "DiskRings leest de grootte van de bestanden op netwerkvolumes om te laten zien hoe hun ruimte wordt gebruikt.";
+"NSFileProviderDomainUsageDescription" = "DiskRings leest de grootte van de bestanden in cloudopslag (zoals iCloud Drive of Dropbox) om te laten zien hoe je ruimte wordt gebruikt. Er worden geen bestanden gedownload.";
+"NSPhotoLibraryUsageDescription" = "DiskRings leest de grootte van je fotobibliotheek om te laten zien hoe je ruimte wordt gebruikt. Foto’s worden niet geopend of gewijzigd.";
+"NSAppleMusicUsageDescription" = "DiskRings leest de grootte van je muziek- en mediamappen om te laten zien hoe je ruimte wordt gebruikt.";

@@ -1,0 +1,10 @@
+/* DiskRings – de: privacy texts macOS shows when DiskRings reads protected locations. */
+
+"NSDesktopFolderUsageDescription" = "DiskRings liest die Größen der Dateien auf deinem Schreibtisch, um zu zeigen, wie dein Speicherplatz belegt ist. Dateien werden weder geöffnet noch geändert.";
+"NSDocumentsFolderUsageDescription" = "DiskRings liest die Größen der Dateien in deinem Ordner „Dokumente“, um zu zeigen, wie dein Speicherplatz belegt ist. Dateien werden weder geöffnet noch geändert.";
+"NSDownloadsFolderUsageDescription" = "DiskRings liest die Größen der Dateien in deinem Ordner „Downloads“, um zu zeigen, wie dein Speicherplatz belegt ist. Dateien werden weder geöffnet noch geändert.";
+"NSRemovableVolumesUsageDescription" = "DiskRings liest die Größen der Dateien auf Wechselmedien (z. B. USB-Laufwerken), um zu zeigen, wie deren Speicherplatz belegt ist.";
+"NSNetworkVolumesUsageDescription" = "DiskRings liest die Größen der Dateien auf Netzwerkvolumes, um zu zeigen, wie deren Speicherplatz belegt ist.";
+"NSFileProviderDomainUsageDescription" = "DiskRings liest die Größen der Dateien in Cloud-Speichern (z. B. iCloud Drive oder Dropbox), um zu zeigen, wie dein Speicherplatz belegt ist. Es werden keine Dateien geladen.";
+"NSPhotoLibraryUsageDescription" = "DiskRings liest die Größe deiner Fotomediathek, um zu zeigen, wie dein Speicherplatz belegt ist. Fotos werden weder geöffnet noch geändert.";
+"NSAppleMusicUsageDescription" = "DiskRings liest die Größe deiner Musik- und Medienordner, um zu zeigen, wie dein Speicherplatz belegt ist.";

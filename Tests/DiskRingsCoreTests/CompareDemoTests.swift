@@ -35,10 +35,10 @@ struct CompareDemoTests {
         for a in d.arcs {
             if let e = m.entry(for: a, view: .delta) { statuses[m.diff.path(of: e)] = m.status(of: a, view: .delta) }
         }
-        #expect(statuses[home + "/Musik/Album B"] == .removed)
-        #expect(statuses[home + "/Filme/Urlaub 2025.mov"] == .removed)
+        #expect(statuses[home + "/Music/Album B"] == .removed)
+        #expect(statuses[home + "/Movies/Vacation 2025.mov"] == .removed)
         #expect(statuses[home + "/" + CompareDemo.newFolder] == .added)
-        #expect(statuses[home + "/Downloads/foto-export.zip"] == .shrunk)
+        #expect(statuses[home + "/Downloads/photo-export.zip"] == .shrunk)
     }
 
     @Test("Demo-Fixture schreibt nur unterhalb der Wurzel")

@@ -41,7 +41,7 @@ struct DetailListView: View {
                 }
             }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Inhalt von \(tree.name(of: state.focus))")
+            .accessibilityLabel(L("list.accessibility", tree.name(of: state.focus)))
         } else {
             Color.clear
         }
@@ -61,7 +61,7 @@ struct DetailListView: View {
                 Text(ByteFormat.string(size)).monospacedDigit()
                 if state.focus != ScanTree.rootIndex, rootSize > 0 {
                     Text("·")
-                    Text("\(ByteFormat.percent(Double(size) / Double(rootSize))) der Scan-Wurzel")
+                    Text(L("list.shareOfRoot", ByteFormat.percent(Double(size) / Double(rootSize))))
                 }
             }
             .font(.subheadline)
@@ -174,8 +174,8 @@ private struct DetailRowView: View {
                 }
                 .controlSize(.mini)
                 .frame(width: 72, alignment: .trailing)
-                .help("Wird neu gescannt")
-                .accessibilityLabel("Wird neu gescannt")
+                .help(L("reason.rescanRunning"))
+                .accessibilityLabel(L("reason.rescanRunning"))
             } else {
                 Text(ByteFormat.string(row.size))
                     .font(.system(size: 12).monospacedDigit())
@@ -219,12 +219,12 @@ private struct DetailRowView: View {
             }
         }
         .contextMenu { if row.kind == .node { NodeContextMenu(state: state, node: row.node) } }
-        .help(row.kind == .unassigned ? "Nicht zugeordnet (System, lokale Snapshots, bereinigbarer Speicher): Belegung des Volumes, die in keinem Ordner auftaucht." : "")
+        .help(row.kind == .unassigned ? L("list.unassigned.help") : "")
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title), \(ByteFormat.string(row.size)), \(ByteFormat.percent(row.share))")
+        .accessibilityLabel(L("list.row.accessibility", title, ByteFormat.string(row.size), ByteFormat.percent(row.share)))
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
         .accessibilityAction { activate() }
-        .accessibilityAction(named: "Hineinzoomen") { if row.kind == .node { state.navigate(to: row.node) } }
+        .accessibilityAction(named: L("accessibility.zoomIn")) { if row.kind == .node { state.navigate(to: row.node) } }
     }
 
     private var isExpandable: Bool { row.kind == .node && tree.node(row.node).childCount > 0 }
@@ -263,7 +263,7 @@ private struct DetailRowView: View {
         switch row.kind {
         case .node: tree.name(of: row.node)
         case .more(_, let count): itemsText(count)
-        case .unassigned: "Nicht zugeordnet"
+        case .unassigned: L("arc.unassigned.title")
         }
     }
 

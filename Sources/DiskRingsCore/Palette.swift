@@ -106,17 +106,17 @@ public enum PaletteScheme: String, Sendable, CaseIterable {
 public enum FileTypeCategory: String, Sendable, CaseIterable {
     case video, image, audio, archive, application, code, document, other
 
-    /// Deutsche Bezeichnung für die Legende.
+    /// Bezeichnung für die Legende.
     public var label: String {
         switch self {
-        case .video: "Video"
-        case .image: "Bilder"
-        case .audio: "Audio"
-        case .archive: "Archive"
-        case .application: "Apps"
-        case .code: "Code"
-        case .document: "Dokumente"
-        case .other: "Sonstiges"
+        case .video: L("fileType.video")
+        case .image: L("fileType.image")
+        case .audio: L("fileType.audio")
+        case .archive: L("fileType.archive")
+        case .application: L("fileType.application")
+        case .code: L("fileType.code")
+        case .document: L("fileType.document")
+        case .other: L("fileType.other")
         }
     }
 

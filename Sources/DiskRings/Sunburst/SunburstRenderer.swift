@@ -252,7 +252,7 @@ enum SunburstRenderer {
             if arc.span * outer < 22 || outer - inner < 11 { continue }
             let fontSize: Double = ring == 1 ? 12 : (ring == 2 ? 11 : 10)
             let font = Font.system(size: fontSize, weight: ring == 1 ? .medium : .regular)
-            let name = arc.kind == .unassigned ? "Nicht zugeordnet" : input.tree.name(of: arc.nodeIndex)
+            let name = arc.kind == .unassigned ? L("arc.unassigned.title") : input.tree.name(of: arc.nodeIndex)
             let textColor = Color(input.palette.label(on: input.colors[i]))
             let full = gc.resolve(Text(name).font(font).foregroundColor(textColor))
             let m = full.measure(in: CGSize(width: 10_000, height: 100))

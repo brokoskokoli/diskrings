@@ -24,6 +24,7 @@ let testSwiftSettings: [SwiftSetting] =
 
 let package = Package(
     name: "DiskRings",
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     products: [
         .library(name: "DiskRingsCore", targets: ["DiskRingsCore"]),
@@ -31,7 +32,7 @@ let package = Package(
         .executable(name: "diskrings-cli", targets: ["diskrings-cli"]),
     ],
     targets: [
-        .target(name: "DiskRingsCore"),
+        .target(name: "DiskRingsCore", resources: [.process("Resources")]),
         .executableTarget(name: "DiskRings", dependencies: ["DiskRingsCore"]),
         .executableTarget(name: "diskrings-cli", dependencies: ["DiskRingsCore"]),
         .testTarget(

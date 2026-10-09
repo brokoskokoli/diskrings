@@ -9,49 +9,50 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Diagramm") {
+            LanguageSection()
+            Section(L("settings.section.chart")) {
                 Stepper(value: $prefs.ringCount, in: SunburstOptions.ringRange) {
-                    LabeledContent("Ringanzahl", value: "\(prefs.ringCount)")
+                    LabeledContent(L("settings.rings"), value: ByteFormat.count(prefs.ringCount))
                 }
-                Picker("Farbschema", selection: $prefs.paletteScheme) {
-                    Text("Nach Ast").tag(PaletteScheme.branch)
-                    Text("Nach Dateityp").tag(PaletteScheme.fileType)
+                Picker(L("settings.colorScheme"), selection: $prefs.paletteScheme) {
+                    Text(L("settings.colorScheme.branch")).tag(PaletteScheme.branch)
+                    Text(L("settings.colorScheme.fileType")).tag(PaletteScheme.fileType)
                 }
                 if prefs.paletteScheme == .fileType {
                     FileTypeLegend()
                 }
-                LabeledContent("Sammelsegment unter") {
+                LabeledContent(L("settings.minAngle")) {
                     HStack {
                         Slider(value: $prefs.minAngleDegrees, in: Preferences.minAngleRange, step: 0.1)
                             .frame(width: 160)
-                            .accessibilityValue(String(format: "%.1f Grad", prefs.minAngleDegrees))
-                        Text(String(format: "%.1f°", prefs.minAngleDegrees).replacingOccurrences(of: ".", with: ","))
+                            .accessibilityValue(L("settings.minAngle.accessibilityValue", angleText))
+                        Text(angleText + "°")
                             .monospacedDigit()
                             .frame(width: 40, alignment: .trailing)
                     }
                 }
-                Toggle("Segmente beschriften", isOn: $prefs.showLabels)
+                Toggle(L("settings.showLabels"), isOn: $prefs.showLabels)
             }
-            Section("Größe") {
-                Picker("Größenmodus", selection: $prefs.sizeMode) {
-                    Text("Belegt auf Platte").tag(SizeMode.allocated)
-                    Text("Logische Größe").tag(SizeMode.logical)
+            Section(L("settings.section.size")) {
+                Picker(L("settings.sizeMode"), selection: $prefs.sizeMode) {
+                    Text(L("settings.sizeMode.allocated")).tag(SizeMode.allocated)
+                    Text(L("settings.sizeMode.logical")).tag(SizeMode.logical)
                 }
                 .pickerStyle(.radioGroup)
             }
             Section {
-                Toggle("Vor dem Papierkorb fragen", isOn: Binding(get: { !prefs.skipTrashConfirmation },
+                Toggle(L("settings.trash.confirm"), isOn: Binding(get: { !prefs.skipTrashConfirmation },
                                                                   set: { prefs.skipTrashConfirmation = !$0 }))
             } header: {
-                Text("Papierkorb")
+                Text(L("settings.section.trash"))
             } footer: {
-                Text("Elemente ab 1 GB werden immer bestätigt.").font(.footnote).foregroundStyle(.secondary)
+                Text(L("settings.trash.footer")).font(.footnote).foregroundStyle(.secondary)
             }
             Section {
-                Toggle("Versteckte Dateien zählen", isOn: $prefs.includeHidden)
-                Toggle("Andere Volumes beim Scan überqueren", isOn: $prefs.crossMountPoints)
+                Toggle(L("settings.includeHidden"), isOn: $prefs.includeHidden)
+                Toggle(L("settings.crossMounts"), isOn: $prefs.crossMountPoints)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Ausgeschlossene Pfade")
+                    Text(L("settings.excluded"))
                     List(prefs.excludedPaths, id: \.self, selection: $selectedExclusion) { p in
                         Text(p).lineLimit(1).truncationMode(.middle)
                     }
@@ -59,20 +60,20 @@ struct SettingsView: View {
                     .border(Color.primary.opacity(0.15))
                     HStack(spacing: 4) {
                         Button { addExclusion() } label: { Image(systemName: "plus") }
-                            .accessibilityLabel("Pfad hinzufügen")
+                            .accessibilityLabel(L("settings.excluded.add"))
                         Button {
                             if let s = selectedExclusion { prefs.excludedPaths.removeAll { $0 == s } }
                             selectedExclusion = nil
                         } label: { Image(systemName: "minus") }
                             .disabled(selectedExclusion == nil)
-                            .accessibilityLabel("Ausgewählten Pfad entfernen")
+                            .accessibilityLabel(L("settings.excluded.remove"))
                     }
                     .buttonStyle(.borderless)
                 }
             } header: {
-                Text("Scan")
+                Text(L("settings.section.scan"))
             } footer: {
-                Text("Diese Einstellungen wirken beim nächsten Scan.").font(.footnote).foregroundStyle(.secondary)
+                Text(L("settings.scan.footer")).font(.footnote).foregroundStyle(.secondary)
             }
             SnapshotSettingsSection(prefs: prefs.snapshots)
         }
@@ -81,12 +82,17 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// Winkelschwelle mit einer Nachkommastelle im Format des Locales („0.5“, „0,5“).
+    private var angleText: String {
+        prefs.minAngleDegrees.formatted(.number.precision(.fractionLength(1)).locale(L10n.locale))
+    }
+
     private func addExclusion() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = true
         panel.allowsMultipleSelection = true
-        panel.prompt = "Ausschließen"
+        panel.prompt = L("settings.excluded.prompt")
         if panel.runModal() == .OK {
             for url in panel.urls where !prefs.excludedPaths.contains(url.path) {
                 prefs.excludedPaths.append(url.path)
@@ -110,6 +116,6 @@ struct FileTypeLegend: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Legende: " + FileTypeCategory.allCases.map(\.label).joined(separator: ", "))
+        .accessibilityLabel(L("settings.legend.accessibility", FileTypeCategory.allCases.map(\.label).joined(separator: L("list.separator"))))
     }
 }

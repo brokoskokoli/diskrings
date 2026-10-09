@@ -1,0 +1,404 @@
+/* DiskRings – de. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Im Finder zeigen";
+"action.open" = "Öffnen";
+"action.quickLook" = "Übersicht";
+"action.zoomIn" = "Hier hineinzoomen";
+"action.copyPath" = "Pfad kopieren";
+"action.info" = "Informationen";
+"action.rescan" = "Diesen Ordner neu scannen";
+"action.moveToTrash" = "In den Papierkorb legen";
+"shortcut.space" = "Leertaste";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "Nichts ausgewählt";
+"reason.notInTree" = "Element ist nicht mehr im Baum";
+"reason.singleItemOnly" = "Nur für ein einzelnes Element";
+"reason.foldersOnly" = "Nur für Ordner";
+"reason.alreadyCenter" = "Ist bereits die Mitte";
+"reason.folderEmpty" = "Ordner ist leer";
+"reason.fullScanRunning" = "Während eines vollständigen Scans nicht möglich";
+"reason.otherVolume" = "Anderes Volume (wird beim Scan nicht betreten)";
+"reason.rescanRunning" = "Wird gerade neu gescannt";
+"reason.rescanRunningIn" = "Wird gerade mit „%@“ neu gescannt";
+"reason.scanRunning" = "Während des Scans nicht möglich";
+"reason.notInCompare" = "Element ist nicht mehr im Vergleich";
+"reason.removedSinceSnapshot" = "„%@“ existiert nicht mehr (seit dem Snapshot entfernt)";
+"reason.containsRemoved" = "Enthält entfernte Elemente, die es nicht mehr gibt";
+"reason.missingOnDisk" = "„%@“ existiert nicht mehr auf dem Datenträger";
+"reason.twoSnapshots" = "Beim Vergleich zweier Snapshots nicht möglich";
+"reason.notInCurrentScan" = "Nicht mehr im aktuellen Scan";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "Die Scan-Wurzel selbst lässt sich nicht in den Papierkorb legen";
+"trash.error.protected" = "Geschützt: %@";
+"trash.error.protectedItem" = "Geschützt: %1$@ – %2$@";
+"trash.error.protectedResolved" = "Geschützt: %1$@ (aufgelöster Pfad %2$@)";
+"trash.error.unresolvable" = "Der Pfad lässt sich nicht mehr auflösen";
+"trash.error.outsideRoot" = "Liegt nicht mehr unter der Scan-Wurzel";
+"trash.error.outsideRootSymlink" = "Liegt nicht mehr unter der Scan-Wurzel (ein Ordner im Pfad wurde durch einen Symlink ersetzt)";
+"trash.confirm.title.one" = "„%@“ in den Papierkorb legen?";
+"trash.confirm.total" = "Insgesamt %1$@ · %2$@";
+"trash.undo.unknownLocation" = "Ort im Papierkorb unbekannt";
+"trash.undo.notInTrash" = "Nicht mehr im Papierkorb";
+"trash.undo.unrecognized" = "Das Objekt im Papierkorb lässt sich nicht sicher wiedererkennen";
+"trash.undo.replacedInTrash" = "Im Papierkorb liegt unter diesem Namen inzwischen ein anderes Objekt (wurde der Papierkorb geleert oder das Objekt verändert?)";
+"trash.undo.occupied" = "Am alten Ort liegt inzwischen ein anderes Objekt";
+"trash.undo.parentMissing" = "Der Elternordner existiert nicht mehr";
+"trash.confirm.undoHint" = "Die Objekte lassen sich mit ⌘Z oder im Finder aus dem Papierkorb zurücklegen.";
+"trash.confirm.dontAsk" = "Nicht mehr fragen (nur für Objekte unter 1 GB)";
+"trash.confirm.alwaysAsk" = "Ab 1 GB wird immer nachgefragt.";
+
+/* Protected paths (reasons) */
+"protected.system" = "Systembereich von macOS (%@)";
+"protected.volumeRoot" = "Wurzel eines Volumes";
+"protected.home" = "Der gesamte Benutzerordner";
+"protected.homeLibrary" = "~/Library als Ganzes";
+"protected.runningApp" = "Die laufende App DiskRings";
+"protected.contains" = "Enthält einen geschützten Bereich: %1$@ (%2$@)";
+
+/* Scan errors */
+"error.scan.notFound" = "Pfad nicht gefunden: %@";
+"error.scan.tooManyNodes" = "Zu viele Einträge für einen Scan-Baum";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "Keine DiskRings-Snapshot-Datei";
+"error.snapshot.unsupportedVersion" = "Snapshot-Format %@ wird nicht unterstützt (neuere Version?)";
+"error.snapshot.truncated" = "Snapshot-Datei ist unvollständig";
+"error.snapshot.corrupted" = "Snapshot-Datei ist beschädigt: %@";
+"error.snapshot.outsideStore" = "Datei liegt nicht im Snapshot-Verzeichnis: %@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "neuere Version";
+"snapshots.damaged.damaged" = "beschädigt";
+"snapshot.untitled" = "Snapshot vom %@";
+"snapshots.window.title" = "Snapshots";
+"snapshots.empty" = "Noch keine Snapshots";
+"snapshots.empty.message" = "Snapshots entstehen automatisch nach jedem vollständigen Scan (abschaltbar in den Einstellungen) oder mit „Ablage → Snapshot sichern“ (⌘S).";
+"snapshots.column.date" = "Datum";
+"snapshots.column.name" = "Name";
+"snapshots.column.root" = "Scan-Wurzel";
+"snapshots.column.size" = "Gesamtgröße";
+"snapshots.column.file" = "Datei";
+"snapshots.compareEachOther" = "Miteinander vergleichen";
+"snapshots.olderIsBefore" = "Der ältere ist „vorher“";
+"snapshots.selectTwo" = "Zum Vergleichen zwei Snapshots auswählen";
+"snapshots.rename.title" = "Snapshot umbenennen";
+"snapshots.rename.message" = "Scan von %1$@, %2$@";
+"snapshots.delete.message" = "Die Snapshot-Datei wird endgültig gelöscht. Gescannte Dateien und Ordner bleiben unberührt.";
+"snapshots.delete.title.one" = "Snapshot löschen?";
+"snapshots.damaged.deleteAll" = "Alle löschen …";
+"snapshots.damaged.delete.title.one" = "Nicht lesbare Datei löschen?";
+"snapshots.damaged.delete.newer" = "Darunter sind Snapshots einer neueren DiskRings-Version, die diese Version nicht lesen kann; eine neuere App könnte sie noch öffnen. Die Dateien werden endgültig gelöscht. Gescannte Dateien und Ordner bleiben unberührt.";
+"snapshots.damaged.delete.message" = "Die Datei lässt sich nicht mehr als Snapshot lesen und wird endgültig gelöscht. Gescannte Dateien und Ordner bleiben unberührt.";
+"snapshots.name.placeholder" = "Name (optional), z. B. „vor Xcode-Update“";
+"snapshots.save.title" = "Snapshot sichern";
+"snapshots.save.confirm" = "Sichern";
+"snapshots.save.message" = "Aktueller Scan von %@";
+"menu.saveSnapshot" = "Snapshot sichern …";
+"menu.snapshots" = "Snapshots …";
+"snapshots.error.read" = "Snapshots konnten nicht gelesen werden: %@";
+"snapshots.saved" = "Snapshot „%@“ gesichert";
+"snapshots.error.save" = "Snapshot konnte nicht gespeichert werden: %@";
+"snapshots.error.rename" = "Umbenennen fehlgeschlagen: %@";
+"snapshots.error.delete" = "Löschen fehlgeschlagen: %@";
+
+/* General */
+"list.separator" = ", ";
+
+/* Compare: headline and warnings */
+"compare.since" = "Seit %@";
+"compare.fromTo" = "Von %1$@ bis %2$@";
+"compare.part.used" = "belegt %@";
+"compare.part.free" = "frei %@";
+"compare.part.scan" = "Scan %@";
+"compare.part.unassigned" = "davon nicht zugeordnet %@";
+"compare.part.volumeUsed" = "Volume belegt %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "vorher ohne versteckte Dateien";
+"compare.warning.hiddenNow" = "jetzt ohne versteckte Dateien";
+"compare.warning.exclusions" = "andere Ausschlussliste";
+"compare.warning.volumes" = "andere Einstellung für Volumes";
+"compare.warning.options" = "Snapshot mit anderen Einstellungen erstellt (%@)";
+"compare.warning.root" = "Andere Scan-Wurzel: %1$@ gegenüber %2$@";
+"compare.warning.volume" = "Anderes Volume";
+"compare.warning.minimumSize" = "Dateien unter %@ werden nur über die Ordnersumme verglichen";
+"compare.mode.growth" = "Wachstum";
+"compare.mode.delta" = "Delta-Färbung";
+"diff.added" = "neu";
+"diff.removed" = "entfernt";
+"diff.grown" = "gewachsen";
+"diff.shrunk" = "geschrumpft";
+"diff.unchanged" = "unverändert";
+"compare.label.used" = "belegt";
+"compare.label.free" = "frei";
+"compare.label.unassigned" = "davon nicht zugeordnet";
+"compare.label.volumeUsed" = "Volume belegt";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@: nicht mehr vorhanden (%2$@)";
+"rescan.summary.unchanged" = "%1$@: %2$@ (unverändert)";
+"rescan.summary.changed" = "%1$@: %2$@ → %3$@ (%4$@)";
+
+/* File type categories (legend) */
+"fileType.video" = "Video";
+"fileType.image" = "Bilder";
+"fileType.audio" = "Audio";
+"fileType.archive" = "Archive";
+"fileType.application" = "Apps";
+"fileType.code" = "Code";
+"fileType.document" = "Dokumente";
+"fileType.other" = "Sonstiges";
+
+/* Common buttons */
+"common.cancel" = "Abbrechen";
+"common.ok" = "OK";
+"common.done" = "Fertig";
+"common.close" = "Schließen";
+"common.delete" = "Löschen";
+"common.deleteEllipsis" = "Löschen …";
+"common.renameEllipsis" = "Umbenennen …";
+"common.rename" = "Umbenennen";
+
+/* Full Disk Access */
+"fda.alert.title" = "Kein Festplattenvollzugriff";
+"fda.alert.setUp" = "Festplattenvollzugriff einrichten";
+"fda.alert.scanAnyway" = "Trotzdem scannen";
+"fda.alert.message" = "Ohne Festplattenvollzugriff fragt macOS beim Scan einzeln nach Ordnern wie Schreibtisch, Dokumente und Downloads, und Bereiche wie ~/Library/Mail bleiben unlesbar. Der Scan wartet, bis du die Systemdialoge beantwortest.\n\nEmpfohlen: In den Systemeinstellungen unter „Datenschutz & Sicherheit → Festplattenvollzugriff“ DiskRings einschalten und danach erneut scannen.";
+
+/* Menus */
+"menu.chooseFolder" = "Ordner auswählen …";
+"menu.fullRescan" = "Komplett neu scannen";
+"menu.undo" = "Widerrufen";
+"menu.redo" = "Wiederholen";
+"menu.find" = "Suchen …";
+"menu.item" = "Objekt";
+"menu.go" = "Gehe zu";
+"menu.back" = "Zurück";
+"menu.forward" = "Vorwärts";
+"menu.enclosingFolder" = "Übergeordneter Ordner";
+"menu.compareRoot" = "Zur Vergleichswurzel";
+"menu.scanRoot" = "Zur Scan-Wurzel";
+"menu.startScreen" = "Startbildschirm";
+
+/* Open panel */
+"panel.scan.prompt" = "Scannen";
+"panel.scan.message" = "Wähle einen Ordner oder ein Volume zum Scannen aus";
+"reason.noScan" = "Kein Scan";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "„%1$@“ in den Papierkorb gelegt (%2$@)";
+"toast.trashFailed" = "„%1$@“ nicht in den Papierkorb gelegt: %2$@";
+"menu.undo.putBack.one" = "„%@“ zurücklegen";
+"toast.putBackFailed" = "„%1$@“ nicht zurückgelegt: %2$@";
+"toast.putBack.one" = "„%@“ zurückgelegt";
+"toast.rescanBlocked" = "Während eines vollständigen Scans ist kein Teil-Rescan möglich";
+"toast.rescanCovered" = "„%@“ wird bereits neu gescannt";
+"toast.rescanFailed" = "„%1$@“ konnte nicht neu gescannt werden: %2$@";
+"toast.rootMissing" = "Die Scan-Wurzel „%@“ existiert nicht mehr";
+"toast.close" = "Hinweis schließen";
+
+/* Item kinds and badges */
+"badge.package" = "Paket";
+"badge.unreadable" = "nicht lesbar";
+"badge.icloudOnly" = "nur in iCloud";
+"badge.symlink" = "Symlink";
+"badge.otherVolume" = "anderes Volume";
+"badge.hardlink" = "Hardlink";
+"kind.file" = "Datei";
+"kind.folder" = "Ordner";
+"kind.package" = "Paket";
+"kind.symlink" = "Symbolischer Link";
+
+/* Chart segments */
+"arc.aggregate.detail" = "zusammengefasst, jeweils unter der Winkelschwelle";
+"arc.remainder.title" = "Dateien in diesem Ordner";
+"arc.remainder.detail" = "noch nicht einzeln erfasst";
+"arc.unassigned.title" = "Nicht zugeordnet";
+"arc.unassigned.detail" = "System, lokale Snapshots, löschbarer Speicher";
+"sunburst.accessibility" = "Sunburst-Diagramm von %@";
+"sunburst.shareOf" = "%1$@ von %2$@";
+"sunburst.center.hint" = "Klick: eine Ebene nach oben";
+
+/* Settings */
+"settings.section.chart" = "Diagramm";
+"settings.rings" = "Ringanzahl";
+"settings.colorScheme" = "Farbschema";
+"settings.colorScheme.branch" = "Nach Ast";
+"settings.colorScheme.fileType" = "Nach Dateityp";
+"settings.minAngle" = "Sammelsegment unter";
+"settings.minAngle.accessibilityValue" = "%@ Grad";
+"settings.showLabels" = "Segmente beschriften";
+"settings.section.size" = "Größe";
+"settings.sizeMode" = "Größenmodus";
+"settings.sizeMode.allocated" = "Belegt auf Platte";
+"settings.sizeMode.logical" = "Logische Größe";
+"settings.section.trash" = "Papierkorb";
+"settings.trash.confirm" = "Vor dem Papierkorb fragen";
+"settings.trash.footer" = "Elemente ab 1 GB werden immer bestätigt.";
+"settings.section.scan" = "Scan";
+"settings.includeHidden" = "Versteckte Dateien zählen";
+"settings.crossMounts" = "Andere Volumes beim Scan überqueren";
+"settings.excluded" = "Ausgeschlossene Pfade";
+"settings.excluded.add" = "Pfad hinzufügen";
+"settings.excluded.remove" = "Ausgewählten Pfad entfernen";
+"settings.excluded.prompt" = "Ausschließen";
+"settings.scan.footer" = "Diese Einstellungen wirken beim nächsten Scan.";
+"settings.legend.accessibility" = "Legende: %@";
+"settings.section.language" = "Sprache";
+"settings.language" = "Sprache";
+"settings.language.automatic" = "Automatisch (System)";
+"settings.language.restartNote" = "Die neue Sprache wird nach einem Neustart von DiskRings wirksam.";
+"settings.language.restartNow" = "Jetzt neu starten";
+"settings.language.footer" = "Du kannst die Sprache auch in den Systemeinstellungen unter „Allgemein → Sprache & Region → Apps“ auswählen.";
+"settings.section.snapshots" = "Snapshots";
+"settings.snapshots.autoSave" = "Nach jedem vollständigen Scan automatisch speichern";
+"settings.snapshots.maxCount" = "Höchstens pro Scan-Wurzel";
+"settings.snapshots.footer" = "Gespeichert werden Ordner und Dateien ab 1 MB. Sind es mehr als die Höchstzahl, werden die ältesten gelöscht.";
+
+/* Get Info window */
+"info.where" = "Ort";
+"info.allocated" = "Belegt";
+"info.logical" = "Logisch";
+"info.contents" = "Inhalt";
+"info.contents.value" = "%1$@, %2$@";
+"info.modified" = "Geändert";
+"info.created" = "Erstellt";
+"info.badges" = "Kennzeichen";
+"info.protected" = "Geschützt";
+
+/* Search */
+"search.placeholder" = "Nach Namen suchen";
+"search.clear" = "Suche löschen";
+"search.backToList" = "Zurück zur Liste";
+"search.results" = "Suchergebnisse";
+"search.searching" = "Suche …";
+"search.noResults" = "Keine Treffer";
+
+/* Main window toolbar */
+"browser.listWidth" = "Breite der Liste";
+"browser.listWidth.value" = "%@ Punkt";
+"browser.back.help" = "Zurück (⌘[)";
+"browser.forward.help" = "Vorwärts (⌘])";
+"browser.scanRunning" = "Scan läuft";
+"browser.rescanRunning" = "Teil-Rescan läuft";
+"browser.rescan" = "Neu scannen";
+"browser.rescan.help" = "Den fokussierten Ordner neu scannen (⇧⌘R)";
+"browser.search" = "Suchen";
+"browser.search.help" = "Nach Namen suchen (⌘F)";
+"browser.newScan" = "Neuer Scan";
+"browser.newScan.help" = "Zurück zum Startbildschirm";
+"browser.breadcrumb" = "Pfad";
+"browser.breadcrumb.current" = "%@, aktueller Ordner";
+
+/* Status bar and scan summary */
+"status.unassigned" = "nicht zugeordnet %@";
+"status.unassigned.help" = "Belegung des Volumes, die in keinem Ordner auftaucht: System, lokale Time-Machine-Snapshots, löschbarer Speicher. Klone und Snapshots können Abweichungen verursachen.";
+"status.deviation" = "Klone und Snapshots können Abweichungen verursachen";
+"status.deviation.help" = "Klone und Snapshots können Abweichungen verursachen: APFS-Klone teilen sich Blöcke, werden aber einzeln gezählt; lokale Time-Machine-Snapshots und löschbarer Speicher tauchen in keinem Ordner auf und stehen unter „Nicht zugeordnet“.";
+"status.fda.help" = "Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail unlesbar und landen unter „Nicht zugeordnet“. Klick öffnet die Systemeinstellung.";
+"status.scanSummary" = "Scan: %1$@ in %2$@";
+"status.volume" = "%1$@: %2$@ · belegt %3$@ · frei %4$@";
+"status.volume.purgeable" = "(davon %@ löschbar)";
+"summary.finished" = "Scan abgeschlossen: %1$@, %2$@, %3$@ in %4$@";
+"summary.less" = "Weniger";
+"summary.close" = "Zusammenfassung schließen";
+"fda.grant" = "Festplattenvollzugriff erteilen …";
+
+/* Detail list */
+"list.accessibility" = "Inhalt von %@";
+"list.shareOfRoot" = "%@ der Scan-Wurzel";
+"list.unassigned.help" = "Nicht zugeordnet (System, lokale Snapshots, löschbarer Speicher): Belegung des Volumes, die in keinem Ordner auftaucht.";
+"list.row.accessibility" = "%1$@, %2$@, %3$@";
+"accessibility.zoomIn" = "Hineinzoomen";
+
+/* Start screen */
+"start.subtitle" = "Wähle ein Volume oder einen Ordner, um zu sehen, wo der Platz hingeht.";
+"start.volumes" = "Volumes";
+"start.noVolumes" = "Keine Volumes gefunden.";
+"start.scanHome" = "Benutzerordner scannen";
+"start.fda.message" = "Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail, Safari oder die Container anderer Apps unlesbar. Sie fehlen im Diagramm und landen unter „Nicht zugeordnet“.";
+"start.fda.openSettings" = "Systemeinstellungen öffnen …";
+"start.fda.checkAgain" = "Erneut prüfen";
+"start.volume.used" = "%1$@ von %2$@ belegt";
+"start.legend.used" = "Belegt %@";
+"start.legend.purgeable" = "Löschbar %@";
+"start.legend.free" = "Frei %@";
+"start.volume.accessibility" = "%1$@, %2$@ von %3$@ belegt, %4$@ frei";
+"start.volume.hint" = "Scannt dieses Volume";
+"start.dropHint" = "oder einen Ordner hierher ziehen";
+
+/* Scan progress */
+"scan.reading" = "Ordner werden gelesen …";
+"scan.title" = "Scanne %@";
+"scan.starting" = "Wird gestartet …";
+"scan.accessibility.starting" = "Scan wird gestartet";
+"scan.accessibility.running" = "Scan läuft: %1$@, %2$@";
+"scan.stalled.title" = "Wartet evtl. auf Freigabe durch macOS … (Systemdialog prüfen)";
+"scan.stalled.message" = "macOS fragt evtl. nach dem Zugriff auf einen Ordner oder ein Laufwerk; der Dialog kann hinter anderen Fenstern liegen. Mit Festplattenvollzugriff entfallen diese Abfragen.";
+"scan.stalled.fda" = "Festplattenvollzugriff …";
+"scan.stalled.fda.help" = "Öffnet „Datenschutz & Sicherheit → Festplattenvollzugriff“ in den Systemeinstellungen";
+
+/* Compare: list and chart */
+"compare.showInChart" = "Im Diagramm zeigen";
+"compare.removedName" = "%@ (entfernt)";
+"reason.noCompare" = "Kein Vergleich";
+"compare.busy.updating" = "Vergleich wird aktualisiert …";
+"compare.busy.computing" = "Vergleich wird berechnet …";
+"compare.error" = "Vergleich nicht möglich: %@";
+"compare.currentScan" = "Aktueller Scan";
+"compare.list.accessibility" = "Vergleich: Inhalt von %@";
+"compare.column.name" = "Name";
+"compare.column.before" = "Vorher";
+"compare.column.now" = "Jetzt";
+"compare.sortBy" = "Nach %@ sortieren";
+"compare.moreItems" = "weitere Elemente";
+"compare.direction" = "Richtung";
+"compare.direction.growth" = "Zuwachs";
+"compare.direction.shrink" = "Rückgang";
+"compare.largest.noShrink" = "Kein Rückgang ab 1 MB";
+"compare.largest.noGrowth" = "Kein Zuwachs ab 1 MB";
+"compare.tab.contents" = "Inhalt";
+"compare.tab.largest" = "Größte Veränderungen";
+"compare.inScanRoot" = "in der Scan-Wurzel";
+"compare.inFolder" = "in %@";
+"compare.largest.row.accessibility" = "%1$@. %2$@, %3$@, %4$@";
+"compare.chart.noGrowth" = "Kein Zuwachs seit dem Snapshot";
+"compare.chart.noData" = "Keine Daten";
+"compare.chart.noGrowth.hint" = "Unter „Delta-Färbung“ sind auch geschrumpfte und entfernte Elemente zu sehen.";
+"compare.chart.accessibility" = "Vergleichsdiagramm (%1$@) von %2$@";
+"compare.center.growth" = "Zuwachs";
+"compare.center.now" = "jetzt %@";
+"compare.tooltip.folderGrowth" = "Zuwachs im Ordner: %@";
+"compare.tooltip.growthWithoutEntries" = "Zuwachs ohne eigene Einträge";
+"compare.tooltip.smallFiles" = "kleine Dateien unter %@ und Ordner-Eigengröße";
+"compare.beforeNow" = "Vorher %1$@  →  Jetzt %2$@";
+"compare.entry.accessibility" = "%1$@, %2$@, %3$@, Delta %4$@";
+"compare.listPicker" = "Liste";
+"compare.viewPicker" = "Darstellung";
+"compare.viewPicker.help" = "Wachstum: Segmentgröße = Zuwachs. Delta-Färbung: normale Größen, rot gewachsen, grün geschrumpft.";
+"compare.end" = "Vergleich beenden";
+"compare.end.help" = "Zurück zur normalen Ansicht (Esc)";
+"compare.breadcrumb" = "Pfad im Vergleich";
+"compare.warning.footer" = "Unterschiede können deshalb auch von den Einstellungen kommen.";
+"compare.warning.accessibility" = "Warnung: %@";
+"compare.legend.growth" = "Segmentgröße = Zuwachs seit %@";
+"compare.legend.intensity" = "Kräftiger = größere Änderung";
+
+/* Compare: picker */
+"compare.with" = "Vergleichen mit …";
+"compare.with.help" = "Diesen Scan mit einem gespeicherten Snapshot vergleichen";
+"compare.picker.empty" = "Keine passenden Snapshots";
+"compare.picker.empty.message" = "Es gibt noch keinen älteren Snapshot dieser Scan-Wurzel auf diesem Volume. Snapshots entstehen automatisch nach jedem Scan oder mit „Ablage → Snapshot sichern“ (⌘S).";
+"compare.button" = "Vergleichen";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@ s";
+"format.duration.minutes" = "%1$@ min %2$@ s";

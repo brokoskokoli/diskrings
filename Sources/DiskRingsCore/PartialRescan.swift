@@ -127,13 +127,13 @@ public enum PartialRescan {
                            logicalAfter: edit.logicalAfter)
     }
 
-    /// „Library: 182,4 GB → 176,1 GB (−6,3 GB)“; „x: nicht mehr vorhanden
-    /// (−1,2 GB)“; ohne Änderung „x: 1,2 GB (unverändert)“.
+    /// „Library: 182.4 GB → 176.1 GB (−6.3 GB)“; „x: no longer exists
+    /// (−1.2 GB)“; ohne Änderung „x: 1.2 GB (unchanged)“.
     public static func summary(name: String, before: UInt64, after: UInt64, removed: Bool) -> String {
-        if removed { return "\(name): nicht mehr vorhanden (\(ByteFormat.signed(-Int64(clamping: before))))" }
-        if before == after { return "\(name): \(ByteFormat.string(after)) (unverändert)" }
+        if removed { return L("rescan.summary.removed", name, ByteFormat.signed(-Int64(clamping: before))) }
+        if before == after { return L("rescan.summary.unchanged", name, ByteFormat.string(after)) }
         let delta = Int64(clamping: after) - Int64(clamping: before)
-        return "\(name): \(ByteFormat.string(before)) → \(ByteFormat.string(after)) (\(ByteFormat.signed(delta)))"
+        return L("rescan.summary.changed", name, ByteFormat.string(before), ByteFormat.string(after), ByteFormat.signed(delta))
     }
 
     /// Geschätzter Fortschritt eines Teilscans aus den bisher gelesenen Bytes

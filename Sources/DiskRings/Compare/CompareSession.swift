@@ -21,7 +21,7 @@ final class CompareSession {
     enum Tab: String, CaseIterable, Identifiable {
         case contents, largest
         var id: Self { self }
-        var title: String { self == .contents ? "Inhalt" : "Größte Veränderungen" }
+        var title: String { self == .contents ? L("compare.tab.contents") : L("compare.tab.largest") }
     }
 
     let model: CompareModel
@@ -222,7 +222,7 @@ extension AppState {
     func startCompare(with info: SnapshotInfo) {
         guard let current = currentSnapshot() else { return }
         let store = snapshots.store
-        runCompare(oldTitle: SnapshotNaming.title(info.metadata), newTitle: "Aktueller Scan", comparesSnapshots: false,
+        runCompare(oldTitle: SnapshotNaming.title(info.metadata), newTitle: L("compare.currentScan"), comparesSnapshots: false,
                    source: .currentScan) {
             SnapshotDiff(old: try store.load(info), new: current)
         }
@@ -268,7 +268,7 @@ extension AppState {
         let token = compareRunGate.begin()
         // Für „Snapshot ↔ aktueller Scan“: der Baum, der verglichen wird.
         let comparedTree = tree
-        snapshots.busy = "Vergleich wird berechnet…"
+        snapshots.busy = L("compare.busy.computing")
         Task {
             defer { if compareRunGate.isCurrent(token) { snapshots.busy = nil } }
             do {
@@ -289,7 +289,7 @@ extension AppState {
                 if source == .currentScan, tree !== comparedTree { scheduleCompareRefresh() }
             } catch {
                 guard compareRunGate.isCurrent(token) else { return }
-                snapshots.errorMessage = "Vergleich nicht möglich: \(error)"
+                snapshots.errorMessage = L("compare.error", L10n.describe(error))
             }
         }
     }

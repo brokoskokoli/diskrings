@@ -18,7 +18,7 @@ struct StartView: View {
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("DiskRings").font(.largeTitle.weight(.semibold))
-                        Text("Wähle ein Volume oder einen Ordner, um zu sehen, wo der Platz hingeht.")
+                        Text(L("start.subtitle"))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -29,21 +29,21 @@ struct StartView: View {
                     Label(err, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 }
-                Text("Volumes").font(.headline).accessibilityAddTraits(.isHeader)
+                Text(L("start.volumes")).font(.headline).accessibilityAddTraits(.isHeader)
                 VStack(spacing: 8) {
                     ForEach(state.volumes) { v in VolumeRow(volume: v) { state.requestScan(v.path) } }
                     if state.volumes.isEmpty {
-                        Text("Keine Volumes gefunden.").foregroundStyle(.secondary)
+                        Text(L("start.noVolumes")).foregroundStyle(.secondary)
                     }
                 }
                 HStack(spacing: 12) {
                     Button { state.chooseFolder() } label: {
-                        Label("Ordner wählen…", systemImage: "folder.badge.plus")
+                        Label(L("menu.chooseFolder"), systemImage: "folder.badge.plus")
                     }
                     .controlSize(.large)
                     .keyboardShortcut("o", modifiers: .command)
                     Button { state.requestScan(NSHomeDirectory()) } label: {
-                        Label("Home-Ordner scannen", systemImage: "house")
+                        Label(L("start.scanHome"), systemImage: "house")
                     }
                     .controlSize(.large)
                     Spacer()
@@ -67,14 +67,14 @@ struct FullDiskAccessBanner: View {
                 .foregroundStyle(.orange)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Kein Festplattenvollzugriff").font(.headline)
-                Text("Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail, Safari oder die Container anderer Apps unlesbar. Sie fehlen im Diagramm und landen unter „Nicht zugeordnet“.")
+                Text(L("fda.alert.title")).font(.headline)
+                Text(L("start.fda.message"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
-                    Button("Systemeinstellungen öffnen…") { state.openFullDiskAccessSettings() }
-                    Button("Erneut prüfen") { state.refreshVolumes() }
+                    Button(L("start.fda.openSettings")) { state.openFullDiskAccessSettings() }
+                    Button(L("start.fda.checkAgain")) { state.refreshVolumes() }
                 }
                 .padding(.top, 4)
             }
@@ -104,16 +104,16 @@ struct VolumeRow: View {
                         Text(volume.name).font(.system(size: 14, weight: .semibold))
                         Text(volume.path).font(.system(size: 11)).foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(ByteFormat.string(volume.usedCapacity)) von \(ByteFormat.string(volume.totalCapacity)) belegt")
+                        Text(L("start.volume.used", ByteFormat.string(volume.usedCapacity), ByteFormat.string(volume.totalCapacity)))
                             .font(.system(size: 12).monospacedDigit())
                     }
                     UsageBar(volume: volume).frame(height: 8)
                     HStack(spacing: 12) {
-                        legend(Color.accentColor, "Belegt \(ByteFormat.string(volume.usedCapacity - min(volume.purgeableCapacity, volume.usedCapacity)))")
+                        legend(Color.accentColor, L("start.legend.used", ByteFormat.string(volume.usedCapacity - min(volume.purgeableCapacity, volume.usedCapacity))))
                         if volume.purgeableCapacity > 0 {
-                            legend(Color.purgeable, "Bereinigbar \(ByteFormat.string(volume.purgeableCapacity))")
+                            legend(Color.purgeable, L("start.legend.purgeable", ByteFormat.string(volume.purgeableCapacity)))
                         }
-                        legend(Color.primary.opacity(0.12), "Frei \(ByteFormat.string(volume.availableCapacity))")
+                        legend(Color.primary.opacity(0.12), L("start.legend.free", ByteFormat.string(volume.availableCapacity)))
                     }
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
@@ -129,8 +129,8 @@ struct VolumeRow: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .accessibilityLabel("\(volume.name), \(ByteFormat.string(volume.usedCapacity)) von \(ByteFormat.string(volume.totalCapacity)) belegt, \(ByteFormat.string(volume.availableCapacity)) frei")
-        .accessibilityHint("Scannt dieses Volume")
+        .accessibilityLabel(L("start.volume.accessibility", volume.name, ByteFormat.string(volume.usedCapacity), ByteFormat.string(volume.totalCapacity), ByteFormat.string(volume.availableCapacity)))
+        .accessibilityHint(L("start.volume.hint"))
     }
 
     private func legend(_ color: Color, _ text: String) -> some View {
@@ -168,7 +168,7 @@ private struct DropHint: View {
             Spacer()
             VStack(spacing: 6) {
                 Image(systemName: "arrow.down.doc").font(.title2).foregroundStyle(.secondary)
-                Text("oder einen Ordner hierher ziehen").foregroundStyle(.secondary)
+                Text(L("start.dropHint")).foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -198,7 +198,7 @@ struct ScanningView: View {
             } else {
                 VStack(spacing: 10) {
                     ProgressView().controlSize(.large)
-                    Text("Ordner werden gelesen…").foregroundStyle(.secondary)
+                    Text(L("scan.reading")).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -235,12 +235,12 @@ struct ScanProgressHeader: View {
         HStack(spacing: 14) {
             ProgressView().controlSize(.small).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Scanne \(state.scanPath ?? "")")
+                Text(L("scan.title", state.scanPath ?? ""))
                     .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if let p = state.progress {
-                    Text("\(filesText(p.filesScanned)) · \(ByteFormat.count(p.directoriesScanned)) Ordner · \(ByteFormat.string(p.allocatedBytes)) · \(ByteFormat.duration(p.elapsed))")
+                    Text([filesText(p.filesScanned), L("count.folders", p.directoriesScanned, ByteFormat.count(p.directoriesScanned)), ByteFormat.string(p.allocatedBytes), ByteFormat.duration(p.elapsed)].joined(separator: " · "))
                         .font(.system(size: 12).monospacedDigit())
                     Text(p.currentPath)
                         .font(.system(size: 11))
@@ -248,11 +248,11 @@ struct ScanProgressHeader: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                 } else {
-                    Text("Wird gestartet…").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(L("scan.starting")).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
             }
             Spacer()
-            Button(role: .cancel) { state.cancelScan() } label: { Text("Abbrechen") }
+            Button(role: .cancel) { state.cancelScan() } label: { Text(L("common.cancel")) }
                 .keyboardShortcut(.cancelAction)
         }
         .padding(.horizontal, 14)
@@ -262,8 +262,8 @@ struct ScanProgressHeader: View {
     }
 
     private var accessibilityText: String {
-        guard let p = state.progress else { return "Scan wird gestartet" }
-        return "Scan läuft: \(filesText(p.filesScanned)), \(ByteFormat.string(p.allocatedBytes))"
+        guard let p = state.progress else { return L("scan.accessibility.starting") }
+        return L("scan.accessibility.running", filesText(p.filesScanned), ByteFormat.string(p.allocatedBytes))
     }
 }
 
@@ -277,17 +277,17 @@ struct StallHint: View {
         HStack(spacing: 10) {
             Image(systemName: "hand.raised.fill").foregroundStyle(.orange).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Wartet evtl. auf Freigabe durch macOS … (Systemdialog prüfen)")
+                Text(L("scan.stalled.title"))
                     .font(.system(size: 12, weight: .semibold))
-                Text("macOS fragt evtl. nach dem Zugriff auf einen Ordner oder ein Laufwerk; der Dialog kann hinter anderen Fenstern liegen. Mit Festplattenvollzugriff entfallen diese Abfragen.")
+                Text(L("scan.stalled.message"))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Button("Festplattenvollzugriff…") { state.openFullDiskAccessSettings() }
+            Button(L("scan.stalled.fda")) { state.openFullDiskAccessSettings() }
                 .buttonStyle(.link)
-                .help("Öffnet „Datenschutz & Sicherheit → Festplattenvollzugriff“ in den Systemeinstellungen")
+                .help(L("scan.stalled.fda.help"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

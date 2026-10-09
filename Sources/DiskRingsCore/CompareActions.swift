@@ -59,21 +59,21 @@ public enum CompareActions {
     public static func availability(_ action: NodeAction, entries: [Int32],
                                     context c: CompareActionContext) -> ActionAvailability {
         let d = c.diff
-        guard !entries.isEmpty else { return .disabled("Nichts ausgewählt") }
+        guard !entries.isEmpty else { return .disabled(L("reason.nothingSelected")) }
         for e in entries where e < 0 || Int(e) >= d.count {
-            return .disabled("Element ist nicht mehr im Vergleich")
+            return .disabled(L("reason.notInCompare"))
         }
-        if entries.count > 1, !action.allowsMultipleTargets { return .disabled("Nur für ein einzelnes Element") }
+        if entries.count > 1, !action.allowsMultipleTargets { return .disabled(L("reason.singleItemOnly")) }
         let first = entries[0]
         switch action {
         case .copyPath:
             return .enabled
         case .zoomIn:
             // Navigation im Vergleich, auch in entfernte Ordner (Delta-Färbung zeigt sie).
-            if !d.isDirectory(first) { return .disabled("Nur für Ordner") }
-            if first == c.focusEntry { return .disabled("Ist bereits die Mitte") }
+            if !d.isDirectory(first) { return .disabled(L("reason.foldersOnly")) }
+            if first == c.focusEntry { return .disabled(L("reason.alreadyCenter")) }
             if d.oldSize(first, c.sizeMode) == 0, d.newSize(first, c.sizeMode) == 0 {
-                return .disabled("Ordner ist leer")
+                return .disabled(L("reason.folderEmpty"))
             }
             return .enabled
         case .revealInFinder, .open, .quickLook, .info, .rescan, .moveToTrash:
@@ -82,22 +82,22 @@ public enum CompareActions {
         let removed = entries.filter { d.entries[Int($0)].newIndex < 0 }
         if !removed.isEmpty {
             return entries.count == 1
-                ? .disabled("„\(d.name(of: first))“ existiert nicht mehr (seit dem Snapshot entfernt)")
-                : .disabled("Enthält entfernte Elemente, die es nicht mehr gibt")
+                ? .disabled(L("reason.removedSinceSnapshot", d.name(of: first)))
+                : .disabled(L("reason.containsRemoved"))
         }
         if c.comparesSnapshots || c.current == nil {
             switch action {
             case .revealInFinder, .open, .quickLook:
                 if let missing = entries.first(where: { !c.fileExists(d.path(of: $0)) }) {
-                    return .disabled("„\(d.name(of: missing))“ existiert nicht mehr auf dem Datenträger")
+                    return .disabled(L("reason.missingOnDisk", d.name(of: missing)))
                 }
                 return .enabled
             default:
-                return .disabled("Beim Vergleich zweier Snapshots nicht möglich")
+                return .disabled(L("reason.twoSnapshots"))
             }
         }
         guard let current = c.current, let nodes = nodes(forEntries: entries, context: c) else {
-            return .disabled("Nicht mehr im aktuellen Scan")
+            return .disabled(L("reason.notInCurrentScan"))
         }
         return action.availability(targets: nodes, context: current)
     }

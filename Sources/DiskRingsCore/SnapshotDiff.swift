@@ -57,18 +57,15 @@ public struct DiffSummary: Sendable, Equatable {
     /// Volume-Wurzel gescannt haben).
     public let unassignedDelta: Int64?
 
-    /// Deutsche Kopfzeile, z. B. „Seit 02.10., 09:14: belegt +38,2 GB · frei −38,2 GB · davon nicht zugeordnet +4,1 GB“.
+    /// Kurze Kopfzeile (CLI), z. B. „Since 10/02, 9:14 AM: used +38.2 GB · free −38.2 GB · of which unassigned +4.1 GB“.
     public var headline: String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "de_DE")
-        f.dateFormat = "dd.MM., HH:mm"
         var parts: [String] = []
-        if let u = usedDelta { parts.append("belegt \(ByteFormat.signed(u))") } else {
-            parts.append("Scan \(ByteFormat.signed(scanDelta))")
+        if let u = usedDelta { parts.append(L("compare.part.used", ByteFormat.signed(u))) } else {
+            parts.append(L("compare.part.scan", ByteFormat.signed(scanDelta)))
         }
-        if let fr = freeDelta { parts.append("frei \(ByteFormat.signed(fr))") }
-        if let n = unassignedDelta { parts.append("davon nicht zugeordnet \(ByteFormat.signed(n))") }
-        return "Seit \(f.string(from: oldDate)): " + parts.joined(separator: " · ")
+        if let fr = freeDelta { parts.append(L("compare.part.free", ByteFormat.signed(fr))) }
+        if let n = unassignedDelta { parts.append(L("compare.part.unassigned", ByteFormat.signed(n))) }
+        return L("compare.since", CompareHeadline.shortDate(oldDate)) + ": " + parts.joined(separator: " · ")
     }
 }
 
@@ -87,15 +84,15 @@ public enum DiffWarning: Sendable, Equatable, CustomStringConvertible {
         case .differentOptions(let o, let n):
             var why: [String] = []
             if o.includeHidden != n.includeHidden {
-                why.append(n.includeHidden ? "vorher ohne versteckte Dateien" : "jetzt ohne versteckte Dateien")
+                why.append(n.includeHidden ? L("compare.warning.hiddenBefore") : L("compare.warning.hiddenNow"))
             }
-            if o.excludedPaths != n.excludedPaths { why.append("andere Ausschlussliste") }
-            if o.crossMountPoints != n.crossMountPoints { why.append("andere Einstellung für Volumes") }
-            return "Snapshot mit anderen Einstellungen erstellt (\(why.joined(separator: ", ")))"
-        case .differentRoot(let o, let n): return "Andere Scan-Wurzel: \(o) gegenüber \(n)"
-        case .differentVolume: return "Anderes Volume"
+            if o.excludedPaths != n.excludedPaths { why.append(L("compare.warning.exclusions")) }
+            if o.crossMountPoints != n.crossMountPoints { why.append(L("compare.warning.volumes")) }
+            return L("compare.warning.options", why.joined(separator: L("list.separator")))
+        case .differentRoot(let o, let n): return L("compare.warning.root", o, n)
+        case .differentVolume: return L("compare.warning.volume")
         case .differentMinimumFileSize(let o, let n):
-            return "Dateien unter \(ByteFormat.string(max(o, n))) werden nur über die Ordnersumme verglichen"
+            return L("compare.warning.minimumSize", ByteFormat.string(max(o, n)))
         }
     }
 }

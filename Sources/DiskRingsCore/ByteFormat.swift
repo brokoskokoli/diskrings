@@ -1,82 +1,92 @@
-/// Formatierung von Größen, Anzahlen und Anteilen auf Deutsch.
+import Foundation
+
+/// Formatierung von Größen, Anzahlen, Anteilen und Dauern, abhängig vom Locale.
 ///
 /// Größen werden wie im Finder dezimal angegeben (1 KB = 1000 Byte).
-/// Regeln: unter 1000 Byte ganze Bytes („512 Byte“), Kilobyte ohne
-/// Nachkommastelle („4 KB“), ab Megabyte eine Nachkommastelle mit Komma
-/// („1,2 MB“, „182,4 GB“). Die Ausgabe ist unabhängig vom System-Locale.
+/// Regeln: unter 1000 Byte ganze Bytes („512 bytes“), Kilobyte ohne
+/// Nachkommastelle („4 KB“), ab Megabyte eine Nachkommastelle („1.2 MB“,
+/// de „182,4 GB“, fr „182,4 Go“). Dezimal- und Tausendertrenner kommen aus dem
+/// Locale, die Einheiten aus der Sprachtabelle (`unit.*`). Standard ist
+/// `L10n.locale`; Tests geben das Locale fest vor.
 public enum ByteFormat {
-    private static let units = ["KB", "MB", "GB", "TB", "PB", "EB"]
+    private static let unitKeys = ["unit.kb", "unit.mb", "unit.gb", "unit.tb", "unit.pb", "unit.eb"]
 
     /// Geschütztes Leerzeichen zwischen Zahl und Einheit.
     public static let unitSeparator = "\u{00A0}"
-    /// Schmales geschütztes Leerzeichen als Tausendertrenner („312 841“).
-    public static let groupSeparator = "\u{202F}"
     /// Echtes Minuszeichen für negative Werte.
     public static let minus = "\u{2212}"
 
-    public static func string(_ bytes: UInt64) -> String {
-        if bytes < 1000 { return "\(bytes)\(unitSeparator)Byte" }
+    public static func string(_ bytes: UInt64, locale: Locale = L10n.locale) -> String {
+        let style = Style.for(locale)
+        if bytes < 1000 {
+            return L10n.format("format.bytes", [Int(bytes), style.integer(bytes)], language: style.language)
+        }
         // Ganzzahlig in Zehnteln der jeweiligen Einheit rechnen, damit nichts
         // durch Gleitkomma-Rundung kippt.
         var unit = 0
         var divisor: UInt64 = 1000
-        while unit < units.count - 1, bytes / divisor >= 1000 {
+        while unit < unitKeys.count - 1, bytes / divisor >= 1000 {
             divisor *= 1000
             unit += 1
         }
         if unit == 0 {
             let kb = roundDiv(bytes, 1000)
-            if kb < 1000 { return "\(kb)\(unitSeparator)KB" }
-            // 999 500 Byte → „1,0 MB“
-            return "\(formatTenths(roundDiv(bytes, 100_000)))\(unitSeparator)MB"
+            if kb < 1000 { return style.integer(kb) + unitSeparator + style.units[0] }
+            // 999 500 Byte → „1.0 MB“
+            return style.tenths(roundDiv(bytes, 100_000)) + unitSeparator + style.units[1]
         }
         var tenths = roundDiv(bytes, divisor / 10)
-        if tenths >= 10_000, unit < units.count - 1 {
+        if tenths >= 10_000, unit < unitKeys.count - 1 {
             unit += 1
             tenths = roundDiv(bytes, divisor * 100)
         }
-        return "\(formatTenths(tenths))\(unitSeparator)\(units[unit])"
+        return style.tenths(tenths) + unitSeparator + style.units[unit]
     }
 
-    /// Vorzeichenbehaftete Größe für Differenzen („+6,3 GB“, „−6,3 GB“, „0 Byte“).
-    public static func signed(_ delta: Int64) -> String {
-        if delta == 0 { return string(0) }
-        let mag = string(delta.magnitude)
+    /// Vorzeichenbehaftete Größe für Differenzen („+6.3 GB“, „−6.3 GB“, „0 bytes“).
+    public static func signed(_ delta: Int64, locale: Locale = L10n.locale) -> String {
+        if delta == 0 { return string(0, locale: locale) }
+        let mag = string(delta.magnitude, locale: locale)
         return (delta > 0 ? "+" : minus) + mag
     }
 
-    /// Anzahl mit Tausendertrennern („312 841“).
-    public static func count<I: BinaryInteger>(_ value: I) -> String {
-        let neg = value < 0
-        let digits = String(value.magnitude)
-        var out = ""
-        for (i, ch) in digits.enumerated() {
-            if i > 0, (digits.count - i) % 3 == 0 { out += groupSeparator }
-            out.append(ch)
-        }
-        return neg ? minus + out : out
+    /// Anzahl mit Tausendertrennern des Locales (en „312,841“, de „312.841“, fr „312 841“).
+    public static func count<I: BinaryInteger>(_ value: I, locale: Locale = L10n.locale) -> String {
+        let out = Style.for(locale).integer(value.magnitude)
+        return value < 0 ? minus + out : out
     }
 
-    /// Anteil als Prozent („41 %“, unter 10 % mit einer Nachkommastelle: „0,5 %“).
-    public static func percent(_ fraction: Double) -> String {
+    /// Anteil als Prozent („41 %“, unter 10 % mit einer Nachkommastelle: „0,5 %“);
+    /// Stellung des Prozentzeichens wie im Locale (en „41%“, tr „%41“).
+    public static func percent(_ fraction: Double, locale: Locale = L10n.locale) -> String {
         guard fraction.isFinite else { return "–" }
+        let style = Style.for(locale)
         let p = fraction * 100
+        let number: String
+        let negative: Bool
         if p.magnitude < 9.95 {
             let tenths = Int64((p * 10).rounded())
-            let sign = tenths < 0 ? minus : ""
-            return "\(sign)\(formatTenths(tenths.magnitude))\(unitSeparator)%"
+            negative = tenths < 0
+            number = style.tenths(tenths.magnitude)
+        } else {
+            let whole = Int64(p.rounded())
+            negative = whole < 0
+            number = style.integer(whole.magnitude)
         }
-        return "\(Int64(p.rounded()))\(unitSeparator)%"
+        return (negative ? minus : "") + style.percentPrefix + number + style.percentSuffix
     }
 
-    /// Dauer in Sekunden („12,3 s“, „2 min 05 s“).
-    public static func duration(_ seconds: Double) -> String {
+    /// Dauer in Sekunden („12.3 s“, „2 min 05 s“).
+    public static func duration(_ seconds: Double, locale: Locale = L10n.locale) -> String {
+        let style = Style.for(locale)
         if seconds < 60 {
-            return "\(formatTenths(UInt64((max(seconds, 0) * 10).rounded())))\(unitSeparator)s"
+            let t = style.tenths(UInt64((max(seconds, 0) * 10).rounded()))
+            return L10n.format("format.duration.seconds", [t], language: style.language)
         }
         let total = Int(seconds.rounded())
         let s = total % 60
-        return "\(total / 60)\(unitSeparator)min \(s < 10 ? "0" : "")\(s)\(unitSeparator)s"
+        return L10n.format("format.duration.minutes", [String(total / 60), (s < 10 ? "0" : "") + String(s)],
+                           language: style.language)
     }
 
     private static func roundDiv(_ a: UInt64, _ b: UInt64) -> UInt64 {
@@ -84,7 +94,56 @@ public enum ByteFormat {
         return r * 2 >= b ? q + 1 : q
     }
 
-    private static func formatTenths(_ tenths: UInt64) -> String {
-        "\(count(tenths / 10)),\(tenths % 10)"
+    /// Trennzeichen, Prozentmuster und Einheiten je Locale (zwischengespeichert).
+    struct Style: Sendable {
+        let language: String
+        let decimal: String
+        let group: String
+        let percentPrefix: String
+        let percentSuffix: String
+        let units: [String]
+
+        private static let lock = NSLock()
+        nonisolated(unsafe) private static var cache: [String: Style] = [:]
+
+        static func `for`(_ locale: Locale) -> Style {
+            let id = locale.identifier
+            if let s = lock.withLock({ cache[id] }) { return s }
+            let s = Style(locale: locale)
+            lock.withLock { cache[id] = s }
+            return s
+        }
+
+        private init(locale: Locale) {
+            language = L10n.resolve(locale.identifier)
+            decimal = locale.decimalSeparator ?? "."
+            group = locale.groupingSeparator ?? ""
+            // Muster aus 0,5 → „50 %“, „50%“, „%50“ ableiten.
+            let sample = (0.5).formatted(.percent.precision(.fractionLength(0)).locale(locale))
+            if let r = sample.range(of: "50") {
+                percentPrefix = String(sample[..<r.lowerBound])
+                percentSuffix = String(sample[r.upperBound...])
+            } else {
+                percentPrefix = ""
+                percentSuffix = ByteFormat.unitSeparator + "%"
+            }
+            let lang = language
+            units = ByteFormat.unitKeys.map { L10n.raw($0, language: lang) }
+        }
+
+        func integer<I: BinaryInteger>(_ value: I) -> String {
+            let digits = String(value)
+            guard !group.isEmpty, digits.count > 3 else { return digits }
+            var out = ""
+            for (i, ch) in digits.enumerated() {
+                if i > 0, (digits.count - i) % 3 == 0 { out += group }
+                out.append(ch)
+            }
+            return out
+        }
+
+        func tenths(_ tenths: UInt64) -> String {
+            integer(tenths / 10) + decimal + String(tenths % 10)
+        }
     }
 }

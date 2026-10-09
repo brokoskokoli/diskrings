@@ -37,7 +37,7 @@ struct CompareListView: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Vergleich: Inhalt von \(model.diff.name(of: session.focus))")
+        .accessibilityLabel(L("compare.list.accessibility", model.diff.name(of: session.focus)))
     }
 
     private func header(_ m: CompareModel) -> some View {
@@ -63,9 +63,9 @@ struct CompareListView: View {
 
     private var columnHeader: some View {
         HStack(spacing: 6) {
-            sortButton("Name", .name).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 34)
-            sortButton("Vorher", .before).frame(width: Self.sizeColumn, alignment: .trailing)
-            sortButton("Jetzt", .now).frame(width: Self.sizeColumn, alignment: .trailing)
+            sortButton(L("compare.column.name"), .name).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 34)
+            sortButton(L("compare.column.before"), .before).frame(width: Self.sizeColumn, alignment: .trailing)
+            sortButton(L("compare.column.now"), .now).frame(width: Self.sizeColumn, alignment: .trailing)
             sortButton("Δ", .delta).frame(width: Self.deltaColumn, alignment: .trailing)
         }
         .font(.system(size: 11, weight: .medium))
@@ -87,8 +87,8 @@ struct CompareListView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Nach \(title) sortieren")
-        .accessibilityLabel("Nach \(title) sortieren")
+        .help(L("compare.sortBy", title))
+        .accessibilityLabel(L("compare.sortBy", title))
     }
 
     private func rows(_ m: CompareModel) -> [CompareRow] {
@@ -160,7 +160,7 @@ private struct CompareRowView: View {
                     .frame(width: CompareListView.deltaColumn, alignment: .trailing)
             } else if case .more(_, let count) = row.kind {
                 Image(systemName: "ellipsis.circle").foregroundStyle(.secondary).frame(width: 16)
-                Text("\(ByteFormat.count(count)) weitere Elemente").foregroundStyle(.secondary)
+                Text(L("count.moreItems", count, ByteFormat.count(count))).foregroundStyle(.secondary)
                 Spacer()
             }
         }
@@ -187,9 +187,9 @@ private struct CompareRowView: View {
         }
         .contextMenu { if isEntry { CompareContextMenu(state: state, entry: e) } }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isEntry ? CompareText.accessibility(m, e) : "weitere Elemente")
+        .accessibilityLabel(isEntry ? CompareText.accessibility(m, e) : L("compare.moreItems"))
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
-        .accessibilityAction(named: "Hineinzoomen") { if isEntry { session.navigate(to: e) } }
+        .accessibilityAction(named: L("accessibility.zoomIn")) { if isEntry { session.navigate(to: e) } }
     }
 
     private var isExpandable: Bool {
@@ -226,9 +226,9 @@ struct LargestChangesView: View {
         let m = session.model
         let changes = m.largestChanges(growth: !session.showShrink)
         VStack(spacing: 0) {
-            Picker("Richtung", selection: Binding(get: { session.showShrink }, set: { session.showShrink = $0 })) {
-                Text("Zuwachs").tag(false)
-                Text("Rückgang").tag(true)
+            Picker(L("compare.direction"), selection: Binding(get: { session.showShrink }, set: { session.showShrink = $0 })) {
+                Text(L("compare.direction.growth")).tag(false)
+                Text(L("compare.direction.shrink")).tag(true)
             }
             .pickerStyle(.radioGroup)
             .horizontalRadioGroupLayout()
@@ -238,7 +238,7 @@ struct LargestChangesView: View {
             .padding(.vertical, 6)
             Divider()
             if changes.isEmpty {
-                Text(session.showShrink ? "Kein Rückgang ab 1 MB" : "Kein Zuwachs ab 1 MB")
+                Text(session.showShrink ? L("compare.largest.noShrink") : L("compare.largest.noGrowth"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -254,13 +254,13 @@ struct LargestChangesView: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Größte Veränderungen")
+        .accessibilityLabel(L("compare.tab.largest"))
     }
 
     private func relative(_ path: String, root: String) -> String {
         let parent = (path as NSString).deletingLastPathComponent
-        if parent == root { return "in der Scan-Wurzel" }
-        if parent.hasPrefix(root + "/") { return "in " + String(parent.dropFirst(root.count + 1)) }
+        if parent == root { return L("compare.inScanRoot") }
+        if parent.hasPrefix(root + "/") { return L("compare.inFolder", String(parent.dropFirst(root.count + 1))) }
         return parent
     }
 }
@@ -299,7 +299,7 @@ private struct LargestChangeRow: View {
                 let signed = session.showShrink ? -Int64(clamping: change.amount) : Int64(clamping: change.amount)
                 Text(ByteFormat.signed(signed)).font(.system(size: 13, weight: .semibold).monospacedDigit())
                     .foregroundStyle(deltaTextColor(signed))
-                Text("\(change.status == .added ? "–" : ByteFormat.string(change.oldSize)) → \(change.status == .removed ? "–" : ByteFormat.string(change.newSize))")
+                Text((change.status == .added ? "–" : ByteFormat.string(change.oldSize)) + " → " + (change.status == .removed ? "–" : ByteFormat.string(change.newSize)))
                     .font(.system(size: 10).monospacedDigit()).foregroundStyle(.secondary)
             }
         }
@@ -316,7 +316,7 @@ private struct LargestChangeRow: View {
         .contextMenu { CompareContextMenu(state: state, entry: change.entry) }
         .help(change.path)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(rank). \(change.name), \(change.status.label), \(ByteFormat.signed(change.delta))")
+        .accessibilityLabel(L("compare.largest.row.accessibility", ByteFormat.count(rank), change.name, change.status.label, ByteFormat.signed(change.delta)))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { session.reveal(change.entry) }
     }

@@ -109,8 +109,8 @@ struct BrowserBody: View {
                         .onEnded { _ in dragStart = nil })
                     .onTapGesture(count: 2) { state.prefs.listWidth = 400 }
             }
-            .accessibilityLabel("Breite der Liste")
-            .accessibilityValue("\(Int(state.prefs.listWidth)) Punkt")
+            .accessibilityLabel(L("browser.listWidth"))
+            .accessibilityValue(L("browser.listWidth.value", ByteFormat.count(Int(state.prefs.listWidth))))
             .accessibilityAdjustableAction { dir in
                 let step = dir == .increment ? 20.0 : -20.0
                 state.prefs.listWidth = min(max(state.prefs.listWidth + step, Preferences.listWidthRange.lowerBound),
@@ -127,12 +127,12 @@ struct BrowserToolbar: View {
             ControlGroup {
                 Button { state.goBack() } label: { Image(systemName: "chevron.left") }
                     .disabled(!state.history.canGoBack)
-                    .help("Zurück (⌘[)")
-                    .accessibilityLabel("Zurück")
+                    .help(L("browser.back.help"))
+                    .accessibilityLabel(L("menu.back"))
                 Button { state.goForward() } label: { Image(systemName: "chevron.right") }
                     .disabled(!state.history.canGoForward)
-                    .help("Vor (⌘])")
-                    .accessibilityLabel("Vor")
+                    .help(L("browser.forward.help"))
+                    .accessibilityLabel(L("menu.forward"))
             }
             .controlGroupStyle(.navigation)
             .fixedSize()
@@ -140,33 +140,33 @@ struct BrowserToolbar: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             if state.phase == .scanning || !state.rescanQueue.isEmpty {
                 ProgressView().controlSize(.small)
-                    .accessibilityLabel(state.phase == .scanning ? "Scan läuft" : "Teil-Rescan läuft")
+                    .accessibilityLabel(state.phase == .scanning ? L("browser.scanRunning") : L("browser.rescanRunning"))
             }
             CompareToolbarButton(state: state)
             let rescan = state.availability(.rescan, targets: [state.focus])
             Menu {
-                Button("Diesen Ordner neu scannen") { state.rescanFocus() }
+                Button(L("action.rescan")) { state.rescanFocus() }
                     .disabled(!rescan.isEnabled)
-                Button("Komplett neu scannen") { state.rescan() }
+                Button(L("menu.fullRescan")) { state.rescan() }
                     .disabled(state.phase == .scanning)
             } label: {
-                Label("Rescan", systemImage: "arrow.clockwise")
+                Label(L("browser.rescan"), systemImage: "arrow.clockwise")
             } primaryAction: {
                 state.rescanFocus()
             }
             .menuStyle(.button)
             .fixedSize()
             .disabled(state.phase == .scanning)
-            .help(rescan.isEnabled ? "Den fokussierten Ordner neu scannen (⇧⌘R)" : (rescan.reason ?? ""))
+            .help(rescan.isEnabled ? L("browser.rescan.help") : (rescan.reason ?? ""))
             if state.searchVisible {
                 SearchField(state: state)
             }
             Button { state.toggleSearch() } label: { Image(systemName: "magnifyingglass") }
-                .help("Nach Namen suchen (⌘F)")
-                .accessibilityLabel("Suchen")
+                .help(L("browser.search.help"))
+                .accessibilityLabel(L("browser.search"))
                 .disabled(state.tree == nil)
-            Button { state.backToStart() } label: { Label("Neuer Scan", systemImage: "externaldrive") }
-                .help("Zurück zum Startbildschirm")
+            Button { state.backToStart() } label: { Label(L("browser.newScan"), systemImage: "externaldrive") }
+                .help(L("browser.newScan.help"))
         }
         .labelStyle(.titleAndIcon)
         .padding(.horizontal, 12)
@@ -205,7 +205,7 @@ struct BreadcrumbView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(label(tree, node))\(node == state.focus ? ", aktueller Ordner" : "")")
+                        .accessibilityLabel(node == state.focus ? L("browser.breadcrumb.current", label(tree, node)) : label(tree, node))
                     }
                     ForEach(hoverPath, id: \.self) { node in
                         separator
@@ -218,7 +218,7 @@ struct BreadcrumbView: View {
                 .font(.system(size: 13))
             }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Pfad")
+            .accessibilityLabel(L("browser.breadcrumb"))
         }
     }
 
@@ -248,29 +248,29 @@ struct StatusBar: View {
                 Image(systemName: "internaldrive").foregroundStyle(.secondary).accessibilityHidden(true)
                 Text(volumeText(v))
                 if state.unassigned > 0 {
-                    Text("· nicht zugeordnet \(ByteFormat.string(state.unassigned))")
-                        .help("Belegung des Volumes, die in keinem Ordner auftaucht: System, lokale Time-Machine-Snapshots, bereinigbarer Speicher. Klone und Snapshots können Abweichungen verursachen.")
+                    Text("· " + L("status.unassigned", ByteFormat.string(state.unassigned)))
+                        .help(L("status.unassigned.help"))
                 }
             } else if let p = state.progress {
-                Text("\(filesText(p.filesScanned)) · \(ByteFormat.string(p.allocatedBytes))")
+                Text(filesText(p.filesScanned) + " · " + ByteFormat.string(p.allocatedBytes))
             }
             if state.volume != nil {
                 Image(systemName: "info.circle")
                     .foregroundStyle(.secondary)
-                    .help("Klone und Snapshots können Abweichungen verursachen: APFS-Klone teilen sich Blöcke, werden aber einzeln gezählt; lokale Time-Machine-Snapshots und bereinigbarer Speicher tauchen in keinem Ordner auf und stehen unter „Nicht zugeordnet“.")
-                    .accessibilityLabel("Klone und Snapshots können Abweichungen verursachen")
+                    .help(L("status.deviation.help"))
+                    .accessibilityLabel(L("status.deviation"))
             }
             Spacer()
             if state.fullDiskAccess == .denied {
                 Button { state.openFullDiskAccessSettings() } label: {
-                    Label("Kein Festplattenvollzugriff", systemImage: "lock.shield")
+                    Label(L("fda.alert.title"), systemImage: "lock.shield")
                 }
                 .buttonStyle(.link)
                 .foregroundStyle(.orange)
-                .help("Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail unlesbar und landen unter „Nicht zugeordnet“. Klick öffnet die Systemeinstellung.")
+                .help(L("status.fda.help"))
             }
             if let r = state.summary {
-                Text("Scan: \(filesText(r.fileCount)) in \(ByteFormat.duration(r.duration))")
+                Text(L("status.scanSummary", filesText(r.fileCount), ByteFormat.duration(r.duration)))
                     .foregroundStyle(.secondary)
             }
         }
@@ -282,8 +282,9 @@ struct StatusBar: View {
     }
 
     private func volumeText(_ v: VolumeInfo) -> String {
-        var s = "\(v.name): \(ByteFormat.string(v.totalCapacity)) · belegt \(ByteFormat.string(v.usedCapacity)) · frei \(ByteFormat.string(v.availableCapacity))"
-        if v.purgeableCapacity > 0 { s += " (davon \(ByteFormat.string(v.purgeableCapacity)) bereinigbar)" }
+        var s = L("status.volume", v.name, ByteFormat.string(v.totalCapacity), ByteFormat.string(v.usedCapacity),
+                  ByteFormat.string(v.availableCapacity))
+        if v.purgeableCapacity > 0 { s += " " + L("status.volume.purgeable", ByteFormat.string(v.purgeableCapacity)) }
         return s
     }
 }
@@ -299,9 +300,9 @@ struct ScanSummaryBanner: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityHidden(true)
-                Text("Scan abgeschlossen: \(filesText(result.fileCount)), \(ByteFormat.count(result.directoryCount)) Ordner, \(ByteFormat.string(result.allocatedSize)) in \(ByteFormat.duration(result.duration))")
+                Text(L("summary.finished", filesText(result.fileCount), L("count.folders", result.directoryCount, ByteFormat.count(result.directoryCount)), ByteFormat.string(result.allocatedSize), ByteFormat.duration(result.duration)))
                 if !result.unreadablePaths.isEmpty {
-                    Button(showUnreadable ? "Weniger" : "\(ByteFormat.count(result.unreadablePaths.count)) nicht lesbar") {
+                    Button(showUnreadable ? L("summary.less") : L("summary.unreadable", result.unreadablePaths.count, ByteFormat.count(result.unreadablePaths.count))) {
                         showUnreadable.toggle()
                     }
                     .buttonStyle(.link)
@@ -310,7 +311,7 @@ struct ScanSummaryBanner: View {
                 Button { state.showSummary = false } label: { Image(systemName: "xmark") }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Zusammenfassung schließen")
+                    .accessibilityLabel(L("summary.close"))
             }
             if showUnreadable {
                 ScrollView {
@@ -323,7 +324,7 @@ struct ScanSummaryBanner: View {
                 }
                 .frame(maxHeight: 120)
                 if state.fullDiskAccess == .denied {
-                    Button("Festplattenvollzugriff erteilen…") { state.openFullDiskAccessSettings() }
+                    Button(L("fda.grant")) { state.openFullDiskAccessSettings() }
                         .controlSize(.small)
                 }
             }

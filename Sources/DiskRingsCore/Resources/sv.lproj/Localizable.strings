@@ -1,0 +1,404 @@
+/* DiskRings – sv. Keys are stable IDs; English (en.lproj) is the source. */
+
+/* Context menu and Item menu (NodeAction) */
+"action.revealInFinder" = "Visa i Finder";
+"action.open" = "Öppna";
+"action.quickLook" = "Snabbtitt";
+"action.zoomIn" = "Zooma in här";
+"action.copyPath" = "Kopiera sökväg";
+"action.info" = "Visa info";
+"action.rescan" = "Skanna om den här mappen";
+"action.moveToTrash" = "Flytta till papperskorgen";
+"shortcut.space" = "Mellanslag";
+
+/* Reasons why an action is unavailable (tooltips) */
+"reason.nothingSelected" = "Inget är markerat";
+"reason.notInTree" = "Objektet finns inte längre i trädet";
+"reason.singleItemOnly" = "Endast för ett enskilt objekt";
+"reason.foldersOnly" = "Endast för mappar";
+"reason.alreadyCenter" = "Redan i mitten";
+"reason.folderEmpty" = "Mappen är tom";
+"reason.fullScanRunning" = "Inte möjligt under en fullständig skanning";
+"reason.otherVolume" = "En annan volym (genomsöktes inte under skanningen)";
+"reason.rescanRunning" = "Skannas om just nu";
+"reason.rescanRunningIn" = "Skannas om som en del av ”%@”";
+"reason.scanRunning" = "Inte möjligt under skanningen";
+"reason.notInCompare" = "Objektet finns inte längre i jämförelsen";
+"reason.removedSinceSnapshot" = "”%@” finns inte längre (borttagen sedan ögonblicksbilden)";
+"reason.containsRemoved" = "Innehåller borttagna objekt som inte längre finns";
+"reason.missingOnDisk" = "”%@” finns inte längre på skivan";
+"reason.twoSnapshots" = "Inte möjligt när två ögonblicksbilder jämförs";
+"reason.notInCurrentScan" = "Finns inte längre i den aktuella skanningen";
+
+/* Trash: confirmation, errors, undo */
+"trash.error.scanRoot" = "Själva skanningsroten kan inte flyttas till papperskorgen";
+"trash.error.protected" = "Skyddad: %@";
+"trash.error.protectedItem" = "Skyddad: %1$@ – %2$@";
+"trash.error.protectedResolved" = "Skyddad: %1$@ (upplöst sökväg %2$@)";
+"trash.error.unresolvable" = "Sökvägen kan inte längre lösas upp";
+"trash.error.outsideRoot" = "Inte längre inuti skanningsroten";
+"trash.error.outsideRootSymlink" = "Inte längre inuti skanningsroten (en mapp i sökvägen ersattes av en symbolisk länk)";
+"trash.confirm.title.one" = "Vill du flytta ”%@” till papperskorgen?";
+"trash.confirm.total" = "Totalt %1$@ · %2$@";
+"trash.undo.unknownLocation" = "Platsen i papperskorgen är okänd";
+"trash.undo.notInTrash" = "Finns inte längre i papperskorgen";
+"trash.undo.unrecognized" = "Objektet i papperskorgen kan inte identifieras på ett tillförlitligt sätt";
+"trash.undo.replacedInTrash" = "Ett annat objekt med det här namnet finns nu i papperskorgen (har papperskorgen tömts eller objektet ändrats?)";
+"trash.undo.occupied" = "Ett annat objekt finns nu på den ursprungliga platsen";
+"trash.undo.parentMissing" = "Den överordnade mappen finns inte längre";
+"trash.confirm.undoHint" = "Du kan lägga tillbaka objekten från papperskorgen med ⌘Z eller i Finder.";
+"trash.confirm.dontAsk" = "Fråga inte igen (endast för objekt under 1 GB)";
+"trash.confirm.alwaysAsk" = "Objekt på 1 GB eller mer måste alltid bekräftas.";
+
+/* Protected paths (reasons) */
+"protected.system" = "Systemområde i macOS (%@)";
+"protected.volumeRoot" = "Roten på en volym";
+"protected.home" = "Hela hemmappen";
+"protected.homeLibrary" = "~/Library i sin helhet";
+"protected.runningApp" = "Den aktiva DiskRings-appen";
+"protected.contains" = "Innehåller ett skyddat område: %1$@ (%2$@)";
+
+/* Scan errors */
+"error.scan.notFound" = "Sökvägen hittades inte: %@";
+"error.scan.tooManyNodes" = "För många objekt för ett skanningsträd";
+
+/* Snapshot errors (technical detail in %@ stays in English) */
+"error.snapshot.notASnapshot" = "Inte en ögonblicksbildsfil från DiskRings";
+"error.snapshot.unsupportedVersion" = "Ögonblicksbildsformatet %@ stöds inte (nyare version?)";
+"error.snapshot.truncated" = "Ögonblicksbildsfilen är ofullständig";
+"error.snapshot.corrupted" = "Ögonblicksbildsfilen är skadad: %@";
+"error.snapshot.outsideStore" = "Filen finns inte i mappen för ögonblicksbilder: %@";
+
+/* Snapshots window */
+"snapshots.damaged.newer" = "nyare version";
+"snapshots.damaged.damaged" = "skadad";
+"snapshot.untitled" = "Ögonblicksbild av %@";
+"snapshots.window.title" = "Ögonblicksbilder";
+"snapshots.empty" = "Inga ögonblicksbilder än";
+"snapshots.empty.message" = "Ögonblicksbilder skapas automatiskt efter varje fullständig skanning (kan stängas av i Inställningar) eller med ”Arkiv → Spara ögonblicksbild” (⌘S).";
+"snapshots.column.date" = "Datum";
+"snapshots.column.name" = "Namn";
+"snapshots.column.root" = "Skanningsrot";
+"snapshots.column.size" = "Total storlek";
+"snapshots.column.file" = "Fil";
+"snapshots.compareEachOther" = "Jämför med varandra";
+"snapshots.olderIsBefore" = "Den äldre räknas som ”före”";
+"snapshots.selectTwo" = "Markera två ögonblicksbilder att jämföra";
+"snapshots.rename.title" = "Byt namn på ögonblicksbild";
+"snapshots.rename.message" = "Skanning av %1$@, %2$@";
+"snapshots.delete.message" = "Ögonblicksbildsfilen raderas permanent. Skannade filer och mappar påverkas inte.";
+"snapshots.delete.title.one" = "Vill du radera ögonblicksbilden?";
+"snapshots.damaged.deleteAll" = "Radera alla…";
+"snapshots.damaged.delete.title.one" = "Vill du radera den oläsbara filen?";
+"snapshots.damaged.delete.newer" = "Några av dem är ögonblicksbilder från en nyare version av DiskRings som den här versionen inte kan läsa; en nyare app kan fortfarande öppna dem. Filerna raderas permanent. Skannade filer och mappar påverkas inte.";
+"snapshots.damaged.delete.message" = "Filen kan inte längre läsas som en ögonblicksbild och raderas permanent. Skannade filer och mappar påverkas inte.";
+"snapshots.name.placeholder" = "Namn (valfritt), t.ex. ”före Xcode-uppdatering”";
+"snapshots.save.title" = "Spara ögonblicksbild";
+"snapshots.save.confirm" = "Spara";
+"snapshots.save.message" = "Aktuell skanning av %@";
+"menu.saveSnapshot" = "Spara ögonblicksbild…";
+"menu.snapshots" = "Ögonblicksbilder…";
+"snapshots.error.read" = "Ögonblicksbilderna kunde inte läsas: %@";
+"snapshots.saved" = "Ögonblicksbilden ”%@” har sparats";
+"snapshots.error.save" = "Ögonblicksbilden kunde inte sparas: %@";
+"snapshots.error.rename" = "Det gick inte att byta namn: %@";
+"snapshots.error.delete" = "Det gick inte att radera: %@";
+
+/* General */
+"list.separator" = ", ";
+
+/* Compare: headline and warnings */
+"compare.since" = "Sedan %@";
+"compare.fromTo" = "Från %1$@ till %2$@";
+"compare.part.used" = "använt %@";
+"compare.part.free" = "ledigt %@";
+"compare.part.scan" = "skanning %@";
+"compare.part.unassigned" = "varav ej tilldelat %@";
+"compare.part.volumeUsed" = "använt på volymen %@";
+"compare.part.folder" = "%1$@ %2$@";
+"compare.warning.hiddenBefore" = "tidigare utan dolda filer";
+"compare.warning.hiddenNow" = "nu utan dolda filer";
+"compare.warning.exclusions" = "annan undantagslista";
+"compare.warning.volumes" = "annan inställning för volymer";
+"compare.warning.options" = "Ögonblicksbilden skapades med andra inställningar (%@)";
+"compare.warning.root" = "Annan skanningsrot: %1$@ jämfört med %2$@";
+"compare.warning.volume" = "Annan volym";
+"compare.warning.minimumSize" = "Filer under %@ jämförs endast via mappens totalsumma";
+"compare.mode.growth" = "Tillväxt";
+"compare.mode.delta" = "Differensfärger";
+"diff.added" = "ny";
+"diff.removed" = "borttagen";
+"diff.grown" = "växt";
+"diff.shrunk" = "krympt";
+"diff.unchanged" = "oförändrad";
+"compare.label.used" = "använt";
+"compare.label.free" = "ledigt";
+"compare.label.unassigned" = "varav ej tilldelat";
+"compare.label.volumeUsed" = "använt på volymen";
+
+/* Partial rescan */
+"rescan.summary.removed" = "%1$@: finns inte längre (%2$@)";
+"rescan.summary.unchanged" = "%1$@: %2$@ (oförändrad)";
+"rescan.summary.changed" = "%1$@: %2$@ → %3$@ (%4$@)";
+
+/* File type categories (legend) */
+"fileType.video" = "Video";
+"fileType.image" = "Bilder";
+"fileType.audio" = "Ljud";
+"fileType.archive" = "Arkiv";
+"fileType.application" = "Appar";
+"fileType.code" = "Kod";
+"fileType.document" = "Dokument";
+"fileType.other" = "Övrigt";
+
+/* Common buttons */
+"common.cancel" = "Avbryt";
+"common.ok" = "OK";
+"common.done" = "Klar";
+"common.close" = "Stäng";
+"common.delete" = "Radera";
+"common.deleteEllipsis" = "Radera…";
+"common.renameEllipsis" = "Byt namn…";
+"common.rename" = "Byt namn";
+
+/* Full Disk Access */
+"fda.alert.title" = "Ingen fullständig skivåtkomst";
+"fda.alert.setUp" = "Ställ in fullständig skivåtkomst";
+"fda.alert.scanAnyway" = "Skanna ändå";
+"fda.alert.message" = "Utan fullständig skivåtkomst frågar macOS separat efter mappar som Skrivbord, Dokument och Hämtade filer under skanningen, och områden som ~/Library/Mail förblir oläsbara. Skanningen väntar tills du har svarat i systemdialogerna.\n\nRekommenderat: Aktivera DiskRings under ”Integritet och säkerhet → Fullständig skivåtkomst” i Systeminställningar och skanna sedan igen.";
+
+/* Menus */
+"menu.chooseFolder" = "Välj mapp…";
+"menu.fullRescan" = "Skanna om allt";
+"menu.undo" = "Ångra";
+"menu.redo" = "Gör om";
+"menu.find" = "Sök…";
+"menu.item" = "Objekt";
+"menu.go" = "Gå";
+"menu.back" = "Bakåt";
+"menu.forward" = "Framåt";
+"menu.enclosingFolder" = "Överordnad mapp";
+"menu.compareRoot" = "Jämförelserot";
+"menu.scanRoot" = "Skanningsrot";
+"menu.startScreen" = "Startskärm";
+
+/* Open panel */
+"panel.scan.prompt" = "Skanna";
+"panel.scan.message" = "Välj en mapp eller volym att skanna";
+"reason.noScan" = "Ingen skanning";
+
+/* Notices (toasts) */
+"toast.trashed.one" = "”%1$@” har flyttats till papperskorgen (%2$@)";
+"toast.trashFailed" = "”%1$@” flyttades inte till papperskorgen: %2$@";
+"menu.undo.putBack.one" = "Lägg tillbaka ”%@”";
+"toast.putBackFailed" = "”%1$@” lades inte tillbaka: %2$@";
+"toast.putBack.one" = "”%@” har lagts tillbaka";
+"toast.rescanBlocked" = "En partiell omskanning är inte möjlig under en fullständig skanning";
+"toast.rescanCovered" = "”%@” skannas redan om";
+"toast.rescanFailed" = "”%1$@” kunde inte skannas om: %2$@";
+"toast.rootMissing" = "Skanningsroten ”%@” finns inte längre";
+"toast.close" = "Stäng meddelande";
+
+/* Item kinds and badges */
+"badge.package" = "paket";
+"badge.unreadable" = "oläsbar";
+"badge.icloudOnly" = "endast i iCloud";
+"badge.symlink" = "symbolisk länk";
+"badge.otherVolume" = "annan volym";
+"badge.hardlink" = "hård länk";
+"kind.file" = "Fil";
+"kind.folder" = "Mapp";
+"kind.package" = "Paket";
+"kind.symlink" = "Symbolisk länk";
+
+/* Chart segments */
+"arc.aggregate.detail" = "sammanslagna, var och en under vinkelgränsen";
+"arc.remainder.title" = "Filer i den här mappen";
+"arc.remainder.detail" = "ännu inte räknade var för sig";
+"arc.unassigned.title" = "Ej tilldelat";
+"arc.unassigned.detail" = "System, lokala ögonblicksbilder, rensningsbart utrymme";
+"sunburst.accessibility" = "Solstrålediagram över %@";
+"sunburst.shareOf" = "%1$@ av %2$@";
+"sunburst.center.hint" = "Klicka: en nivå upp";
+
+/* Settings */
+"settings.section.chart" = "Diagram";
+"settings.rings" = "Antal ringar";
+"settings.colorScheme" = "Färgschema";
+"settings.colorScheme.branch" = "Efter gren";
+"settings.colorScheme.fileType" = "Efter filtyp";
+"settings.minAngle" = "Slå ihop segment under";
+"settings.minAngle.accessibilityValue" = "%@ grader";
+"settings.showLabels" = "Etikettera segment";
+"settings.section.size" = "Storlek";
+"settings.sizeMode" = "Storleksläge";
+"settings.sizeMode.allocated" = "Allokerat på skivan";
+"settings.sizeMode.logical" = "Logisk storlek";
+"settings.section.trash" = "Papperskorg";
+"settings.trash.confirm" = "Fråga innan objekt flyttas till papperskorgen";
+"settings.trash.footer" = "Objekt på 1 GB eller mer måste alltid bekräftas.";
+"settings.section.scan" = "Skanning";
+"settings.includeHidden" = "Räkna med dolda filer";
+"settings.crossMounts" = "Gå in i andra volymer vid skanning";
+"settings.excluded" = "Undantagna sökvägar";
+"settings.excluded.add" = "Lägg till sökväg";
+"settings.excluded.remove" = "Ta bort markerad sökväg";
+"settings.excluded.prompt" = "Undanta";
+"settings.scan.footer" = "De här inställningarna börjar gälla vid nästa skanning.";
+"settings.legend.accessibility" = "Teckenförklaring: %@";
+"settings.section.language" = "Språk";
+"settings.language" = "Språk";
+"settings.language.automatic" = "Automatiskt (system)";
+"settings.language.restartNote" = "Det nya språket börjar gälla när DiskRings har startats om.";
+"settings.language.restartNow" = "Starta om nu";
+"settings.language.footer" = "Du kan också välja språk i Systeminställningar → Allmänt → Språk och region → Appar.";
+"settings.section.snapshots" = "Ögonblicksbilder";
+"settings.snapshots.autoSave" = "Spara automatiskt efter varje fullständig skanning";
+"settings.snapshots.maxCount" = "Max per skanningsrot";
+"settings.snapshots.footer" = "Mappar och filer på 1 MB eller mer sparas. Om det finns fler än maxantalet raderas de äldsta.";
+
+/* Get Info window */
+"info.where" = "Plats";
+"info.allocated" = "Allokerat";
+"info.logical" = "Logisk";
+"info.contents" = "Innehåll";
+"info.contents.value" = "%1$@, %2$@";
+"info.modified" = "Ändrad";
+"info.created" = "Skapad";
+"info.badges" = "Attribut";
+"info.protected" = "Skyddad";
+
+/* Search */
+"search.placeholder" = "Sök efter namn";
+"search.clear" = "Rensa sökning";
+"search.backToList" = "Tillbaka till listan";
+"search.results" = "Sökresultat";
+"search.searching" = "Söker…";
+"search.noResults" = "Inga träffar";
+
+/* Main window toolbar */
+"browser.listWidth" = "Listbredd";
+"browser.listWidth.value" = "%@ punkter";
+"browser.back.help" = "Bakåt (⌘[)";
+"browser.forward.help" = "Framåt (⌘])";
+"browser.scanRunning" = "Skanning pågår";
+"browser.rescanRunning" = "Partiell omskanning pågår";
+"browser.rescan" = "Skanna om";
+"browser.rescan.help" = "Skanna om den fokuserade mappen (⇧⌘R)";
+"browser.search" = "Sök";
+"browser.search.help" = "Sök efter namn (⌘F)";
+"browser.newScan" = "Ny skanning";
+"browser.newScan.help" = "Tillbaka till startskärmen";
+"browser.breadcrumb" = "Sökväg";
+"browser.breadcrumb.current" = "%@, aktuell mapp";
+
+/* Status bar and scan summary */
+"status.unassigned" = "ej tilldelat %@";
+"status.unassigned.help" = "Använt utrymme på volymen som inte syns i någon mapp: system, lokala ögonblicksbilder från Time Machine, rensningsbart utrymme. Kloner och ögonblicksbilder kan orsaka avvikelser.";
+"status.deviation" = "Kloner och ögonblicksbilder kan orsaka avvikelser";
+"status.deviation.help" = "Kloner och ögonblicksbilder kan orsaka avvikelser: APFS-kloner delar block men räknas separat; lokala ögonblicksbilder från Time Machine och rensningsbart utrymme syns inte i någon mapp och visas under ”Ej tilldelat”.";
+"status.fda.help" = "Utan fullständig skivåtkomst förblir mappar som ~/Library/Mail oläsbara och hamnar under ”Ej tilldelat”. Klicka för att öppna Systeminställningar.";
+"status.scanSummary" = "Skanning: %1$@ på %2$@";
+"status.volume" = "%1$@: %2$@ · använt %3$@ · ledigt %4$@";
+"status.volume.purgeable" = "(varav %@ rensningsbart)";
+"summary.finished" = "Skanningen är klar: %1$@, %2$@, %3$@ på %4$@";
+"summary.less" = "Mindre";
+"summary.close" = "Stäng sammanfattning";
+"fda.grant" = "Ge fullständig skivåtkomst…";
+
+/* Detail list */
+"list.accessibility" = "Innehåll i %@";
+"list.shareOfRoot" = "%@ av skanningsroten";
+"list.unassigned.help" = "Ej tilldelat (system, lokala ögonblicksbilder, rensningsbart utrymme): använt utrymme på volymen som inte syns i någon mapp.";
+"list.row.accessibility" = "%1$@, %2$@, %3$@";
+"accessibility.zoomIn" = "Zooma in";
+
+/* Start screen */
+"start.subtitle" = "Välj en volym eller mapp för att se vart utrymmet tar vägen.";
+"start.volumes" = "Volymer";
+"start.noVolumes" = "Inga volymer hittades.";
+"start.scanHome" = "Skanna hemmappen";
+"start.fda.message" = "Utan fullständig skivåtkomst förblir mappar som ~/Library/Mail, Safari eller andra appars behållare oläsbara. De saknas i diagrammet och hamnar under ”Ej tilldelat”.";
+"start.fda.openSettings" = "Öppna Systeminställningar…";
+"start.fda.checkAgain" = "Kontrollera igen";
+"start.volume.used" = "%1$@ av %2$@ används";
+"start.legend.used" = "Använt %@";
+"start.legend.purgeable" = "Rensningsbart %@";
+"start.legend.free" = "Ledigt %@";
+"start.volume.accessibility" = "%1$@, %2$@ av %3$@ används, %4$@ ledigt";
+"start.volume.hint" = "Skannar den här volymen";
+"start.dropHint" = "eller dra hit en mapp";
+
+/* Scan progress */
+"scan.reading" = "Läser mappar…";
+"scan.title" = "Skannar %@";
+"scan.starting" = "Startar…";
+"scan.accessibility.starting" = "Skanningen startar";
+"scan.accessibility.running" = "Skanning pågår: %1$@, %2$@";
+"scan.stalled.title" = "Väntar kanske på tillstånd från macOS … (leta efter en systemdialog)";
+"scan.stalled.message" = "macOS kanske ber om åtkomst till en mapp eller enhet; dialogrutan kan vara dold bakom andra fönster. Med fullständig skivåtkomst visas inte de här förfrågningarna.";
+"scan.stalled.fda" = "Fullständig skivåtkomst…";
+"scan.stalled.fda.help" = "Öppnar ”Integritet och säkerhet → Fullständig skivåtkomst” i Systeminställningar";
+
+/* Compare: list and chart */
+"compare.showInChart" = "Visa i diagram";
+"compare.removedName" = "%@ (borttagen)";
+"reason.noCompare" = "Ingen jämförelse";
+"compare.busy.updating" = "Uppdaterar jämförelse…";
+"compare.busy.computing" = "Beräknar jämförelse…";
+"compare.error" = "Jämförelse inte möjlig: %@";
+"compare.currentScan" = "Aktuell skanning";
+"compare.list.accessibility" = "Jämförelse: innehåll i %@";
+"compare.column.name" = "Namn";
+"compare.column.before" = "Före";
+"compare.column.now" = "Nu";
+"compare.sortBy" = "Sortera efter %@";
+"compare.moreItems" = "fler objekt";
+"compare.direction" = "Riktning";
+"compare.direction.growth" = "Tillväxt";
+"compare.direction.shrink" = "Minskning";
+"compare.largest.noShrink" = "Ingen minskning på 1 MB eller mer";
+"compare.largest.noGrowth" = "Ingen tillväxt på 1 MB eller mer";
+"compare.tab.contents" = "Innehåll";
+"compare.tab.largest" = "Största ändringar";
+"compare.inScanRoot" = "i skanningsroten";
+"compare.inFolder" = "i %@";
+"compare.largest.row.accessibility" = "%1$@. %2$@, %3$@, %4$@";
+"compare.chart.noGrowth" = "Ingen tillväxt sedan ögonblicksbilden";
+"compare.chart.noData" = "Inga data";
+"compare.chart.noGrowth.hint" = "”Differensfärger” visar även objekt som har krympt eller tagits bort.";
+"compare.chart.accessibility" = "Jämförelsediagram (%1$@) över %2$@";
+"compare.center.growth" = "Tillväxt";
+"compare.center.now" = "nu %@";
+"compare.tooltip.folderGrowth" = "Tillväxt i mappen: %@";
+"compare.tooltip.growthWithoutEntries" = "Tillväxt utan egna objekt";
+"compare.tooltip.smallFiles" = "små filer under %@ och mappens egen storlek";
+"compare.beforeNow" = "Före %1$@  →  Nu %2$@";
+"compare.entry.accessibility" = "%1$@, %2$@, %3$@, differens %4$@";
+"compare.listPicker" = "Lista";
+"compare.viewPicker" = "Vy";
+"compare.viewPicker.help" = "Tillväxt: segmentstorlek = tillväxt. Differensfärger: normala storlekar, rött växt, grönt krympt.";
+"compare.end" = "Avsluta jämförelse";
+"compare.end.help" = "Tillbaka till normal vy (Esc)";
+"compare.breadcrumb" = "Sökväg i jämförelsen";
+"compare.warning.footer" = "Avvikelser kan därför även bero på inställningarna.";
+"compare.warning.accessibility" = "Varning: %@";
+"compare.legend.growth" = "Segmentstorlek = tillväxt sedan %@";
+"compare.legend.intensity" = "Starkare = större ändring";
+
+/* Compare: picker */
+"compare.with" = "Jämför med…";
+"compare.with.help" = "Jämför den här skanningen med en sparad ögonblicksbild";
+"compare.picker.empty" = "Inga matchande ögonblicksbilder";
+"compare.picker.empty.message" = "Det finns ännu ingen äldre ögonblicksbild av den här skanningsroten på den här volymen. Ögonblicksbilder skapas automatiskt efter varje skanning eller med ”Arkiv → Spara ögonblicksbild” (⌘S).";
+"compare.button" = "Jämför";
+
+/* Units and formats (keep the no-break spaces between number and unit) */
+"unit.kb" = "KB";
+"unit.mb" = "MB";
+"unit.gb" = "GB";
+"unit.tb" = "TB";
+"unit.pb" = "PB";
+"unit.eb" = "EB";
+"format.duration.seconds" = "%@ s";
+"format.duration.minutes" = "%1$@ min %2$@ s";
