@@ -45,6 +45,7 @@ final class Fixture {
                 guard w == n else { throw FixtureError.errno("write", errno) }
                 left -= n
             }
+            fsync(fd) // Blöcke sofort zuteilen (siehe sparseFile)
         }
         return p
     }
@@ -90,6 +91,9 @@ final class Fixture {
         var one: UInt8 = 1
         _ = pwrite(fd, &one, 1, 0)
         _ = pwrite(fd, &one, 1, off_t(logical - 1))
+        // Ohne fsync kann APFS die Blöcke verzögert zuteilen, und `st_blocks`
+        // ändert sich zwischen Scan und Vergleich (unter Last beobachtet).
+        fsync(fd)
         return p
     }
 
