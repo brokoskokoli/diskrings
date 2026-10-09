@@ -108,7 +108,8 @@ error: Notarisierung nicht möglich: Apple lehnt den API-Key ab ($METHOD).
 
 Prüfen (siehe docs/RELEASING.md):
   - Key-ID und Issuer-ID stimmen (App Store Connect → Users and Access →
-    Integrations → Team Keys; die Issuer-ID steht über der Liste).
+    Integrations → App Store Connect API → Team Keys; die Issuer-ID steht
+    über der Liste).
   - Der Key ist ein Team Key (kein Individual Key) mit Rolle "Developer"
     oder höher und nicht widerrufen.
   - Die .p8 gehört zu genau dieser Key-ID.

@@ -21,10 +21,15 @@ Beteiligte Skripte:
 
 ### 1. API Key in App Store Connect anlegen
 
-1. [App Store Connect](https://appstoreconnect.apple.com) → **Users and Access** → **Integrations** → **Team Keys**.
+1. [App Store Connect](https://appstoreconnect.apple.com) → **Users and Access** → **Integrations** → **App Store Connect API** → **Team Keys**.
    Beim ersten Mal muss der Account Holder den API-Zugang einmal anfordern.
 2. **+** (Generate API Key), Name z. B. „DiskRings Notarisierung (GitHub)“, Rolle **Developer**.
-   Mehr Rechte braucht die Notarisierung nicht.
+   Das ist die kleinste Rolle, mit der `notarytool` nach unserem Kenntnisstand funktioniert
+   (Erfahrungsberichte, keine Zusage von Apple); der erste Trockenlauf beweist es. Scheitert er
+   mit „Apple lehnt den API-Key ab“, einen Key mit Rolle **App Manager** anlegen.
+   Achtung: Ein Team Key ist **nicht** auf die Notarisierung beschränkt. Er hat API-Zugriff auf
+   das ganze Team im Rahmen seiner Rolle (z. B. App-Metadaten, Builds, TestFlight) und ist deshalb
+   genauso sorgfältig zu behandeln wie das Zertifikat.
 3. **Download API Key**: Die Datei `AuthKey_<KeyID>.p8` lässt sich nur **einmal** herunterladen.
 4. Die **Key ID** (Spalte in der Liste) und die **Issuer ID** (UUID über der Liste) notieren.
 
@@ -173,6 +178,7 @@ Mit dem Workflow verlässt der private Schlüssel der Developer ID den Rechner: 
 - Actions auf Commit-SHAs gepinnt; nur Actions von GitHub (`actions/*`) und `maxim-lobanov/setup-xcode` (wie in der CI). Updates bewusst einspielen (SHA und Versionskommentar ändern).
 - Auslöser nur Tag-Push `v*` und manueller Start; keine Pull-Request-Auslöser, also kommt fremder Code aus Forks nie an die Secrets.
 - Kein `set -x`; GitHub maskiert Secret-Werte im Log zusätzlich, das zufällige Keychain-Passwort wird per `::add-mask::` maskiert. Die `.p8` liegt nur für die Dauer eines `notarytool`-Aufrufs in einer Datei (0600) unter `$RUNNER_TEMP`, das `.p12` nur bis zum Import. Die Keychain wird im `always()`-Schritt gelöscht.
+- Bekannte Restlücke: Das zufällige Keychain-Passwort und das `.p12`-Passwort stehen für die Dauer von `security create-keychain`/`unlock-keychain`/`import`/`set-key-partition-list` als Prozessargumente in der Prozessliste (das `security`-Werkzeug nimmt sie nicht anders ohne Dialog an). Auf dem gehosteten, nur für diesen Job gestarteten Runner kann sie nur der eigene Job sehen; das Risiko ist gering. Lokal gilt dasselbe für `scripts/setup-release-secrets.sh` (temporäres Export-Passwort).
 - Das Zwischenzertifikat von Apple wird, falls es auf dem Runner fehlt, nur mit geprüfter SHA-256-Summe nachgeladen.
 
 **Was du einrichten solltest**
@@ -181,7 +187,7 @@ Mit dem Workflow verlässt der private Schlüssel der Developer ID den Rechner: 
 - **Deployment-Regeln** am Environment: nur Tags `v*` und `main`.
 - **Tag- und Branch-Rulesets** (siehe oben), damit nur du Release-Tags setzen und `main` nicht umgeschrieben werden kann.
 - **Zwei-Faktor-Anmeldung** bei GitHub und Apple.
-- Der API Key bekommt nur die Rolle **Developer**; er kann notarisieren, aber keine Zertifikate anlegen und keine Apps veröffentlichen.
+- Der API Key bekommt die kleinste Rolle, mit der `notarytool` funktioniert (**Developer**). Er ist trotzdem nicht auf die Notarisierung beschränkt, sondern hat im Rahmen dieser Rolle API-Zugriff auf das ganze Team (z. B. App-Metadaten und Builds). Bei Verdacht deshalb immer auch den Key widerrufen.
 
 **Bei Verdacht auf Missbrauch**
 

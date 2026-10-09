@@ -53,8 +53,8 @@ missing_secrets_help() {
 
  So richtest du sie einmalig ein (Details: docs/RELEASING.md):
 
- 1. App Store Connect → Users and Access → Integrations → Team Keys:
-    Key mit Rolle "Developer" anlegen, .p8 herunterladen (nur einmal möglich),
+ 1. App Store Connect → Users and Access → Integrations → App Store Connect API
+    → Team Keys: Key mit Rolle "Developer" anlegen, .p8 herunterladen (nur einmal möglich),
     Key-ID und Issuer-ID notieren.
  2. Auf dem Mac mit dem Developer-ID-Zertifikat im Schlüsselbund:
 
@@ -121,9 +121,13 @@ cmd_preflight() {
         || die "NOTARY_API_KEY_ID sieht nicht wie eine Key-ID aus (10 Zeichen, A-Z und 0-9)."
     [[ "$NOTARY_API_ISSUER_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] \
         || die "NOTARY_API_ISSUER_ID sieht nicht wie eine Issuer-ID aus (UUID)."
-    printf '%s' "$NOTARY_API_KEY_P8_BASE64" | tr -d '[:space:]' | base64 --decode 2>/dev/null \
-        | grep -q -- '-----BEGIN PRIVATE KEY-----' \
+    # Erst einlesen, dann suchen: `grep -q` direkt in der Pipe kann unter pipefail
+    # per SIGPIPE einen Fehler vortäuschen.
+    local p8
+    p8=$(printf '%s' "$NOTARY_API_KEY_P8_BASE64" | tr -d '[:space:]' | base64 --decode 2>/dev/null || true)
+    grep -q -- '-----BEGIN PRIVATE KEY-----' <<<"$p8" \
         || die "NOTARY_API_KEY_P8_BASE64 ist keine base64-kodierte .p8-Datei (base64 -i AuthKey_….p8)."
+    unset p8
     if ! printf '%s' "$MACOS_CERTIFICATE_P12_BASE64" | tr -d '[:space:]' | base64 --decode >/dev/null 2>&1; then
         die "MACOS_CERTIFICATE_P12_BASE64 ist kein gültiges base64 (base64 -i zertifikat.p12)."
     fi
@@ -141,8 +145,9 @@ user_searchlist() {
 }
 
 ensure_devid_intermediate() {
-    if security find-certificate -a -c "Developer ID Certification Authority" -Z 2>/dev/null \
-        | grep -q "SHA-256 hash: $DEVID_G2_SHA256"; then
+    local found
+    found=$(security find-certificate -a -c "Developer ID Certification Authority" -Z 2>/dev/null || true)
+    if grep -q "SHA-256 hash: $DEVID_G2_SHA256" <<<"$found"; then
         return 0
     fi
     echo "==> Zwischenzertifikat Developer ID G2 fehlt, lade es von apple.com"
@@ -228,6 +233,10 @@ cmd_keychain_cleanup() {
         echo "==> Keychain gelöscht"
     fi
     rm -rf "$STATE"
+    # Reste von scripts/notarize.sh, falls ein Lauf hart abgebrochen wurde (nur in der CI).
+    if [ -n "${RUNNER_TEMP:-}" ]; then
+        find "$RUNNER_TEMP" -maxdepth 1 -name 'notary-key.*' -exec rm -rf {} + 2>/dev/null || true
+    fi
 }
 
 case "${1:-}" in

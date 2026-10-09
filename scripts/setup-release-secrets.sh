@@ -76,38 +76,74 @@ ask_secret() {
     done
 }
 
-# Schreibt aus einem PKCS#12 mit beliebig vielen Identitäten genau die Identität
-# $3 (Zertifikat + passender privater Schlüssel) in ein neues PKCS#12.
+# Zerlegt die PEM-Ausgabe von `openssl pkcs12 -nodes` (stdin) in Blöcke und gibt je
+# nach mode aus:
+#   list  localKeyID jeder Identität "$id" (Zertifikat mit passendem Schlüssel), je Zeile
+#   cert  das Zertifikat mit localKeyID "$want"
+#   pair  Schlüssel + Zertifikat mit localKeyID "$want"
+# shellcheck disable=SC2016
+P12_AWK='
+    /^Bag Attributes/ { lkid = ""; fname = ""; subj = ""; next }
+    /^[[:space:]]+localKeyID:/ { sub(/^[[:space:]]+localKeyID:[[:space:]]*/, ""); lkid = $0; next }
+    /^[[:space:]]+friendlyName:/ { sub(/^[[:space:]]+friendlyName:[[:space:]]*/, ""); fname = $0; next }
+    /^subject=/ { subj = $0; next }
+    /^-----BEGIN / { inpem = 1; type = ($0 ~ /CERTIFICATE/) ? "cert" : "key"; pem = $0 "\n"; next }
+    inpem {
+        pem = pem $0 "\n"
+        if ($0 ~ /^-----END /) {
+            inpem = 0; n++
+            T[n] = type; L[n] = lkid; F[n] = fname; S[n] = subj; P[n] = pem
+        }
+        next
+    }
+    END {
+        for (i = 1; i <= n; i++) if (T[i] == "key" && L[i] != "") K[L[i]] = i
+        for (i = 1; i <= n; i++) {
+            if (T[i] != "cert" || L[i] == "" || !(L[i] in K)) continue
+            if (mode == "list") {
+                if (F[i] == id || index(S[i], "CN=" id "/") || S[i] ~ ("CN=" id "$")) print L[i]
+            } else if (L[i] == want) {
+                if (mode == "pair") printf "%s", P[K[L[i]]]
+                printf "%s", P[i]
+                exit 0
+            }
+        }
+    }'
+
+# PEM-Ausgabe eines PKCS#12 (privater Schlüssel unverschlüsselt, nur in der Pipe).
+p12_dump() { IN_PASS=$2 "$OPENSSL" pkcs12 -in "$1" -nodes -passin env:IN_PASS 2>/dev/null; }
+
+# notAfter eines Zertifikats (PEM auf stdin) als Unix-Zeit.
+not_after_epoch() {
+    local d
+    d=$("$OPENSSL" x509 -noout -enddate | cut -d= -f2 | tr -s ' ')
+    LC_ALL=C date -j -u -f '%b %d %T %Y GMT' "$d" +%s
+}
+
+# Schreibt aus einem PKCS#12 mit beliebig vielen Identitäten genau eine Identität
+# $3 (Zertifikat + passender privater Schlüssel) in ein neues PKCS#12. Gibt es
+# mehrere (z. B. nach einer Verlängerung), gewinnt die nicht abgelaufene mit dem
+# spätesten Ablaufdatum.
 #   extract_identity <in.p12> <in-passwort> <identität> <out.p12> <out-passwort> [kette.pem]
+# Rückgabe: 0 ok, 1 Fehler (Passwort, Export), 3 Identität fehlt, 5 alle abgelaufen.
 # Der private Schlüssel liegt dabei nur im Speicher (Pipe), nie unverschlüsselt auf der Platte.
 extract_identity() {
     local in=$1 in_pass=$2 identity=$3 out=$4 out_pass=$5 chain=${6:-}
-    local certfile=()
+    local certfile=() lkids lkid pem end best="" best_end=0
     if [ -n "$chain" ] && [ -s "$chain" ]; then certfile=(-certfile "$chain"); fi
-    IN_PASS=$in_pass "$OPENSSL" pkcs12 -in "$in" -nodes -passin env:IN_PASS 2>/dev/null \
-        | awk -v id="$identity" '
-            /^Bag Attributes/ { lkid = ""; fname = ""; subj = ""; next }
-            /^[[:space:]]+localKeyID:/ { sub(/^[[:space:]]+localKeyID:[[:space:]]*/, ""); lkid = $0; next }
-            /^[[:space:]]+friendlyName:/ { sub(/^[[:space:]]+friendlyName:[[:space:]]*/, ""); fname = $0; next }
-            /^subject=/ { subj = $0; next }
-            /^-----BEGIN / { inpem = 1; type = ($0 ~ /CERTIFICATE/) ? "cert" : "key"; pem = $0 "\n"; next }
-            inpem {
-                pem = pem $0 "\n"
-                if ($0 ~ /^-----END /) {
-                    inpem = 0; n++
-                    T[n] = type; L[n] = lkid; F[n] = fname; S[n] = subj; P[n] = pem
-                }
-                next
-            }
-            END {
-                for (i = 1; i <= n; i++) {
-                    if (T[i] == "cert" && L[i] != "" && (F[i] == id || index(S[i], "CN=" id "/") || S[i] ~ ("CN=" id "$"))) { ci = i; break }
-                }
-                if (!ci) exit 3
-                for (j = 1; j <= n; j++) if (T[j] == "key" && L[j] == L[ci]) { ki = j; break }
-                if (!ki) exit 4
-                printf "%s%s", P[ki], P[ci]
-            }' \
+    # Passwort prüfen (nur Zertifikate). Schlüssel fließen ausschließlich durch Pipes,
+    # nie durch Variablen oder Here-Strings (die bash in temporäre Dateien schreibt).
+    IN_PASS=$in_pass "$OPENSSL" pkcs12 -in "$in" -nokeys -passin env:IN_PASS >/dev/null 2>&1 || return 1
+    lkids=$(p12_dump "$in" "$in_pass" | awk -v mode=list -v id="$identity" "$P12_AWK")
+    [ -n "$lkids" ] || return 3
+    while IFS= read -r lkid; do
+        pem=$(p12_dump "$in" "$in_pass" | awk -v mode=cert -v want="$lkid" "$P12_AWK")
+        "$OPENSSL" x509 -noout -checkend 0 <<<"$pem" >/dev/null 2>&1 || continue
+        end=$(not_after_epoch <<<"$pem") || continue
+        if [ "$end" -gt "$best_end" ]; then best=$lkid; best_end=$end; fi
+    done <<<"$lkids"
+    [ -n "$best" ] || return 5
+    p12_dump "$in" "$in_pass" | awk -v mode=pair -v want="$best" "$P12_AWK" \
         | OUT_PASS=$out_pass "$OPENSSL" pkcs12 -export -name "$identity" \
             ${certfile[@]+"${certfile[@]}"} \
             -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 \
@@ -171,7 +207,15 @@ step_protection() {
     say "  - Pflicht-Freigabe: Jeder Lauf wartet, bis du ihn in GitHub freigibst."
     say "  - Nur Tags v* und der Branch main dürfen das Environment nutzen."
     confirm "Beides jetzt einrichten?" j || return 0
-    local uid
+    local current uid
+    current=$(gh api "repos/$REPO/environments/$ENV_NAME" --jq \
+        '[(.protection_rules // [])[] | .type] | join(", ")' 2>/dev/null || true)
+    if [ -n "$current" ]; then
+        say "warning: Das Environment hat schon Schutzregeln ($current). Sie werden ersetzt:"
+        say "         Reviewer nur noch du, Wartezeit und andere Regeln entfallen,"
+        say "         Deployment-Regeln auf \"ausgewählte Branches und Tags\"."
+        confirm "Vorhandene Schutzregeln überschreiben?" n || { say "  Unverändert gelassen."; return 0; }
+    fi
     uid=$(gh api user --jq .id)
     if ! printf '{"reviewers":[{"type":"User","id":%s}],"prevent_self_review":false,"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}' "$uid" \
         | gh api -X PUT "repos/$REPO/environments/$ENV_NAME" --input - >/dev/null; then
@@ -191,7 +235,9 @@ step_protection() {
 step_certificate() {
     say ""
     say "== Zertifikat: $IDENTITY"
-    if ! security find-identity -v -p codesigning | grep -qF "\"$IDENTITY\""; then
+    local identities
+    identities=$(security find-identity -v -p codesigning 2>/dev/null || true)
+    if ! grep -qF "\"$IDENTITY\"" <<<"$identities"; then
         say "warning: \"$IDENTITY\" ist im Schlüsselbund nicht als gültige Identität zu finden."
     fi
     say "Passwort für das .p12 (wird als MACOS_CERTIFICATE_PASSWORD gespeichert;"
@@ -221,7 +267,9 @@ step_certificate() {
         local rc=0
         extract_identity "$all" "$tmp_pass" "$IDENTITY" "$P12" "$P12_PASS" "$chain" || rc=$?
         rm -f "$all"
-        if [ "$rc" -ne 0 ]; then
+        if [ "$rc" -eq 5 ]; then
+            die "Alle Zertifikate \"$IDENTITY\" sind abgelaufen. Neues Developer-ID-Zertifikat anlegen."
+        elif [ "$rc" -ne 0 ]; then
             manual_export_help
             die "Identität \"$IDENTITY\" samt Schlüssel nicht im Export gefunden. Weg b) nutzen."
         fi
@@ -256,7 +304,7 @@ MSG
 step_api_key() {
     say ""
     say "== App Store Connect API Key"
-    say "   (App Store Connect → Users and Access → Integrations → Team Keys, Rolle \"Developer\")"
+    say "   (App Store Connect → Users and Access → Integrations → App Store Connect API → Team Keys, Rolle \"Developer\")"
     ask "Pfad zur .p8-Datei (AuthKey_XXXXXXXXXX.p8)"
     P8=${REPLY/#\~/$HOME}
     [ -f "$P8" ] || die "Datei nicht gefunden: $P8"
