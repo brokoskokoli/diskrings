@@ -61,3 +61,17 @@ Beim Scan von `/`: 5 Worker 18,5 s, 8 Worker 14,1 s. Deshalb ist der Standard �
 ## Offene Punkte
 - Kalter Cache (nach Neustart) ist nicht gemessen; die Zahlen oben sind Bestwerte.
 - Die Spitze beim Baum-Aufbau (etwa 106 Byte pro Knoten) ließe sich durch eine Permutation an Ort und Stelle statt eines zweiten Knoten-Arrays noch um etwa ein Drittel senken.
+
+## Sunburst-Layout und Hit-Test (M3)
+
+Test `Sunburst-Performance` (`ZoomAndNavigationTests.swift`), synthetischer Baum mit 2 000 000 Knoten (`DemoTree.large`), 10 Ringe, bester von mehreren Läufen. Debug-Build (`swift test`), also eher pessimistisch:
+
+| Messung | Ergebnis | Ziel |
+|---|---:|---:|
+| Layout, Schwelle 0,5°, Modus belegt | 1,3 ms (616 Arcs) | < 50 ms |
+| Layout, Modus logisch | 2,7 ms | < 50 ms |
+| Layout ohne Schwelle (ungünstigster Fall, bis zur Obergrenze) | 16 ms (10 563 Arcs) | < 50 ms |
+| Hit-Test | 0,9 µs pro Punkt | < 1 ms |
+| Farben für alle Arcs | 0,2 ms | – |
+
+Die Laufzeit hängt im Wesentlichen von der Zahl der Arcs ab, nicht von der Baumgröße. Das Zeichnen im `Canvas` ist nicht automatisiert gemessen.

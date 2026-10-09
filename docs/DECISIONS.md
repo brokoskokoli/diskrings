@@ -48,3 +48,49 @@
 - **Ausschlussliste**: exakte absolute Pfade (der Teilbaum fällt mit weg); Pfade werden zusätzlich mit `realpath` aufgelöst.
 - **Formatierung**: dezimal (1 KB = 1000 Byte), deutsch, unabhängig vom System-Locale. KB ohne, ab MB eine Nachkommastelle („61,0 GB“ statt „61 GB“ wie in der Skizze). Tausendertrenner ist ein schmales geschütztes Leerzeichen („312 841“).
 - **Nicht zugeordnet** = `totalCapacity − availableCapacity − Scan-Summe`, nie negativ. Bereinigbarer Speicher zählt damit als belegt und landet in „Nicht zugeordnet“, wie im Segmentnamen der Spec vorgesehen.
+
+## M2/M3 – Oberfläche und Sunburst
+
+### Build ohne Xcode: `@State` als Makro
+- Im SDK von macOS 27 ist `@State` zusätzlich ein Makro (`SwiftUIMacros.StateMacro`). Dessen Plugin liefern nur Xcode, nicht die Command Line Tools; `@State` bricht den Build daher mit „plugin for module 'SwiftUIMacros' not found“ ab.
+- Lösung: `typealias ViewState<Value> = SwiftUI.State<Value>` (in `Sources/DiskRings/Support/Support.swift`) und überall `@ViewState` statt `@State`. Als Typalias greift der Property Wrapper, nicht das Makro. Mit Xcode funktioniert das genauso.
+
+### Layout (`SunburstLayout`)
+- Winkel im Bogenmaß, 0 = oben, im Uhrzeigersinn. Die Arcs werden ringweise in Breitensuche erzeugt; so ist jeder Ring nach Winkel sortiert (Voraussetzung für die binäre Suche im Hit-Test), und eine Obergrenze für die Arcs schneidet außen ab statt einseitig.
+- **Obergrenze** (Standard 12 000 Arcs): Ein Ring, der sie sprengen würde, entfällt ganz. Nur der erste Ring wird gekürzt (Rest ins Sammelsegment).
+- **Sammelsegment** je Elternknoten für alle Kinder unter der Schwelle; die Schwelle gilt in absoluten Grad (0,5°), wie in der Spec. Ein einzelnes zu kleines Element landet ebenfalls im Sammelsegment („1 kleineres Element“).
+- **Restsegment** (zusätzlich zur Spec): Live-Snapshots enthalten nur Ordner, deren Größe schon die Dateien enthält. Die Differenz Ordnergröße − Summe der Kinder erscheint als graues Segment „Dateien in diesem Ordner“, damit die Winkel stimmen.
+- Im Modus „belegt“ läuft die Berechnung nur bis zum ersten zu kleinen Kind (die Kinder sind sortiert). Für die Größe des Sammelsegments werden die übrigen Kinder allerdings aufsummiert (bis zum ersten mit 0 Byte); bei sehr großen Ordnern im Fokusbereich ist das O(Kinder). Im Modus „logisch“ werden die Kinder jedes sichtbaren Ordners einmal durchlaufen und die großen nach logischer Größe sortiert.
+- **„Nicht zugeordnet“** ist ein Arc im ersten Ring (Ende des Kreises), nur wenn der Fokus die Wurzel ist und der Größenmodus „belegt“ (beim logischen Modus ergibt die Differenz keinen Sinn). Gezeichnet wird es von Ring 1 bis zum Außenrand, schraffiert; der Hit-Test trifft es in allen Ringen („im äußersten Bereich der Wurzel“, SPEC 4.1). Angezeigt wird es nur, wenn die Scan-Wurzel genau der Einhängepunkt des Volumes ist.
+- Ringbreiten: Mittelscheibe 22 % des Radius, jeder Ring 84 % so breit wie der vorige.
+
+### Farben
+- Schema „Ast“: feste Folge von 12 gut unterscheidbaren Farbtönen in der Reihenfolge der Äste (größter zuerst), mit ±9° Verschiebung je nach Lage im Ast. Die Töne werden relativ zum Fokus vergeben; nach dem Hineinzoomen ändern sich also die Farben (wie bei Scanner und DaisyDisk).
+- Schema „Dateityp“: Dateien nach Endung (feste Liste), Ordner neutral grau. Pakete mit bekannter Endung (z. B. `.app`, `.photoslibrary`) bekommen die Kategorie und vererben sie an ihren Inhalt. Eine Einfärbung von Ordnern nach dem überwiegenden Dateityp gibt es nicht (bräuchte eine Auswertung des ganzen Teilbaums).
+- Beschriftungen sind schwarz oder weiß, je nachdem, was mehr Kontrast hat (immer mindestens 4,58 : 1, getestet).
+
+### Zoom-Animation
+- `ZoomTransition` bildet beide Layouts mit derselben „Kamera“ ab: Winkel' = a·Winkel + b, Ring' = Ring + c. Interpoliert werden die Bilder von 0 und 2π und die Tiefe, linear, mit Ease-in-out (300 ms). Das alte Layout blendet dabei aus. Ohne Vorfahrenbeziehung (z. B. Zurück zu einem Geschwister) wird überblendet. Bei „Bewegung reduzieren“ gibt es keine Animation.
+
+### Navigation
+- `FocusHistory` speichert Knotenindizes. Bei jedem neuen Baum (Live-Snapshot → Endergebnis, Rescan) wird die Historie über die Pfade übertragen; ein verschwundener Fokus fällt auf den nächsten vorhandenen Vorfahren zurück. Man kann also schon während des Scans hineinzoomen.
+- Klick auf ein Sammelsegment zoomt in dessen Elternordner (falls nicht schon Fokus). Klick auf eine Datei wählt sie aus und klappt die Liste bis dorthin auf.
+- „Rescan“ in der Toolbar ist vorerst ein kompletter neuer Scan der Wurzel; der Fokus wird danach über den Pfad wiederhergestellt.
+
+### Oberfläche
+- Die Toolbar (Zurück/Vor, Breadcrumb, Rescan) liegt im Fensterinhalt statt in der `NSToolbar` des Fensters. Grund: So lässt sie sich in den Vorschaubildern mitrendern, und die Breadcrumb hat die volle Breite.
+- Diagramm und Liste stehen in einem `HStack` mit fester Listenbreite (400 pt), nicht in einem `HSplitView`; die Liste ist also nicht in der Breite verstellbar.
+- Die Detailliste ist eine eigene Outline aus `ScrollView` + `LazyVStack` (keine `List`/`OutlineGroup`): Prozentbalken, Farbfeld aus dem Diagramm und Hover-Sync sind so einfacher. Je Ebene höchstens 400 Zeilen, der Rest als eine Zeile „N kleinere Elemente“. An der Volume-Wurzel steht „Nicht zugeordnet“ als eigene Zeile, nach Größe einsortiert. Der Prozentwert einer Zeile bezieht sich auf ihren Elternordner.
+- Die Liste zeigt ein Farbfeld nur für Knoten, die im Diagramm bis Ring 3 sichtbar sind.
+- Das Fenster ist ein einzelnes `Window` (keine `WindowGroup`), damit die Menübefehle (⌘[ / ⌘] / ⌘↑) ohne Fokus-Verwaltung auf den einen `AppState` wirken.
+- Kontextmenü: Struktur, Reihenfolge und Tastenkürzel aller Einträge aus SPEC 3.5 stehen in `NodeAction`; in M3 ist nur „Hier hineinzoomen“ aktiv, die übrigen Einträge sind ausgegraut mit „(folgt)“. M4 implementiert `NodeActions.perform` und `isImplemented`.
+- Einstellungen, die schon wirken: Ringanzahl, Farbschema (mit Legende), Schwelle für das Sammelsegment (0,1–3°), Beschriftung an/aus, Größenmodus, versteckte Dateien, andere Volumes überqueren, Ausschlussliste. Die Scan-Optionen wirken beim nächsten Scan. Snapshot-Einstellungen fehlen noch (M6).
+
+### Vorschaubilder (visuelle Prüfung)
+- `DiskRings --render-snapshots <ordner> [--scan <pfad>]` rendert die Szenen hell und dunkel als PNG und beendet sich. Es gibt kein Test-Target für die App: Ein Test-Target, das vom ausführbaren SwiftUI-Target abhängt, wäre mit den Command Line Tools ein weiterer Sonderweg.
+- Das Diagramm allein wird mit `ImageRenderer` gerendert. Ganze Ansichten (Hauptansicht, Start, Scan, Einstellungen) dagegen über ein unsichtbares Fenster mit `NSHostingView` und `cacheDisplay`: `ImageRenderer` zeichnet AppKit-gestützte Bausteine (Buttons, ScrollView, Form) nicht, dort erschienen nur gelbe Platzhalter.
+- `ImageRenderer` löst dynamische `NSColor`s nicht nach dem Hell-/Dunkelmodus auf; der Hintergrund ist dort deshalb fest gesetzt.
+
+### Bündel
+- `scripts/make-app.sh` baut `build/DiskRings.app` (Release, Info.plist mit `de.stefanrichter.DiskRings`, `LSMinimumSystemVersion` 14.0) und signiert ad hoc. Developer ID, Hardened Runtime, Icon und Notarisierung kommen in M7.
+- `--scan <pfad>` als Startargument startet sofort einen Scan (zum Testen: `open build/DiskRings.app --args --scan /usr/share`).

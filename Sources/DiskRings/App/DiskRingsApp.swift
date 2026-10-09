@@ -63,7 +63,14 @@ struct RootView: View {
                     .allowsHitTesting(false)
             }
         }
-        .onAppear { state.refreshVolumes() }
+        .onAppear {
+            state.refreshVolumes()
+            // `--scan <pfad>` startet sofort einen Scan (für Tests und Skripte).
+            let args = CommandLine.arguments
+            if state.phase == .start, let i = args.firstIndex(of: "--scan"), i + 1 < args.count {
+                state.startScan(args[i + 1])
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Festplattenvollzugriff kann in den Systemeinstellungen erteilt worden sein.
             state.fullDiskAccess = FullDiskAccess.status()
