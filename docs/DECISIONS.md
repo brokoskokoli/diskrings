@@ -59,3 +59,22 @@
 - **Ausschlussliste**: exakte absolute Pfade (der Teilbaum fällt mit weg); Pfade werden zusätzlich mit `realpath` aufgelöst.
 - **Formatierung**: dezimal (1 KB = 1000 Byte), deutsch, unabhängig vom System-Locale. KB ohne, ab MB eine Nachkommastelle („61,0 GB“ statt „61 GB“ wie in der Skizze). Tausendertrenner ist ein schmales geschütztes Leerzeichen („312 841“).
 - **Nicht zugeordnet** = `totalCapacity − availableCapacity − Scan-Summe`, nie negativ. Bereinigbarer Speicher zählt damit als belegt und landet in „Nicht zugeordnet“, wie im Segmentnamen der Spec vorgesehen.
+
+## M6 – Teil-Rescan, Snapshots und Vergleich (Kern)
+
+### Veränderbarer Baum: neue unveränderliche Versionen (copy-on-write)
+- **Entscheidung:** `ScanTree` bleibt unveränderlich und `Sendable`. `replacingSubtree(at:with:)`, `removingNode(at:)` und `compacted()` erzeugen eine **neue** Baum-Version (`TreeEdit.tree`); der alte Baum bleibt unverändert gültig.
+- **Begründung:** Die Oberfläche hält den Baum, ein gecachtes Sunburst-Layout und `NodeRef`s; Rescans laufen im Hintergrund. Mit unveränderlichen Versionen gibt es keine Datenrennen und keine Sperren beim Lesen, und das Layout des alten Baums bleibt bis zum Austausch konsistent (die Diagramm-Animation kann alt gegen neu interpolieren). Kosten: eine Kopie von Knoten-Array und Namenspuffer pro Änderung, mit passender Kapazität in einem Schritt angelegt. Gemessen (Debug-Build): 3,8 ms für das Einhängen eines Ordners mit 300 Dateien in einen Baum mit 2 010 101 Knoten (Ziel: unter 100 ms ohne den Scan). Speicher: Während des Austauschs existieren kurz zwei Versionen.
+- Ein in-place veränderbarer Baum hätte die Kopie gespart, aber Locks bzw. eine Actor-Isolation für jeden Lesezugriff des Layouts erfordert.
+
+### Ablauf eines Teil-Rescans (Befund S7)
+- `ScanEngine.rescanBlocking(subtree:in:)` bzw. `rescan(subtree:in:)` (async) scannt den Pfad des Knotens mit denselben Optionen und hängt das Ergebnis mit `replacingSubtree` ein. Existiert der Pfad nicht mehr, wird der Knoten entfernt (`RescanResult.removed`). Ein nicht betretener Einhängepunkt wird ohne `crossMountPoints` nicht neu eingelesen.
+- Der Knoten behält Namen, Elternknoten und seinen Datensatz; seine alten Nachfahren werden als `.dead` markiert, die neuen hinten angehängt (zusammenhängend, sortiert, wie vom `TreeBuilder` geliefert).
+- Die Differenz wird bis zur Wurzel propagiert; in jeder Ebene wird der geänderte Knoten innerhalb seiner Geschwister an die richtige Stelle geschoben. **Folge:** Dabei können der Knoten selbst und Geschwister entlang des Pfads ihren Index ändern (sonst wären die Kinder nicht mehr sortiert). `TreeEdit.index` liefert den neuen Index des bearbeiteten Knotens, `TreeEdit.translate(_:)` übersetzt beliebige alte Indizes (z. B. Fokus, Auswahl, Verlauf). Eltern stehen weiterhin vor ihren Kindern; die Breitensuche-Reihenfolge gilt nach einer Änderung aber nicht mehr global (erst wieder nach einer Kompaktierung).
+- **Kompaktierung:** Sind mehr als 25 % der Knoten tot (`needsCompaction`), kompaktiert `replacingSubtree`/`removingNode` standardmäßig sofort (`compactIfNeeded: true`) und setzt `TreeEdit.compacted`; dann ändern sich alle Indizes (über `translate` abbildbar). Mit `compactIfNeeded: false` kann die Oberfläche das später im Hintergrund mit `compacted()` erledigen.
+- **Tote Knoten** bleiben bis zur Kompaktierung in `ScanTree.nodes`. Sie sind von der Wurzel aus nicht erreichbar; wer `nodes` linear durchläuft, muss `.dead` überspringen. `count` zählt sie mit, `liveCount` nicht.
+- **Undo** des Papierkorbs: `rescanBlocking(path:in:)` liest den nächsten im Baum vorhandenen Vorfahren des Pfads neu ein, also den Elternordner des zurückgelegten Elements.
+
+### Hardlinks beim Teil-Rescan
+- Der Baum behält eine schlanke Tabelle aller Dateien mit `nlink > 1`: Knotenindex, Gerät, Inode und echte Größe (32 Byte pro Eintrag, nur für Hardlinks). Beim Rescan fliegen die Einträge toter Knoten heraus, die neuen kommen hinzu, und jede betroffene Gruppe wird neu bereinigt: Weiterhin zählt das lebende Vorkommen mit dem bytewise kleinsten Pfad, die anderen mit 0 Byte und Flag `hardlinkDuplicate`. Größenwechsel (auch außerhalb des Teilbaums) werden wie oben propagiert.
+- **Grenze:** Hatte eine Datei beim Scan `nlink == 1` und bekommt sie danach einen weiteren Link im neu eingelesenen Teilbaum, steht das alte Vorkommen nicht in der Tabelle; die Datei zählt dann doppelt, bis ein gemeinsamer Vorfahre neu eingelesen wird (Test „Bekannte Grenze“). Alle Inodes zu speichern kostete 12 Byte pro Knoten.
