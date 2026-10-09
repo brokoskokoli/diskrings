@@ -59,7 +59,9 @@ final class AppState {
     // MARK: Scan
     private(set) var scanPath: String?
     private(set) var progress: ScanProgress?
-    private(set) var result: ScanResult?
+    /// Kennzahlen des letzten vollständigen Scans, ohne dessen Baum (es lebt
+    /// nur eine Baumversion: `tree`). Folgt Änderungen am Baum (`applyEdit`).
+    private(set) var summary: ScanSummary?
     var scanError: String?
     var showSummary = false
     /// Erkennt einen Scan, der still auf eine macOS-Datenschutzabfrage wartet.
@@ -214,7 +216,7 @@ final class AppState {
         pendingFocusPath = nil
         scanPath = path
         progress = nil
-        result = nil
+        summary = nil
         scanError = nil
         showSummary = false
         undoStack = []
@@ -251,7 +253,7 @@ final class AppState {
         cancelScan()
         cancelPartialRescans()
         setTree(nil)
-        result = nil
+        summary = nil
         undoStack = []
         clearSearch()
         phase = .start
@@ -267,7 +269,7 @@ final class AppState {
 
     private func finish(_ r: ScanResult) {
         stallDetector = nil
-        result = r
+        summary = ScanSummary(r)
         let v = VolumeInfo.forPath(r.tree.rootPath)
         volume = v
         unassigned = (v.map { $0.path == r.tree.rootPath } ?? false) ? v!.unassigned(scanTotal: r.allocatedSize) : 0
@@ -338,6 +340,7 @@ final class AppState {
             transition = nil
         }
         layout = newLayout
+        summary = summary?.updated(for: new)
         scheduleCompareRefresh()
     }
 
@@ -779,7 +782,7 @@ final class AppState {
 
     /// Ergebnis setzen, ohne zu scannen (Vorschaubilder).
     func setResultInternal(_ r: ScanResult) {
-        result = r
+        summary = ScanSummary(r)
         scanPath = r.tree.rootPath
     }
 

@@ -12,7 +12,7 @@ struct BrowserView: View {
         VStack(spacing: 0) {
             BrowserToolbar(state: state)
             Divider()
-            if state.showSummary, let r = state.result {
+            if state.showSummary, let r = state.summary {
                 ScanSummaryBanner(state: state, result: r)
                 Divider()
             }
@@ -269,7 +269,7 @@ struct StatusBar: View {
                 .foregroundStyle(.orange)
                 .help("Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail unlesbar und landen unter „Nicht zugeordnet“. Klick öffnet die Systemeinstellung.")
             }
-            if let r = state.result {
+            if let r = state.summary {
                 Text("Scan: \(filesText(r.fileCount)) in \(ByteFormat.duration(r.duration))")
                     .foregroundStyle(.secondary)
             }
@@ -292,7 +292,7 @@ struct StatusBar: View {
 /// nicht lesbaren Ordner.
 struct ScanSummaryBanner: View {
     let state: AppState
-    let result: ScanResult
+    let result: ScanSummary
     @ViewState private var showUnreadable = false
 
     var body: some View {

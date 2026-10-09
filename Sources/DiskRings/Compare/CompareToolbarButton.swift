@@ -11,7 +11,7 @@ struct CompareToolbarButton: View {
     var body: some View {
         Button { showPicker = true } label: { Label("Vergleichen mit…", systemImage: "clock.arrow.2.circlepath") }
             .help("Diesen Scan mit einem gespeicherten Snapshot vergleichen")
-            .disabled(state.result == nil || state.tree == nil || state.phase == .scanning)
+            .disabled(state.summary == nil || state.tree == nil || state.phase == .scanning)
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 CompareSnapshotPicker(state: state) { showPicker = false }
             }

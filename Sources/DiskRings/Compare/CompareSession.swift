@@ -230,10 +230,9 @@ extension AppState {
 
     /// Der aktuelle Baum als Snapshot (für „Snapshot ↔ aktueller Scan“).
     func currentSnapshot() -> Snapshot? {
-        guard let tree, let result else { return nil }
-        var meta = SnapshotMetadata.current(for: result, volume: volume, date: snapshots.currentScanDate ?? Date())
-        meta.allocatedSize = tree.root.allocatedSize
-        meta.logicalSize = tree.root.logicalSize
+        guard let tree, let summary else { return nil }
+        let meta = SnapshotMetadata.current(for: summary, tree: tree, volume: volume,
+                                            date: snapshots.currentScanDate ?? Date())
         return Snapshot(metadata: meta, tree: tree)
     }
 

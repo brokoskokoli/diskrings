@@ -93,11 +93,10 @@ final class SnapshotLibrary {
 
     /// „Ablage → Snapshot sichern“ (⌘S) mit optionalem Namen.
     func saveCurrent(state: AppState, name: String?) {
-        guard let tree = state.tree, let result = state.result else { return }
-        var meta = SnapshotMetadata.current(for: result, volume: state.volume, name: SnapshotNaming.normalized(name))
+        guard let tree = state.tree, let summary = state.summary else { return }
         // Der Baum kann sich seit dem Scan geändert haben (Papierkorb, Teil-Rescan).
-        meta.allocatedSize = tree.root.allocatedSize
-        meta.logicalSize = tree.root.logicalSize
+        let meta = SnapshotMetadata.current(for: summary, tree: tree, volume: state.volume,
+                                            name: SnapshotNaming.normalized(name))
         save(tree: tree, metadata: meta, retention: state.prefs.snapshots.retention, announce: true, store: store)
     }
 

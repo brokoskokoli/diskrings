@@ -239,7 +239,7 @@ struct SnapshotCommands: Commands {
         CommandGroup(replacing: .saveItem) {
             Button("Snapshot sichern…") { state.snapshots.showSavePrompt = true }
                 .keyboardShortcut("s", modifiers: .command)
-                .disabled(state.tree == nil || state.result == nil || state.phase != .browsing)
+                .disabled(state.tree == nil || state.summary == nil || state.phase != .browsing)
             Button("Snapshots…") { openWindow(id: SnapshotsWindow.id) }
                 .keyboardShortcut("s", modifiers: [.command, .option])
         }
