@@ -18,7 +18,7 @@ Stand M1. Die Speicherspitze ist inzwischen deutlich niedriger (bei `~` 239 stat
 |---|---:|---:|---:|---:|---:|---:|---:|
 | `~` | 2 456 848 | 425 343 | 2 882 191 | 9,7 s / 9,9 s | 168,9 MB | 311 MB | 315 MB |
 | `/` | 3 501 040 | 717 252 | 4 218 292 | 13,9 s / 14,7 s | 245,4 MB | 448 MB | 452 MB |
-| `~/Projects` | 1 301 548 | 213 575 | 1 515 123 | 5,2 s | 87,0 MB | 161 MB | – |
+| Projektordner unter `~` | 1 301 548 | 213 575 | 1 515 123 | 5,2 s | 87,0 MB | 161 MB | – |
 | `/usr/share` | 19 267 | 888 | 20 155 | 0,1 s | 1,1 MB | 6 MB | – |
 
 - „Baum im Speicher“ = Knoten-Array (40 Byte pro Knoten) plus Namenspuffer (`ScanTree.memoryFootprint`). Pro Knoten sind das rund 58 Byte, davon etwa 18 Byte Name.
@@ -33,7 +33,7 @@ Stand M1. Die Speicherspitze ist inzwischen deutlich niedriger (bei `~` 239 stat
 | `~` | 158 MB | 160 MB | 183 MB | 311 MB |
 | `/` | 226 MB | 228 MB | 262 MB | 448 MB |
 
-Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortierte Rohbaum (36 Byte pro Knoten plus Namen), 16 Byte Hilfsdaten pro Knoten und das fertige Knoten-Array (40 Byte). Danach wird alles außer dem Baum sofort an das System zurückgegeben (siehe „mmap-Puffer“ in docs/DECISIONS.md). Mit normalen Swift-Arrays lag die Spitze beim Scan von `~` bei 567 MB, und nach dem Scan von `~/Projects` blieb der Prozess bei 314 MB statt 93 MB.
+Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortierte Rohbaum (36 Byte pro Knoten plus Namen), 16 Byte Hilfsdaten pro Knoten und das fertige Knoten-Array (40 Byte). Danach wird alles außer dem Baum sofort an das System zurückgegeben (siehe „mmap-Puffer“ in docs/DECISIONS.md). Mit normalen Swift-Arrays lag die Spitze beim Scan von `~` bei 567 MB, und nach dem Scan eines Projektordners (1,5 Mio. Knoten) blieb der Prozess bei 314 MB statt 93 MB.
 
 ### Abgleich mit `du`
 
@@ -46,7 +46,7 @@ Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortier
 
 ### Volume-Bilanz beim Scan von `/`
 - Scan-Summe 373,7 GB + „Nicht zugeordnet“ 64,4 GB = 438,1 GB = belegt laut Volume. `/System/Volumes/Data` wurde nicht betreten, `/Users`, `/Applications` usw. erscheinen über die Firmlinks unter `/`.
-- Nicht betretene Einhängepunkte: `/System/Volumes/{Data,Hardware,Preboot,Update,VM,iSCPreboot,xarts}`, `/Volumes/Recovery`, `/dev`, `/nix`.
+- Nicht betretene Einhängepunkte: `/System/Volumes/{Data,Hardware,Preboot,Update,VM,iSCPreboot,xarts}`, `/Volumes/Recovery`, `/dev` und weitere.
 
 ## Worker-Anzahl (`~`, warmer Cache)
 
