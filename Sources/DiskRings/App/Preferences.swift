@@ -27,6 +27,8 @@ final class Preferences {
     var crossMountPoints: Bool { didSet { defaults.set(crossMountPoints, forKey: Key.crossMounts) } }
     var excludedPaths: [String] { didSet { defaults.set(excludedPaths, forKey: Key.excluded) } }
     var showLabels: Bool { didSet { defaults.set(showLabels, forKey: Key.labels) } }
+    /// Snapshot-Einstellungen (SPEC 3.7), siehe Snapshots/SnapshotLibrary.swift.
+    let snapshots: SnapshotPreferences
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -40,6 +42,7 @@ final class Preferences {
         crossMountPoints = defaults.object(forKey: Key.crossMounts) as? Bool ?? false
         excludedPaths = defaults.stringArray(forKey: Key.excluded) ?? []
         showLabels = defaults.object(forKey: Key.labels) as? Bool ?? true
+        snapshots = SnapshotPreferences(defaults: defaults)
     }
 
     /// Erlaubter Bereich der Winkelschwelle in Grad.

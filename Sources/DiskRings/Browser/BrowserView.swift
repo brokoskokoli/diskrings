@@ -36,6 +36,7 @@ struct BrowserView: View {
             Divider()
             StatusBar(state: state)
         }
+        .modifier(CompareModeSwitch(state: state, frozenTime: frozenTime))
     }
 }
 
@@ -61,6 +62,7 @@ struct BrowserToolbar: View {
             if state.phase == .scanning {
                 ProgressView().controlSize(.small).accessibilityLabel("Scan läuft")
             }
+            CompareToolbarButton(state: state)
             Button { state.rescan() } label: { Label("Rescan", systemImage: "arrow.clockwise") }
                 .help("Komplett neu scannen")
                 .disabled(state.phase == .scanning)

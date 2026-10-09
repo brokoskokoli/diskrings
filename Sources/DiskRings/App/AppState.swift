@@ -59,6 +59,10 @@ final class AppState {
     /// Bitte an die Liste, zu diesem Knoten zu scrollen.
     var scrollRequest: Int32?
 
+    // MARK: Snapshots und Vergleich (SPEC 3.9, siehe Snapshots/ und Compare/)
+    var snapshots = SnapshotLibrary()
+    var compare: CompareSession?
+
     init(prefs: Preferences) {
         self.prefs = prefs
         scanner.handler = { [weak self] event in
@@ -109,6 +113,7 @@ final class AppState {
         result = nil
         scanError = nil
         showSummary = false
+        compare = nil
         setTree(nil)
         phase = .scanning
         scanner.start(path, options: prefs.scanOptions)
@@ -133,6 +138,7 @@ final class AppState {
     @ObservationIgnored private var pendingFocusPath: String?
 
     func backToStart() {
+        compare = nil
         cancelScan()
         setTree(nil)
         result = nil
@@ -155,6 +161,7 @@ final class AppState {
         pendingFocusPath = nil
         phase = .browsing
         showSummary = true
+        snapshots.didFinishScan(r, volume: v, retention: prefs.snapshots.retention)
     }
 
     /// Setzt einen neuen Baum (Snapshot, Endergebnis, Fixture) und überträgt
