@@ -42,6 +42,9 @@ final class SnapshotPreferences {
 final class SnapshotLibrary {
     let store: SnapshotStore
     private(set) var infos: [SnapshotInfo] = []
+    /// Dateien in der Ablage, die sich nicht lesen lassen (abgeschnitten,
+    /// beschädigt); im Fenster „Snapshots“ als „beschädigt“ gezeigt.
+    private(set) var damaged: [DamagedSnapshot] = []
     /// Zeitpunkt, zu dem der aktuelle Scan fertig wurde. Snapshots ab diesem
     /// Zeitpunkt zeigen denselben Stand und werden nicht zum Vergleich angeboten.
     private(set) var currentScanDate: Date?
@@ -60,7 +63,7 @@ final class SnapshotLibrary {
 
     func refresh() {
         do {
-            infos = try store.list()
+            (infos, damaged) = try store.listAll()
         } catch {
             errorMessage = "Snapshots konnten nicht gelesen werden: \(error)"
         }
@@ -125,11 +128,31 @@ final class SnapshotLibrary {
 
     // MARK: Verwalten
 
+    /// Umbenennen im Hintergrund: Es wird nur der Kopf der Datei neu
+    /// geschrieben, die Datei aber trotzdem einmal kopiert (atomar ersetzt).
     func rename(_ info: SnapshotInfo, to name: String?) {
-        do {
-            try store.rename(info, to: SnapshotNaming.normalized(name))
-        } catch {
-            errorMessage = "Umbenennen fehlgeschlagen: \(error)"
+        let store = store
+        let newName = SnapshotNaming.normalized(name)
+        Task {
+            do {
+                _ = try await Task.detached(priority: .userInitiated) {
+                    try store.rename(info, to: newName)
+                }.value
+            } catch {
+                errorMessage = "Umbenennen fehlgeschlagen: \(error)"
+            }
+            refresh()
+        }
+    }
+
+    /// Löscht beschädigte Dateien (nur innerhalb der Ablage).
+    func deleteDamaged(_ items: [DamagedSnapshot]) {
+        for d in items {
+            do {
+                try store.delete(d)
+            } catch {
+                errorMessage = "Löschen fehlgeschlagen: \(error)"
+            }
         }
         refresh()
     }

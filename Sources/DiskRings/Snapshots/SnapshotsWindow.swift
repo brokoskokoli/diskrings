@@ -20,7 +20,7 @@ struct SnapshotsWindow: View {
         let library = state.snapshots
         let selected = library.infos.filter { selection.contains($0.id) }
         VStack(spacing: 0) {
-            if library.infos.isEmpty {
+            if library.infos.isEmpty && library.damaged.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "clock.arrow.2.circlepath").font(.system(size: 34)).foregroundStyle(.secondary)
                     Text("Noch keine Snapshots").font(.headline)
@@ -66,6 +66,10 @@ struct SnapshotsWindow: View {
                         confirmDelete = true
                     }
                 }
+            }
+            if !library.damaged.isEmpty {
+                Divider()
+                DamagedSnapshotsList(library: library)
             }
             Divider()
             HStack(spacing: 8) {
@@ -129,6 +133,74 @@ struct SnapshotsWindow: View {
         guard infos.count == 2 else { return }
         state.compareSnapshots(infos[0], infos[1])
         openWindow(id: "main")
+    }
+}
+
+/// Beschädigte Snapshot-Dateien (abgeschnitten oder unlesbar): nur
+/// anzeigen, im Finder zeigen und löschen.
+struct DamagedSnapshotsList: View {
+    let library: SnapshotLibrary
+    @ViewState private var confirm: [DamagedSnapshot] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Label("\(library.damaged.count == 1 ? "1 beschädigte Datei" : "\(library.damaged.count) beschädigte Dateien")",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                if library.damaged.count > 1 {
+                    Button("Alle löschen…") { confirm = library.damaged }.controlSize(.small)
+                }
+            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(library.damaged) { d in
+                        HStack(spacing: 8) {
+                            Text("beschädigt")
+                                .font(.system(size: 10, weight: .semibold))
+                                .padding(.horizontal, 5).padding(.vertical, 1)
+                                .background(Color.orange.opacity(0.2), in: Capsule())
+                            Text(title(d)).lineLimit(1).truncationMode(.middle)
+                            Text(d.reason).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                            Spacer()
+                            Text(ByteFormat.string(d.fileSize)).monospacedDigit().foregroundStyle(.secondary)
+                            Button { NSWorkspace.shared.activateFileViewerSelecting([d.url]) } label: {
+                                Image(systemName: "magnifyingglass")
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Im Finder zeigen")
+                            Button { confirm = [d] } label: { Image(systemName: "trash") }
+                                .buttonStyle(.borderless)
+                                .help("Löschen…")
+                        }
+                        .font(.system(size: 11))
+                        .help(d.url.path)
+                    }
+                }
+            }
+            .frame(height: min(90, CGFloat(library.damaged.count) * 22))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.06))
+        .confirmationDialog(confirm.count == 1 ? "Beschädigte Datei löschen?" : "\(confirm.count) beschädigte Dateien löschen?",
+                            isPresented: Binding(get: { !confirm.isEmpty }, set: { if !$0 { confirm = [] } }),
+                            titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) {
+                library.deleteDamaged(confirm)
+                confirm = []
+            }
+            Button("Abbrechen", role: .cancel) { confirm = [] }
+        } message: {
+            Text("Die Datei lässt sich nicht mehr als Snapshot lesen und wird endgültig gelöscht. Gescannte Dateien und Ordner bleiben unberührt.")
+        }
+    }
+
+    private func title(_ d: DamagedSnapshot) -> String {
+        guard let m = d.metadata else { return d.url.lastPathComponent }
+        return "\(SnapshotNaming.title(m)) · \(m.rootPath)"
     }
 }
 

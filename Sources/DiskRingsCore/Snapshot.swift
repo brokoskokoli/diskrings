@@ -233,6 +233,61 @@ public enum SnapshotFile {
         return try decodeHeader(header)
     }
 
+    /// Liest Kopf und Längenangaben (ohne die Nutzdaten) und liefert die
+    /// Metadaten und die Länge, die eine vollständige Datei hätte.
+    public static func inspect(_ url: URL) throws -> (metadata: SnapshotMetadata, expectedLength: UInt64) {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let fixed = try handle.read(upToCount: 16) ?? Data()
+        var r = Reader(fixed)
+        let headerLength = try readPreamble(&r)
+        guard let header = try handle.read(upToCount: Int(headerLength)), header.count == Int(headerLength) else {
+            throw SnapshotError.truncated
+        }
+        let metadata = try decodeHeader(header)
+        guard let lengths = try handle.read(upToCount: 24), lengths.count == 24 else { throw SnapshotError.truncated }
+        var l = Reader(lengths)
+        let rawLength = try l.u64()
+        let compressedLength = try l.u64()
+        guard rawLength < 1 << 36, compressedLength < 1 << 36 else { throw SnapshotError.corrupted("Längenangaben") }
+        return (metadata, 16 + UInt64(headerLength) + 24 + compressedLength)
+    }
+
+    /// Bereich des (JSON-)Kopfs in den Dateibytes.
+    static func headerRange(of data: Data) throws -> Range<Int> {
+        var r = Reader(data)
+        let headerLength = try readPreamble(&r)
+        guard data.count >= 16 + Int(headerLength) else { throw SnapshotError.truncated }
+        return 16 ..< 16 + Int(headerLength)
+    }
+
+    /// Ersetzt nur den Kopf: Längenangaben, Prüfsumme und komprimierte
+    /// Nutzdaten werden unverändert übernommen (nicht dekomprimiert). Eine
+    /// abgeschnittene oder zu lange Datei wird abgelehnt.
+    public static func replacingHeader(in data: Data, with metadata: SnapshotMetadata) throws -> Data {
+        let range = try headerRange(of: data)
+        _ = try decodeHeader(data.subdata(in: range))
+        var r = Reader(data.subdata(in: range.upperBound ..< data.count))
+        _ = try r.u64()
+        let compressedLength = try r.u64()
+        _ = try r.u64()
+        guard compressedLength < 1 << 36 else { throw SnapshotError.corrupted("Längenangaben") }
+        let expected = range.upperBound + 24 + Int(compressedLength)
+        guard data.count >= expected else { throw SnapshotError.truncated }
+        guard data.count == expected else { throw SnapshotError.corrupted("Dateilänge") }
+        var meta = metadata
+        meta.date = normalized(meta.date)
+        let header = try jsonEncoder.encode(meta)
+        guard header.count < 1 << 24 else { throw SnapshotError.corrupted("Kopflänge") }
+        var out = Data()
+        out.reserveCapacity(data.count - range.count + header.count)
+        out.append(data.subdata(in: 0 ..< 12))
+        out.appendLE(UInt32(header.count))
+        out.append(header)
+        out.append(data.subdata(in: range.upperBound ..< data.count))
+        return out
+    }
+
     public static func decode(_ data: Data) throws -> Snapshot {
         var r = Reader(data)
         let headerLength = try readPreamble(&r)
@@ -262,7 +317,7 @@ public enum SnapshotFile {
         return headerLength
     }
 
-    private static func decodeHeader(_ data: Data) throws -> SnapshotMetadata {
+    static func decodeHeader(_ data: Data) throws -> SnapshotMetadata {
         do {
             return try jsonDecoder.decode(SnapshotMetadata.self, from: data)
         } catch {

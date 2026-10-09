@@ -144,6 +144,17 @@ enum CompareDemoRenderer {
             shot(SnapshotsWindow(state: s8, initialSelection: [info.id, laterInfo.id]), "snapshots-window",
                  CGSize(width: 780, height: 300))
 
+            // 8b. Dasselbe Fenster mit einer abgeschnittenen und einer unlesbaren
+            //     Datei (nur in der temporären Ablage).
+            let cut = try store.save(before, volume: v1, name: "abgeschnitten", date: date("2026-09-10 12:00"))
+            let cutData = try Data(contentsOf: cut.url)
+            try cutData.prefix(cutData.count - 100).write(to: cut.url)
+            try Data("kein Snapshot".utf8).write(to: cut.url.deletingLastPathComponent()
+                .appendingPathComponent("20260901T080000000Z.drsnap"))
+            let s8b = makeState()
+            shot(SnapshotsWindow(state: s8b), "snapshots-window-damaged", CGSize(width: 780, height: 380))
+            for d in try store.listDamaged() { try store.delete(d) }
+
             // 9. Dialog „Snapshot sichern“ und Einstellungen.
             shot(SnapshotNameSheet(title: "Snapshot sichern", message: "Aktueller Scan von \(home)", confirm: "Sichern",
                                    name: .constant("vor macOS-Update")) { _ in }, "snapshot-save-sheet", nil)

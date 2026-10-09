@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 /// Eine gespeicherte Snapshot-Datei (aus der Liste, ohne geladenen Baum).
@@ -8,6 +9,27 @@ public struct SnapshotInfo: Sendable, Equatable, Identifiable {
     public let fileSize: UInt64
 
     public var id: UUID { metadata.id }
+}
+
+/// Eine Datei in der Ablage, die sich nicht als Snapshot lesen lässt
+/// (abgeschnitten, beschädigter Kopf, kein Snapshot). Sie lässt sich nur
+/// löschen; `prune` räumt sie auf.
+public struct DamagedSnapshot: Sendable, Equatable, Identifiable {
+    public let url: URL
+    public let fileSize: UInt64
+    /// Grund, z. B. „Snapshot-Datei ist unvollständig“.
+    public let reason: String
+    /// Metadaten, falls wenigstens der Kopf lesbar ist.
+    public let metadata: SnapshotMetadata?
+
+    public init(url: URL, fileSize: UInt64, reason: String, metadata: SnapshotMetadata?) {
+        self.url = url
+        self.fileSize = fileSize
+        self.reason = reason
+        self.metadata = metadata
+    }
+
+    public var id: String { url.path }
 }
 
 /// Ablage der Snapshots unter
@@ -63,9 +85,21 @@ public struct SnapshotStore: Sendable {
         let data = try SnapshotFile.encode(Snapshot(metadata: meta, tree: condensed))
         let dir = baseDirectory.appendingPathComponent(Self.directoryName(for: meta.volumeUUID), isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let url = Self.uniqueURL(in: dir, date: meta.date)
-        try data.write(to: url, options: .withoutOverwriting)
-        return SnapshotInfo(url: url, metadata: meta, fileSize: UInt64(data.count))
+        // Erst vollständig in eine temporäre Datei schreiben, dann ohne
+        // Überschreiben umbenennen: Eine halb geschriebene `.drsnap` gäbe es
+        // sonst kurz in der Ablage, und ein gleichzeitiges `prune` hielte sie
+        // für beschädigt.
+        let temp = dir.appendingPathComponent(".\(UUID().uuidString).tmp")
+        try data.write(to: temp)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        for _ in 0 ..< 100 {
+            let url = Self.uniqueURL(in: dir, date: meta.date)
+            if renamex_np(temp.path, url.path, UInt32(RENAME_EXCL)) == 0 {
+                return SnapshotInfo(url: url, metadata: meta, fileSize: UInt64(data.count))
+            }
+            guard errno == EEXIST else { throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: url.path]) }
+        }
+        throw CocoaError(.fileWriteFileExists)
     }
 
     /// Kompakter Baum ohne tote Knoten und ohne Dateien unter `minimumFileSize`
@@ -117,22 +151,47 @@ public struct SnapshotStore: Sendable {
 
     // MARK: Verwalten
 
-    /// Alle Snapshots, neueste zuerst. Nicht lesbare Dateien werden übersprungen.
-    public func list() throws -> [SnapshotInfo] {
+    /// Alle lesbaren Snapshots, neueste zuerst. Beschädigte Dateien fehlen
+    /// hier (siehe `listDamaged`).
+    public func list() throws -> [SnapshotInfo] { try listAll().valid }
+
+    /// Dateien in der Ablage, die sich nicht als Snapshot lesen lassen.
+    public func listDamaged() throws -> [DamagedSnapshot] { try listAll().damaged }
+
+    /// Liest alle `.drsnap`-Dateien und teilt sie in lesbare und beschädigte.
+    /// Geprüft werden Vorspann, Kopf und die Dateilänge laut Längenangabe
+    /// (eine abgeschnittene Datei fällt damit auf, ohne die Nutzdaten zu
+    /// lesen). Die Prüfsumme wird erst beim Laden geprüft.
+    public func listAll() throws -> (valid: [SnapshotInfo], damaged: [DamagedSnapshot]) {
         let fm = FileManager.default
-        guard fm.fileExists(atPath: baseDirectory.path) else { return [] }
-        var out: [SnapshotInfo] = []
+        guard fm.fileExists(atPath: baseDirectory.path) else { return ([], []) }
+        var valid: [SnapshotInfo] = []
+        var damaged: [DamagedSnapshot] = []
         for dir in try fm.contentsOfDirectory(at: baseDirectory, includingPropertiesForKeys: [.isDirectoryKey]) {
             guard (try? dir.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
             for file in try fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey])
             where file.pathExtension == "drsnap" {
-                guard let meta = try? SnapshotFile.readMetadata(file) else { continue }
-                let size = (try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-                out.append(SnapshotInfo(url: file, metadata: meta, fileSize: UInt64(size)))
+                let size = UInt64((try? file.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+                do {
+                    let (meta, expected) = try SnapshotFile.inspect(file)
+                    if size == expected {
+                        valid.append(SnapshotInfo(url: file, metadata: meta, fileSize: size))
+                    } else {
+                        let reason = size < expected ? SnapshotError.truncated.description
+                            : SnapshotError.corrupted("Dateilänge").description
+                        damaged.append(DamagedSnapshot(url: file, fileSize: size, reason: reason, metadata: meta))
+                    }
+                } catch {
+                    let reason = (error as? SnapshotError)?.description ?? "\(error)"
+                    let meta = try? SnapshotFile.readMetadata(file)
+                    damaged.append(DamagedSnapshot(url: file, fileSize: size, reason: reason, metadata: meta))
+                }
             }
         }
-        return out.sorted { $0.metadata.date != $1.metadata.date ? $0.metadata.date > $1.metadata.date
+        valid.sort { $0.metadata.date != $1.metadata.date ? $0.metadata.date > $1.metadata.date
             : $0.url.path > $1.url.path }
+        damaged.sort { $0.url.path < $1.url.path }
+        return (valid, damaged)
     }
 
     /// Snapshots derselben Scan-Wurzel (und, falls angegeben, desselben Volumes).
@@ -152,30 +211,57 @@ public struct SnapshotStore: Sendable {
         try FileManager.default.removeItem(at: url)
     }
 
-    /// Gibt dem Snapshot einen neuen Namen (`nil` entfernt ihn). Die Datei
-    /// wird mit neuem Kopf atomar ersetzt; die Nutzdaten bleiben unverändert.
+    /// Löscht eine beschädigte Datei (nur innerhalb des Basisverzeichnisses).
+    public func delete(_ damaged: DamagedSnapshot) throws {
+        let url = try checkedURL(damaged.url)
+        try FileManager.default.removeItem(at: url)
+    }
+
+    /// Gibt dem Snapshot einen neuen Namen (`nil` entfernt ihn). Nur der Kopf
+    /// wird neu geschrieben; die komprimierten Nutzdaten werden unverändert
+    /// kopiert, nicht dekomprimiert (`SnapshotFile.replacingHeader`). Die
+    /// Datei wird atomar ersetzt; eine abgeschnittene Datei bleibt unverändert.
     @discardableResult
     public func rename(_ info: SnapshotInfo, to name: String?) throws -> SnapshotInfo {
         let url = try checkedURL(info.url)
-        let data = try Data(contentsOf: url)
-        let snapshot = try SnapshotFile.decode(data)
-        var meta = snapshot.metadata
+        let data = try Data(contentsOf: url, options: .mappedIfSafe)
+        let range = try SnapshotFile.headerRange(of: data)
+        var meta = try SnapshotFile.decodeHeader(data.subdata(in: range))
         meta.name = name
-        let newData = try SnapshotFile.encode(Snapshot(metadata: meta, tree: snapshot.tree))
+        let newData = try SnapshotFile.replacingHeader(in: data, with: meta)
         try newData.write(to: url, options: .atomic)
         return SnapshotInfo(url: url, metadata: meta, fileSize: UInt64(newData.count))
     }
 
     /// Löscht die ältesten Snapshots der Scan-Wurzel, bis höchstens
     /// `maxCount` übrig sind. Gibt die gelöschten zurück.
+    ///
+    /// Außerdem werden beschädigte Dateien aufgeräumt: solche derselben
+    /// Scan-Wurzel (Kopf lesbar) und solche ohne lesbaren Kopf (im Ordner des
+    /// Volumes bzw. ohne `volumeUUID` überall). Sie stehen nicht in der
+    /// Rückgabe, weil sie keine `SnapshotInfo` haben.
     @discardableResult
     public func prune(maxCount: Int = SnapshotStore.defaultMaxCount, rootPath: String,
                       volumeUUID: String? = nil) throws -> [SnapshotInfo] {
-        let all = try list(rootPath: rootPath, volumeUUID: volumeUUID) // neueste zuerst
+        let (valid, damaged) = try listAll()
+        for d in damaged where isPrunable(d, rootPath: rootPath, volumeUUID: volumeUUID) {
+            try? delete(d)
+        }
+        let all = valid.filter { // neueste zuerst
+            $0.metadata.rootPath == rootPath && (volumeUUID == nil || $0.metadata.volumeUUID == volumeUUID)
+        }
         guard all.count > maxCount else { return [] }
         let doomed = Array(all.dropFirst(max(maxCount, 0)))
         for info in doomed { try delete(info) }
         return doomed
+    }
+
+    private func isPrunable(_ d: DamagedSnapshot, rootPath: String, volumeUUID: String?) -> Bool {
+        if let m = d.metadata {
+            return m.rootPath == rootPath && (volumeUUID == nil || m.volumeUUID == volumeUUID)
+        }
+        guard volumeUUID != nil else { return true }
+        return d.url.deletingLastPathComponent().lastPathComponent == Self.directoryName(for: volumeUUID)
     }
 
     // MARK: Hilfen
