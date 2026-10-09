@@ -12,6 +12,8 @@ Ziel laut SPEC (1, 4.2): 1–2 Mio. Dateien in unter 60 s, unter 150 MB RAM für
 
 ## Ergebnisse (Standard: 8 Worker)
 
+Stand M1. Die Speicherspitze ist inzwischen deutlich niedriger (bei `~` 239 statt 311 MB, siehe „Speicherspitze: Baumaufbau an Ort und Stelle“).
+
 | Scan | Dateien | Ordner | Knoten | Dauer | Baum im Speicher | Spitze (peak footprint) | max. RSS |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | `~` | 2 456 848 | 425 343 | 2 882 191 | 9,7 s / 9,9 s | 168,9 MB | 311 MB | 315 MB |
