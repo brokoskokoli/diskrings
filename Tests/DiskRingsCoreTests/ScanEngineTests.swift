@@ -3,7 +3,7 @@ import Darwin
 import Foundation
 import Testing
 
-@Suite("ScanEngine: Größen und Struktur")
+@Suite("ScanEngine: Größen und Struktur", .timeLimit(.minutes(2)))
 struct ScanEngineSizeTests {
     @Test("Größen, Summen und Sortierung stimmen mit lstat überein")
     func sizesAndSums() throws {
@@ -400,7 +400,7 @@ struct ScanEngineDuTests {
     }
 }
 
-@Suite("ScanEngine: Parallelität, Abbruch, Fortschritt", .serialized)
+@Suite("ScanEngine: Parallelität, Abbruch, Fortschritt", .serialized, .timeLimit(.minutes(2)))
 struct ScanEngineConcurrencyTests {
     @Test("Paralleler und sequenzieller Scan ergeben identische Bäume (Fixture)")
     func determinismFixture() throws {
@@ -463,6 +463,69 @@ struct ScanEngineConcurrencyTests {
         let latency = Date().timeIntervalSince(start)
         #expect(thrown is CancellationError)
         #expect(latency < 0.5, "Abbruch dauerte \(latency) s")
+    }
+
+    @Test("S5: Abbruch mit mehreren aktiven Workern nach ≥ 20 000 Dateien greift in unter 0,5 s")
+    func cancelWithBusyWorkers() throws {
+        let token = ScanCancellation()
+        let cancelledAt = OSAllocatedUnfairLockBox<Date?>(nil)
+        let seen = OSAllocatedUnfairLockBox<ScanProgress?>(nil)
+        let engine = ScanEngine(options: ScanOptions(workerCount: 8, progressInterval: 0.005))
+        var thrown: Error?
+        do {
+            _ = try engine.scanBlocking("/System/Library", cancellation: token, onProgress: { p in
+                if cancelledAt.value == nil, p.filesScanned >= 20_000, p.activeWorkers >= 2 {
+                    seen.value = p
+                    cancelledAt.value = Date()
+                    token.cancel()
+                }
+            })
+        } catch {
+            thrown = error
+        }
+        let start = try #require(cancelledAt.value, "Bedingung (≥ 20 000 Dateien, ≥ 2 aktive Worker) nie erreicht")
+        let latency = Date().timeIntervalSince(start)
+        #expect(thrown is CancellationError)
+        #expect(latency < 0.5, "Abbruch dauerte \(latency) s")
+        #expect((seen.value?.activeWorkers ?? 0) >= 2)
+    }
+
+    @Test("S5: Abbruch während des Zusammenführens bzw. Baumaufbaus", arguments: [ScanPhase.assembling, .building])
+    func cancelDuringAssembly(phase: ScanPhase) throws {
+        let fx = try Fixture()
+        for d in 0 ..< 10 { for f in 0 ..< 50 { try fx.file("d\(d)/f\(f)", size: 100) } }
+        let token = ScanCancellation()
+        var engine = ScanEngine(options: ScanOptions(workerCount: 4))
+        engine.hooks.phase = { p in if p == phase { token.cancel() } }
+        #expect(throws: CancellationError.self) {
+            try engine.scanBlocking(fx.root, cancellation: token)
+        }
+        // Ohne Abbruch läuft derselbe Scan durch.
+        var plain = ScanEngine(options: ScanOptions(workerCount: 4))
+        plain.hooks.phase = { _ in }
+        #expect(try plain.scanBlocking(fx.root).fileCount == 500)
+    }
+
+    @Test("S6: Ereignis-Stream puffert bei langsamem Konsumenten nur die neuesten Ereignisse")
+    func boundedEventStream() async throws {
+        let fx = try Fixture()
+        for d in 0 ..< 200 { try fx.file("d\(d)/f", size: 10) }
+        var engine = ScanEngine(options: ScanOptions(workerCount: 1, progressInterval: 0.001))
+        // Jeder Ordner dauert 2 ms: ~400 ms Scan, ~400 Fortschrittsmeldungen.
+        engine.hooks.beforeOpenDirectory = { _ in usleep(2000) }
+        let stream = engine.events(fx.root)
+        try await Task.sleep(nanoseconds: 1_500_000_000) // Konsument liest nicht
+        var count = 0
+        var finished = false
+        for try await e in stream {
+            count += 1
+            if case .finished(let r) = e {
+                finished = true
+                #expect(r.fileCount == 200)
+            }
+        }
+        #expect(finished)
+        #expect(count <= ScanEngine.eventBufferLimit, "\(count) Ereignisse gepuffert")
     }
 
     @Test("Abbruch der Task bricht den asynchronen Scan ab")

@@ -17,6 +17,14 @@ import Foundation
 /// identische Bäume.
 public struct ScanEngine: Sendable {
     public let options: ScanOptions
+    /// Eingriffspunkte für Tests (z. B. Ordner zwischen Auflisten und Öffnen
+    /// verschwinden lassen oder in einer bestimmten Phase abbrechen).
+    var hooks = ScanHooks()
+
+    /// So viele Ereignisse puffert `events(_:)` höchstens, wenn der Konsument
+    /// nicht nachkommt. Ältere Fortschrittsmeldungen und Snapshots werden
+    /// dann verworfen; `.finished` ist immer das letzte Ereignis und bleibt.
+    public static let eventBufferLimit = 8
 
     public init(options: ScanOptions = ScanOptions()) {
         self.options = options
@@ -52,8 +60,13 @@ public struct ScanEngine: Sendable {
 
     /// Ereignis-Stream mit Fortschritt, Live-Snapshots und dem Endergebnis.
     /// Beendet der Konsument den Stream, wird der Scan abgebrochen.
+    ///
+    /// Der Puffer ist begrenzt (`eventBufferLimit`, die neuesten bleiben):
+    /// Ein langsamer Konsument verpasst Zwischenstände, aber der Speicher
+    /// wächst nicht mit der Scandauer.
     public func events(_ path: String, includeSnapshots: Bool = true) -> AsyncThrowingStream<ScanEvent, Error> {
-        let (stream, continuation) = AsyncThrowingStream.makeStream(of: ScanEvent.self, throwing: Error.self)
+        let (stream, continuation) = AsyncThrowingStream.makeStream(
+            of: ScanEvent.self, throwing: Error.self, bufferingPolicy: .bufferingNewest(Self.eventBufferLimit))
         let progress: @Sendable (ScanProgress) -> Void = { p in continuation.yield(.progress(p)) }
         let snapshot: (@Sendable (ScanTree) -> Void)? =
             includeSnapshots ? { @Sendable t in _ = continuation.yield(.snapshot(t)) } : nil
@@ -108,6 +121,7 @@ public struct ScanEngine: Sendable {
         let ctx = ScanContext(
             options: options, rootPath: rootPath, rootDev: st.st_dev, rootName: rootName,
             cancellation: cancellation)
+        ctx.hooks = hooks
         var rootFlags: NodeFlags = [.directory]
         if PackageDetector.isPackage(name: rootName) { rootFlags.insert(.package) }
         ctx.rootBuffer.append(parent: ScanContext.noParent, name: Array(rootName.utf8), flags: rootFlags,
@@ -165,9 +179,11 @@ public struct ScanEngine: Sendable {
 
         do {
             memDebug("scan done")
+            hooks.phase?(.assembling)
             let assembled = try Assembler.assemble(ctx: ctx, workers: workers)
             memDebug("assembled")
             let raw = assembled.raw
+            hooks.phase?(.building)
             let tree = try TreeBuilder.build(raw, rootPath: rootPath) { cancellation.isCancelled }
             memDebug("built")
             let root = tree.root
@@ -192,6 +208,17 @@ public struct ScanEngine: Sendable {
 }
 
 // MARK: - Gemeinsamer Zustand
+
+/// Phasen nach dem Lesen, für Test-Eingriffe.
+enum ScanPhase: Sendable { case assembling, building }
+
+/// Eingriffspunkte für Tests; im normalen Betrieb leer.
+struct ScanHooks: Sendable {
+    /// Wird vor dem Öffnen jedes Ordners mit dessen Pfad aufgerufen.
+    var beforeOpenDirectory: (@Sendable (String) -> Void)?
+    /// Wird zu Beginn der Phasen nach dem Lesen aufgerufen.
+    var phase: (@Sendable (ScanPhase) -> Void)?
+}
 
 struct ScanJob {
     /// Gepackte Referenz auf den Ordnerknoten: Puffer-ID (obere 24 Bit) und Index.
@@ -263,6 +290,7 @@ final class ScanContext: @unchecked Sendable {
     /// Pfade, die nie betreten werden (`/System/Volumes/Data`).
     let neverEnter: Set<String>
     let excluded: Set<String>
+    var hooks = ScanHooks()
 
     /// Puffer 0: nur die Wurzel. Wird vor dem Start befüllt und von
     /// Workern ausschließlich unter `cond` für Markierungen genutzt.
@@ -337,7 +365,7 @@ final class ScanContext: @unchecked Sendable {
         cond.lock()
         defer { cond.unlock() }
         return ScanProgress(filesScanned: files, directoriesScanned: dirs, allocatedBytes: bytes,
-                            currentPath: currentPath, elapsed: 0)
+                            currentPath: currentPath, elapsed: 0, activeWorkers: active)
     }
 
     func skeletonSnapshot() -> RawTree {
@@ -413,6 +441,7 @@ final class ScanWorker: @unchecked Sendable {
             var entries = 0
             let parentPathPrefix = job.path == "/" ? "/" : job.path + "/"
 
+            ctx.hooks.beforeOpenDirectory?(job.path)
             let fd = openDirectory(job.path)
             var readError: Int32 = 0
             if fd < 0 {

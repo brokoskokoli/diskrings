@@ -59,6 +59,8 @@ public struct ScanProgress: Sendable, Equatable {
     public var currentPath: String
     /// Seit Scanbeginn vergangene Zeit in Sekunden.
     public var elapsed: Double
+    /// Anzahl der Worker, die gerade einen Teilbaum lesen.
+    public var activeWorkers: Int = 0
 }
 
 /// Ereignisse des asynchronen Scan-Streams.
