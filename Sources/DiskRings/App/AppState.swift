@@ -129,6 +129,9 @@ final class AppState {
     var compare: CompareSession?
     /// Zähler für die Neuberechnung des Vergleichs nach Änderungen am Baum.
     @ObservationIgnored var compareRefreshGeneration = 0
+    /// Generation für das Starten eines Vergleichs (`runCompare`): Ein neuer
+    /// Vergleich, ein neuer Scan und `backToStart` verwerfen laufende.
+    @ObservationIgnored var compareRunGate = GenerationGate()
 
     init(prefs: Preferences) {
         self.prefs = prefs
@@ -222,6 +225,7 @@ final class AppState {
         undoStack = []
         clearSearch()
         compare = nil
+        compareRunGate.invalidate()
         setTree(nil)
         phase = .scanning
         stallDetector = ScanStallDetector(start: Date())
@@ -250,6 +254,7 @@ final class AppState {
 
     func backToStart() {
         compare = nil
+        compareRunGate.invalidate()
         cancelScan()
         cancelPartialRescans()
         setTree(nil)

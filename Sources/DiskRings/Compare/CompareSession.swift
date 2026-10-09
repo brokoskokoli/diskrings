@@ -246,8 +246,16 @@ extension AppState {
         }
     }
 
+    /// Beendet den Vergleich. Ohne aktuellen Scan (zwei Snapshots, vom
+    /// Startbildschirm aus verglichen) geht es zurück zum Startbildschirm
+    /// statt in eine leere Hauptansicht.
     func endCompare() {
         compare = nil
+        compareRunGate.invalidate()
+        if tree == nil, phase == .browsing {
+            phase = .start
+            refreshVolumes()
+        }
     }
 
     /// Lädt und vergleicht im Hintergrund; danach ist der Vergleichsmodus aktiv.
@@ -255,19 +263,30 @@ extension AppState {
                             makeDiff: @escaping @Sendable () throws -> SnapshotDiff) {
         let mode = prefs.sizeMode
         let options = prefs.layoutOptions(unassigned: 0)
+        let token = compareRunGate.begin()
+        // Für „Snapshot ↔ aktueller Scan“: der Baum, der verglichen wird.
+        let comparedTree = tree
         snapshots.busy = "Vergleich wird berechnet…"
         Task {
-            defer { snapshots.busy = nil }
+            defer { if compareRunGate.isCurrent(token) { snapshots.busy = nil } }
             do {
                 let model = try await Task.detached(priority: .userInitiated) {
                     CompareModel(diff: try makeDiff(), mode: mode)
                 }.value
+                // Inzwischen neuer Scan, zurück zum Start, Vergleich beendet
+                // oder ein neuerer Vergleich: Ergebnis verwerfen.
+                guard compareRunGate.isCurrent(token) else { return }
+                if source == .currentScan, tree == nil || phase != .browsing { return }
                 let session = CompareSession(model: model, oldTitle: oldTitle, newTitle: newTitle,
                                              comparesSnapshots: comparesSnapshots, options: options)
                 session.source = source
                 compare = session
                 if phase == .start { phase = .browsing }
+                // Baum während der Berechnung geändert (Papierkorb, Teil-Rescan):
+                // gleich neu rechnen.
+                if source == .currentScan, tree !== comparedTree { scheduleCompareRefresh() }
             } catch {
+                guard compareRunGate.isCurrent(token) else { return }
                 snapshots.errorMessage = "Vergleich nicht möglich: \(error)"
             }
         }
