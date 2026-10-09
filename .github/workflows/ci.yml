@@ -1,5 +1,5 @@
-# Build und Tests auf einem macOS-Runner. Keine Signatur, keine Notarisierung:
-# Das Zertifikat bleibt auf dem Entwicklerrechner (SPEC 7).
+# Build und Tests auf einem macOS-Runner. Keine Signatur, keine Notarisierung;
+# das macht nur der Release-Workflow (release.yml) bei Tags v*, siehe docs/RELEASING.md.
 #
 # Performance-Tests (Filter "Performance|performance", wie in scripts/check.sh)
 # laufen hier nicht: Ihre Grenzen (z. B. Layout von 2 Mio. Knoten unter 50 ms,

@@ -1,0 +1,146 @@
+# Release: baut DiskRings, signiert mit der Developer ID, notarisiert und heftet
+# die Tickets an (App und DMG), erzeugt ZIP, DMG und SHA256SUMS und
+# veröffentlicht ein GitHub Release mit generierten Release-Notes.
+#
+#   git tag v0.1.0 && git push origin v0.1.0   → Release v0.1.0 (Tag muss zu VERSION passen)
+#   Actions → Release → Run workflow           → Trockenlauf (dry_run): alles außer
+#                                                Veröffentlichen; Artefakte zum Herunterladen
+#
+# Einrichtung, Secrets und Sicherheitsabwägungen: docs/RELEASING.md.
+# Die Logik steckt in den Skripten (scripts/ci-release.sh, scripts/release.sh,
+# scripts/notarize.sh), damit sie lokal nachvollziehbar und testbar bleibt.
+#
+# Sicherheit:
+#   - Actions auf Commit-SHAs gepinnt (Kommentar = Version).
+#   - Standard-Token ohne Rechte; nur der Job "publish" darf Releases anlegen
+#     (contents: write) und sieht dafür keine Signier-Secrets.
+#   - Secrets nur im Environment "release" und nur in den Schritten, die sie brauchen;
+#     kein `set -x`; ${{ }} nie direkt in run-Blöcken (Script-Injection).
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Trockenlauf: bauen, signieren, notarisieren, aber nicht veröffentlichen'
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Bauen, signieren, notarisieren
+    # Wie ci.yml (geprüft 10/2026: Image macos-26-arm64, Xcode 26.6).
+    runs-on: macos-26
+    timeout-minutes: 60
+    # Secrets und optionale Pflicht-Freigabe liegen im Environment "release".
+    environment: release
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.preflight.outputs.publish }}
+      tag: ${{ steps.preflight.outputs.tag }}
+      version: ${{ steps.preflight.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Ganze Historie: make-app.sh nimmt die Commit-Anzahl als Build-Nummer.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Tag, VERSION und Secrets prüfen
+        id: preflight
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: scripts/ci-release.sh preflight
+
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+
+      - name: Toolchain
+        run: |
+          xcode-select -p
+          swift --version
+
+      - name: swift build
+        run: swift build
+
+      # Performance-Tests laufen auf den geteilten Runnern nicht (siehe ci.yml).
+      - name: swift test (ohne Performance-Tests)
+        run: swift test --skip 'Performance|performance'
+
+      - name: Zertifikat in temporäre Keychain importieren
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          DISKRINGS_REQUIRE_VALID_IDENTITY: '1'
+        run: scripts/ci-release.sh keychain-setup
+
+      # make-app.sh (Signatur mit DISKRINGS_KEYCHAIN), Notarisierung von App und
+      # DMG per API-Key, stapler, spctl, SHA256SUMS. Tests liefen oben schon.
+      - name: App bauen, signieren, notarisieren
+        env:
+          NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: scripts/release.sh --skip-checks
+
+      - name: Keychain löschen
+        if: always()
+        run: scripts/ci-release.sh keychain-cleanup
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: DiskRings-${{ steps.preflight.outputs.version }}
+          path: |
+            dist/*.zip
+            dist/*.dmg
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: GitHub Release anlegen
+    needs: build
+    if: needs.build.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: DiskRings-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Prüfsummen kontrollieren
+        working-directory: dist
+        run: sha256sum -c SHA256SUMS
+
+      - name: gh release create
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $TAG existiert schon. Löschen (gh release delete $TAG) oder VERSION erhöhen."
+            exit 1
+          fi
+          gh release create "$TAG" \
+            "dist/DiskRings-$VERSION.zip" "dist/DiskRings-$VERSION.dmg" dist/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "DiskRings $VERSION" --generate-notes
