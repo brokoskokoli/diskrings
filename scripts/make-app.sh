@@ -111,7 +111,7 @@ SIGNED_WITH=
 if [ "${DISKRINGS_ADHOC:-0}" = "1" ]; then
     echo "    DISKRINGS_ADHOC=1: ad-hoc-Signatur"
     sign_adhoc
-elif ! security find-identity -v -p codesigning | grep -qF "\"$IDENTITY\""; then
+elif ! grep -qF "\"$IDENTITY\"" <<<"$(security find-identity -v -p codesigning)"; then
     echo "warning: Identität \"$IDENTITY\" nicht im Schlüsselbund, signiere ad hoc" >&2
     sign_adhoc
 else
