@@ -77,10 +77,14 @@ public enum SunburstHit: Sendable, Equatable {
 public struct SunburstHitTester: Sendable {
     public let layout: SunburstLayout
     public let geometry: SunburstGeometry
+    /// Das Segment „Nicht zugeordnet“ wird von Ring 1 bis zum Außenrand
+    /// gezeichnet und ist daher in allen Ringen treffbar.
+    public var unassignedSpansAllRings: Bool
 
-    public init(layout: SunburstLayout, geometry: SunburstGeometry) {
+    public init(layout: SunburstLayout, geometry: SunburstGeometry, unassignedSpansAllRings: Bool = true) {
         self.layout = layout
         self.geometry = geometry
+        self.unassignedSpansAllRings = unassignedSpansAllRings
     }
 
     /// Winkel eines Punkts relativ zur Mitte in Bildschirmkoordinaten
@@ -98,7 +102,13 @@ public struct SunburstHitTester: Sendable {
         let r = (dx * dx + dy * dy).squareRoot()
         guard let ring = geometry.ring(atRadius: r) else { return .none }
         if ring == 0 { return .center }
-        return hit(ring: ring, angle: Self.angle(dx: dx, dy: dy))
+        let a = Self.angle(dx: dx, dy: dy)
+        let h = hit(ring: ring, angle: a)
+        if h == .none, ring > 1, unassignedSpansAllRings, case .arc(let i) = hit(ring: 1, angle: a),
+           layout.arcs[i].kind == .unassigned {
+            return .arc(i)
+        }
+        return h
     }
 
     /// Arc in `ring` beim Winkel `angle` (Bogenmaß, 0 = oben, im Uhrzeigersinn).

@@ -174,9 +174,9 @@ public struct Palette: Sendable, Equatable {
     public var centerHoverFill: RGBColor { isDark ? RGBColor(white: 0.26) : RGBColor(white: 0.91) }
     public var primaryText: RGBColor { isDark ? RGBColor(white: 0.94) : RGBColor(white: 0.11) }
     public var secondaryText: RGBColor { isDark ? RGBColor(white: 0.64) : RGBColor(white: 0.42) }
-    public var aggregateFill: RGBColor { isDark ? RGBColor(white: 0.36) : RGBColor(white: 0.80) }
+    public var aggregateFill: RGBColor { isDark ? RGBColor(white: 0.32) : RGBColor(white: 0.80) }
     public var remainderFill: RGBColor { isDark ? RGBColor(white: 0.28) : RGBColor(white: 0.88) }
-    public var unassignedFill: RGBColor { isDark ? RGBColor(white: 0.24) : RGBColor(white: 0.66) }
+    public var unassignedFill: RGBColor { isDark ? RGBColor(white: 0.40) : RGBColor(white: 0.66) }
 
     /// Textfarbe mit dem besseren Kontrast auf `fill` (Schwarz oder Weiß; damit
     /// ist das Kontrastverhältnis auf jeder Fläche mindestens 4,58 : 1).
@@ -187,7 +187,7 @@ public struct Palette: Sendable, Equatable {
 
     /// Hervorgehobene Variante (Hover/Auswahl).
     public func highlighted(_ c: RGBColor) -> RGBColor {
-        isDark ? c.mixed(with: RGBColor(white: 1), 0.28) : c.mixed(with: RGBColor(white: 0), 0.16)
+        isDark ? c.mixed(with: RGBColor(white: 1), 0.28) : c.mixed(with: RGBColor(white: 0), 0.10)
     }
 
     /// Abgeschwächte Variante (andere Segmente, wenn eines hervorgehoben ist).

@@ -114,6 +114,22 @@ struct SunburstHitTesterTests {
         }
     }
 
+    @Test("„Nicht zugeordnet“ ist in allen Ringen treffbar")
+    func unassignedAllRings() {
+        let t = sampleTree()
+        let l = SunburstLayout(tree: t, options: SunburstOptions(unassigned: 1000))
+        let g = SunburstGeometry(rings: 6, outerRadius: 300)
+        let u = l.ringRanges[0].upperBound - 1
+        #expect(l.arcs[u].kind == .unassigned)
+        let angle = l.arcs[u].midAngle
+        for ring in 1 ... 6 {
+            let (x, y) = point(g, ring: ring, angle: angle)
+            #expect(SunburstHitTester(layout: l, geometry: g).hit(dx: x, dy: y) == .arc(u))
+        }
+        let (x, y) = point(g, ring: 5, angle: angle)
+        #expect(SunburstHitTester(layout: l, geometry: g, unassignedSpansAllRings: false).hit(dx: x, dy: y) == .none)
+    }
+
     @Test("Leeres Layout: nur die Mitte")
     func empty() {
         let t = ScanTreeBuilder(rootName: "e").build(rootPath: "/e")
