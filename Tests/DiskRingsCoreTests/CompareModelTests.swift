@@ -286,6 +286,12 @@ struct CompareModelTests {
         #expect(!layout.isEmpty)
     }
 
+    @Test("Status-Bezeichnungen")
+    func statusLabels() {
+        #expect(DiffStatus.allCases.map(\.label) == ["neu", "entfernt", "gewachsen", "geschrumpft", "unverändert"])
+        #expect(CompareViewMode.allCases.map(\.title) == ["Wachstum", "Delta-Färbung"])
+    }
+
     @Test("Ohne Zuwachs ist das Wachstumslayout leer")
     func noGrowth() {
         let t = CompareFixture.oldTree()

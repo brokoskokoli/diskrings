@@ -30,8 +30,10 @@ struct DeltaPaletteTests {
             #expect(s.intensity(-d) == v) // symmetrisch
             last = v
         }
-        // Logarithmisch: ein Zehntel der Referenz ist deutlich sichtbar.
-        #expect(s.intensity(100_000_000) > 0.6)
+        // Wurzelskala: ein Zehntel der Referenz ist deutlich sichtbar, ein
+        // Fünftel klar schwächer als das Ganze.
+        #expect(s.intensity(100_000_000) > 0.4)
+        #expect(s.intensity(200_000_000) < 0.6)
         // Referenz 0 wird zu 1 Byte (kein Teilen durch null).
         #expect(DeltaScale(reference: 0).intensity(5) == 1)
     }

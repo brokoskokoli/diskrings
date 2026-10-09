@@ -3,17 +3,14 @@ import Foundation
 /// Intensitätsskala der Delta-Färbung (SPEC 3.9: „die Intensität richtet
 /// sich nach der Größe des Deltas“).
 ///
-/// Logarithmisch zwischen einer Mindestintensität (jede Änderung ist
-/// sichtbar) und 1 (ab `reference`). So bleiben auch Änderungen von einem
-/// Tausendstel der Referenz erkennbar, ohne dass die größte alles andere
-/// blass erscheinen lässt.
+/// Wurzelskala zwischen einer Mindestintensität (jede Änderung ist
+/// sichtbar) und 1 (ab `reference`). Die Wurzel hebt kleine Änderungen an,
+/// unterscheidet aber noch deutlich zwischen einem Fünftel und dem Ganzen
+/// (eine logarithmische Skala ließ in der Vorschau fast alle gewachsenen
+/// Ordner gleich kräftig erscheinen).
 public struct DeltaScale: Sendable, Equatable {
     /// Intensität der kleinsten Änderung (> 0 Byte).
     public static let minimumIntensity = 0.15
-    /// Dynamikumfang: Änderungen ab `reference / dynamicRange` heben sich
-    /// sichtbar von der Mindestintensität ab.
-    public static let dynamicRange = 1000.0
-
     /// Betrag, ab dem die volle Intensität erreicht ist (mindestens 1 Byte).
     public let reference: UInt64
 
@@ -26,8 +23,7 @@ public struct DeltaScale: Sendable, Equatable {
         let m = delta.magnitude
         if m == 0 { return 0 }
         if m >= reference { return 1 }
-        let r = Self.dynamicRange
-        let t = log1p(r * Double(m) / Double(reference)) / log1p(r)
+        let t = (Double(m) / Double(reference)).squareRoot()
         return Self.minimumIntensity + (1 - Self.minimumIntensity) * min(max(t, 0), 1)
     }
 }

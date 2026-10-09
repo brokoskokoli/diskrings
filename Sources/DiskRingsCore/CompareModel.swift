@@ -17,6 +17,19 @@ public enum CompareViewMode: String, Sendable, CaseIterable, Identifiable {
     }
 }
 
+extension DiffStatus {
+    /// Deutsche Bezeichnung für Liste und Tooltip.
+    public var label: String {
+        switch self {
+        case .added: "neu"
+        case .removed: "entfernt"
+        case .grown: "gewachsen"
+        case .shrunk: "geschrumpft"
+        case .unchanged: "unverändert"
+        }
+    }
+}
+
 /// Ein Baum, den der Sunburst im Vergleichsmodus zeichnet, samt Abbildung
 /// Baumknoten ↔ Vergleichseintrag (`SnapshotDiff.entries`).
 public struct CompareDisplayTree: Sendable {
