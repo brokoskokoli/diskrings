@@ -7,10 +7,22 @@ Verwendung:
                             [--no-hidden] [--exclude PFAD]... [--workers N]
                             [--cross-mounts] [--progress] [--live [--live-depth K]]
   diskrings-cli volumes [--json]
+  diskrings-cli snapshot save <pfad> [--name NAME] [--dir VERZ] [--min-size BYTE]
+                                     [--no-hidden] [--exclude PFAD]... [--workers N]
+  diskrings-cli snapshot list [--dir VERZ]
+  diskrings-cli diff <snapshotA> [<snapshotB> | --scan <pfad>] [--top N] [--dir VERZ]
 
-  scan     Scannt <pfad> und gibt Gesamtsumme, Dateianzahl, Dauer und die
-           größten Ordner aus (Standard: --top 10 --depth 1).
-  volumes  Listet die eingehängten Volumes.
+  scan      Scannt <pfad> und gibt Gesamtsumme, Dateianzahl, Dauer und die
+            größten Ordner aus (Standard: --top 10 --depth 1).
+  volumes   Listet die eingehängten Volumes.
+  snapshot  save: scannt <pfad> und speichert einen Snapshot (Standard-Ablage
+            ~/Library/Application Support/DiskRings/Snapshots, Dateien unter
+            1 MB nur in der Ordnersumme). list: zeigt alle Snapshots.
+  diff      Vergleicht Snapshot A mit Snapshot B oder mit einem frischen Scan
+            (Standard: --scan mit der Scan-Wurzel von A) und zeigt die
+            größten Veränderungen (Standard: --top 20). Snapshots werden als
+            Datei (.drsnap) oder über den Anfang ihrer ID aus „snapshot list“
+            angegeben.
 """
 
 struct CLIError: Error, CustomStringConvertible {
@@ -254,6 +266,189 @@ func runVolumes(json: Bool) -> Int32 {
     return 0
 }
 
+// MARK: - Snapshots und Vergleich
+
+func makeStore(_ dir: String?, minSize: UInt64? = nil) -> SnapshotStore {
+    let base = dir.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+        ?? SnapshotStore.defaultBaseDirectory
+    return SnapshotStore(baseDirectory: base, minimumFileSize: minSize ?? SnapshotStore.defaultMinimumFileSize)
+}
+
+func dateText(_ d: Date) -> String {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "de_DE")
+    f.dateFormat = "dd.MM.yyyy HH:mm:ss"
+    return f.string(from: d)
+}
+
+func scanWithSignal(_ path: String, options: ScanOptions) -> ScanResult {
+    let cancel = ScanCancellation()
+    signal(SIGINT, SIG_IGN)
+    let sigSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
+    sigSource.setEventHandler { cancel.cancel() }
+    sigSource.resume()
+    do {
+        return try ScanEngine(options: options).scanBlocking(path, cancellation: cancel)
+    } catch is CancellationError {
+        FileHandle.standardError.write(Data("\nAbgebrochen.\n".utf8))
+        exit(130)
+    } catch {
+        FileHandle.standardError.write(Data("Fehler: \(error)\n".utf8))
+        exit(1)
+    }
+}
+
+func runSnapshot(_ args: ArraySlice<String>) -> Int32 {
+    guard let sub = args.first else { fail("snapshot erwartet save oder list") }
+    var it = args.dropFirst().makeIterator()
+    var path: String?
+    var name: String?
+    var dir: String?
+    var minSize: UInt64?
+    var options = ScanOptions()
+    func value(_ flag: String) -> String {
+        guard let v = it.next() else { fail("\(flag) erwartet einen Wert") }
+        return v
+    }
+    while let arg = it.next() {
+        switch arg {
+        case "--name": name = value(arg)
+        case "--dir": dir = value(arg)
+        case "--min-size":
+            guard let v = UInt64(value(arg)) else { fail("--min-size erwartet eine Zahl in Byte") }
+            minSize = v
+        case "--no-hidden": options.includeHidden = false
+        case "--exclude": options.excludedPaths.append(value(arg))
+        case "--workers":
+            guard let v = Int(value(arg)), v > 0 else { fail("--workers erwartet eine Zahl > 0") }
+            options.workerCount = v
+        default:
+            if arg.hasPrefix("--") { fail("Unbekannte Option \(arg)") }
+            if path != nil { fail("Nur ein Pfad erlaubt") }
+            path = arg
+        }
+    }
+    let store = makeStore(dir, minSize: minSize)
+    switch sub {
+    case "save":
+        guard let path else { fail("Pfad fehlt") }
+        let result = scanWithSignal(path, options: options)
+        let start = Date()
+        do {
+            let info = try store.save(result, name: name)
+            let saveTime = Date().timeIntervalSince(start)
+            print("Snapshot gespeichert: \(info.url.path)")
+            print("ID:            \(info.metadata.id.uuidString)")
+            print("Scan-Wurzel:   \(info.metadata.rootPath)")
+            print("Belegt:        \(ByteFormat.string(info.metadata.allocatedSize))")
+            print("Knoten:        \(ByteFormat.count(info.metadata.nodeCount)) von \(ByteFormat.count(result.tree.count)) (Dateien unter \(ByteFormat.string(store.minimumFileSize)) nur in der Ordnersumme)")
+            print("Dateigröße:    \(ByteFormat.string(info.fileSize))")
+            print("Dauer:         Scan \(ByteFormat.duration(result.duration)), Speichern \(ByteFormat.duration(saveTime))")
+            return 0
+        } catch {
+            FileHandle.standardError.write(Data("Fehler beim Speichern: \(error)\n".utf8))
+            return 1
+        }
+    case "list":
+        do {
+            let all = try store.list()
+            if all.isEmpty { print("Keine Snapshots in \(store.baseDirectory.path)") }
+            for info in all {
+                let m = info.metadata
+                let label = m.name.map { " „\($0)“" } ?? ""
+                print("\(dateText(m.date))\(label)  \(ByteFormat.string(m.allocatedSize))  \(m.rootPath)")
+                print("    ID \(m.id.uuidString) · \(ByteFormat.count(m.nodeCount)) Knoten · \(ByteFormat.string(info.fileSize)) · \(info.url.path)")
+            }
+            return 0
+        } catch {
+            FileHandle.standardError.write(Data("Fehler: \(error)\n".utf8))
+            return 1
+        }
+    default:
+        fail("Unbekannter Unterbefehl snapshot \(sub)")
+    }
+}
+
+/// Lädt einen Snapshot über den Dateipfad oder den Anfang seiner ID.
+func loadSnapshot(_ ref: String, store: SnapshotStore) -> Snapshot {
+    do {
+        let expanded = (ref as NSString).expandingTildeInPath
+        if FileManager.default.fileExists(atPath: expanded) {
+            return try store.load(url: URL(fileURLWithPath: expanded))
+        }
+        let matches = try store.list().filter { $0.metadata.id.uuidString.lowercased().hasPrefix(ref.lowercased()) }
+        guard matches.count == 1 else {
+            fail(matches.isEmpty ? "Snapshot \(ref) nicht gefunden" : "Snapshot-ID \(ref) ist nicht eindeutig")
+        }
+        return try store.load(matches[0])
+    } catch {
+        FileHandle.standardError.write(Data("Fehler beim Laden von \(ref): \(error)\n".utf8))
+        exit(1)
+    }
+}
+
+func runDiff(_ args: ArraySlice<String>) -> Int32 {
+    var it = args.makeIterator()
+    var refs: [String] = []
+    var scanPath: String?
+    var scanFlag = false
+    var top = 20
+    var dir: String?
+    while let arg = it.next() {
+        switch arg {
+        case "--scan":
+            scanFlag = true
+            if let v = it.next() { scanPath = v }
+        case "--top":
+            guard let v = it.next().flatMap({ Int($0) }), v >= 0 else { fail("--top erwartet eine Zahl ≥ 0") }
+            top = v
+        case "--dir":
+            guard let v = it.next() else { fail("--dir erwartet einen Wert") }
+            dir = v
+        default:
+            if arg.hasPrefix("--") { fail("Unbekannte Option \(arg)") }
+            refs.append(arg)
+        }
+    }
+    guard let first = refs.first, refs.count <= 2 else { fail("diff erwartet einen oder zwei Snapshots") }
+    if refs.count == 2, scanFlag { fail("Entweder <snapshotB> oder --scan, nicht beides") }
+    let store = makeStore(dir)
+    let old = loadSnapshot(first, store: store)
+    let new: Snapshot
+    if refs.count == 2 {
+        new = loadSnapshot(refs[1], store: store)
+    } else {
+        let path = scanPath ?? old.metadata.rootPath
+        var options = ScanOptions()
+        options.includeHidden = old.metadata.options.includeHidden
+        options.excludedPaths = old.metadata.options.excludedPaths
+        options.crossMountPoints = old.metadata.options.crossMountPoints
+        let result = scanWithSignal(path, options: options)
+        new = Snapshot(metadata: .current(for: result), tree: result.tree)
+    }
+    let start = Date()
+    let diff = SnapshotDiff(old: old, new: new)
+    let changes = diff.largestChanges(limit: top)
+    let elapsed = Date().timeIntervalSince(start)
+
+    print("Vergleich \(dateText(old.metadata.date)) → \(dateText(new.metadata.date))")
+    print(diff.summary.headline)
+    print("Scan-Summe:    \(ByteFormat.string(old.tree.root.allocatedSize)) → \(ByteFormat.string(new.tree.root.allocatedSize)) (\(ByteFormat.signed(diff.summary.scanDelta)))")
+    for w in diff.warnings { print("Warnung:       \(w)") }
+    print("Dauer:         \(ByteFormat.duration(elapsed)) für \(ByteFormat.count(diff.count)) Einträge")
+    print("")
+    print("Größte Veränderungen:")
+    if changes.isEmpty { print("  (keine)") }
+    let statusText: [DiffStatus: String] = [.added: "neu", .removed: "entfernt", .grown: "gewachsen",
+                                            .shrunk: "geschrumpft", .unchanged: "unverändert"]
+    for c in changes {
+        let d = ByteFormat.signed(c.delta).padding(toLength: 12, withPad: " ", startingAt: 0)
+        let st = (statusText[c.status] ?? "").padding(toLength: 11, withPad: " ", startingAt: 0)
+        print("\(d) \(st) \(c.path)\(c.isDirectory ? "/" : "")")
+    }
+    return 0
+}
+
 let argv = CommandLine.arguments.dropFirst()
 guard let command = argv.first else { print(usage); exit(2) }
 switch command {
@@ -261,6 +456,10 @@ case "scan":
     exit(runScan(parseScan(argv.dropFirst())))
 case "volumes":
     exit(runVolumes(json: argv.contains("--json")))
+case "snapshot":
+    exit(runSnapshot(argv.dropFirst()))
+case "diff":
+    exit(runDiff(argv.dropFirst()))
 case "-h", "--help", "help":
     print(usage)
 default:
