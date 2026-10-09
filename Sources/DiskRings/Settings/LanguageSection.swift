@@ -6,18 +6,20 @@ import SwiftUI
 /// Sprache, gespeichert als `AppleLanguages` der App (`LanguageSetting`, Core).
 /// Die Oberfläche übernimmt die Sprache erst nach einem Neustart.
 struct LanguageSection: View {
-    /// Für die Vorschaubilder: feste Wahl statt der gespeicherten.
-    var previewChoice: LanguageChoice?
     @ViewState private var choice: LanguageChoice = LanguageSetting().choice
 
+    // Bindung direkt an `$choice`, gespeichert in `onChange`. Eine eigene
+    // `Binding(get:set:)` (bzw. `set: select`) brachte den Compiler von
+    // Swift 6.3.3 (Xcode 26.6, CI) beim IR-Gen eines Thunks zum Absturz.
     var body: some View {
         Section {
-            Picker(L("settings.language"), selection: Binding(get: { previewChoice ?? choice }, set: select)) {
+            Picker(L("settings.language"), selection: $choice) {
                 ForEach(LanguageChoice.all, id: \.self) { c in
                     Text(c.title).tag(c)
                 }
             }
-            if LanguageSetting.needsRestart(choice: previewChoice ?? choice, running: L10n.language) {
+            .onChange(of: choice) { _, newValue in LanguageSetting().set(newValue) }
+            if LanguageSetting.needsRestart(choice: choice, running: L10n.language) {
                 HStack(alignment: .firstTextBaseline) {
                     Label(L("settings.language.restartNote"), systemImage: "arrow.clockwise.circle")
                         .font(.callout)
@@ -32,11 +34,6 @@ struct LanguageSection: View {
             Text(L("settings.language.footer")).font(.footnote).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    private func select(_ c: LanguageChoice) {
-        choice = c
-        LanguageSetting().set(c)
     }
 }
 
