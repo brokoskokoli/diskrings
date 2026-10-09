@@ -157,7 +157,7 @@ public struct ScanEngine: Sendable {
                 let t0 = DispatchTime.now().uptimeNanoseconds
                 let raw = ctx.skeletonSnapshot()
                 let t1 = DispatchTime.now().uptimeNanoseconds
-                if let tree = try? TreeBuilder.build(raw, rootPath: rootPath) {
+                if let tree = try? TreeBuilder.build(raw, rootPath: rootPath, partial: true) {
                     snapshotDebug(nodes: tree.count, copyNanos: t1 - t0,
                                   buildNanos: DispatchTime.now().uptimeNanoseconds - t1)
                     onSnapshot(tree)

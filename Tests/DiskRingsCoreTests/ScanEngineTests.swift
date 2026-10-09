@@ -619,8 +619,16 @@ struct ScanEngineConcurrencyTests {
         var engine = ScanEngine(options: ScanOptions(workerCount: 1, progressInterval: 0.001))
         // Jeder Ordner dauert 2 ms: ~400 ms Scan, ~400 Fortschrittsmeldungen.
         engine.hooks.beforeOpenDirectory = { _ in usleep(2000) }
+        // Erst lesen, wenn der Scan sicher fertig ist: Eine feste Wartezeit
+        // reichte auf langsamen CI-Runnern nicht (der Konsument las mit, und
+        // es kamen mehr Ereignisse an als gepuffert werden).
+        let building = OSAllocatedUnfairLockBox(false)
+        engine.hooks.phase = { p in if p == .building { building.value = true } }
         let stream = engine.events(fx.root)
-        try await Task.sleep(nanoseconds: 1_500_000_000) // Konsument liest nicht
+        let deadline = Date().addingTimeInterval(30)
+        while !building.value, Date() < deadline { try await Task.sleep(nanoseconds: 20_000_000) }
+        try #require(building.value, "Scan kam nicht bis zum Baumaufbau")
+        try await Task.sleep(nanoseconds: 500_000_000) // Baum von 200 Dateien und .finished: Millisekunden
         var count = 0
         var finished = false
         for try await e in stream {
@@ -709,6 +717,25 @@ struct ScanEngineConcurrencyTests {
         }
         #expect(missing == 0)
         #expect(tooMany == 0)
+    }
+
+    /// CI-Befund: Auf einem langsamen Runner kam ein Live-Snapshot, bevor
+    /// irgendein Ordner Größen trug; die Heuristik in `TreeBuilder` hielt ihn
+    /// deshalb für vollständig.
+    @Test("Früher Live-Snapshot ohne Größen gilt nie als vollständig")
+    func earlyLiveSnapshotIsIncomplete() throws {
+        let fx = try Fixture()
+        for d in 0 ..< 3 { try fx.file("d\(d)/f", size: 1000) }
+        let box = OSAllocatedUnfairLockBox<[ScanTree]>([])
+        var engine = ScanEngine(options: ScanOptions(workerCount: 1, progressInterval: 0.005))
+        // Der erste Ordner hängt 100 ms: Bis dahin enthält das Skelett nur Ordner ohne Größen.
+        engine.hooks.beforeOpenDirectory = { _ in usleep(100_000) }
+        let r = try engine.scanBlocking(fx.root, onSnapshot: { t in box.value.append(t) })
+        let snaps = box.value
+        try #require(!snaps.isEmpty)
+        #expect(snaps.contains { $0.root.fileCount == 0 }, "Test braucht einen Snapshot vor der ersten Datei")
+        #expect(snaps.allSatisfy { !$0.isComplete })
+        #expect(r.tree.isComplete)
     }
 
     @Test("K7: Live-Snapshots reichen standardmäßig 6 Ebenen tief")

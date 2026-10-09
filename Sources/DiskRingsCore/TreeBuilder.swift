@@ -97,7 +97,8 @@ enum TreeBuilder {
         rootPath: String,
         hardlinks: [HardlinkEntry] = [],
         isCancelled: () -> Bool = { false },
-        indexMap: ((UnsafeBufferPointer<Int32>) -> Void)? = nil
+        indexMap: ((UnsafeBufferPointer<Int32>) -> Void)? = nil,
+        partial: Bool = false
     ) throws -> ScanTree {
         var raw = rawIn
         let n = raw.count
@@ -116,7 +117,8 @@ enum TreeBuilder {
         raw.logical = MappedBuffer()
         raw.ownFiles = MappedBuffer()
         let tree = try buildInPlace(nodes: &nodes, names: UnsafeBufferPointer(raw.names.buffer), rootPath: rootPath,
-                                    hardlinks: hardlinks, isCancelled: isCancelled, indexMap: indexMap)
+                                    hardlinks: hardlinks, isCancelled: isCancelled, indexMap: indexMap,
+                                    partial: partial)
         withExtendedLifetime(raw) {}
         return tree
     }
@@ -138,12 +140,15 @@ enum TreeBuilder {
         rootPath: String,
         hardlinks rawLinks: [HardlinkEntry] = [],
         isCancelled: () -> Bool = { false },
-        indexMap: ((UnsafeBufferPointer<Int32>) -> Void)? = nil
+        indexMap: ((UnsafeBufferPointer<Int32>) -> Void)? = nil,
+        partial: Bool = false
     ) throws -> ScanTree {
         let n = nodes.count
         precondition(n > 0 && n < Int(Int32.max))
         var live = 1
-        var complete = true
+        // Ein Teilbaum (Live-Snapshot) ist nie vollständig, auch wenn noch
+        // kein Ordner vorläufige Größen trägt.
+        var complete = !partial
         var links = rawLinks
         try nodes.withUnsafeMutableBufferPointer { nb in
             // 1. Kinder je Elternknoten zählen (CSR-Darstellung).

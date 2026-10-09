@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   build-and-test:
+    # Geprüft 10/2026: Image macos-26-arm64, Xcode 26.6 (Swift 6.3.3).
     runs-on: macos-26
     timeout-minutes: 30
     steps:
