@@ -96,7 +96,8 @@ enum TreeBuilder {
         _ rawIn: consuming RawTree,
         rootPath: String,
         hardlinks: [HardlinkEntry] = [],
-        isCancelled: () -> Bool = { false }
+        isCancelled: () -> Bool = { false },
+        indexMap: ((UnsafeBufferPointer<Int32>) -> Void)? = nil
     ) throws -> ScanTree {
         var raw = rawIn
         let n = raw.count
@@ -115,7 +116,7 @@ enum TreeBuilder {
         raw.logical = MappedBuffer()
         raw.ownFiles = MappedBuffer()
         let tree = try buildInPlace(nodes: &nodes, names: UnsafeBufferPointer(raw.names.buffer), rootPath: rootPath,
-                                    hardlinks: hardlinks, isCancelled: isCancelled)
+                                    hardlinks: hardlinks, isCancelled: isCancelled, indexMap: indexMap)
         withExtendedLifetime(raw) {}
         return tree
     }
@@ -136,7 +137,8 @@ enum TreeBuilder {
         names nm: UnsafeBufferPointer<UInt8>,
         rootPath: String,
         hardlinks rawLinks: [HardlinkEntry] = [],
-        isCancelled: () -> Bool = { false }
+        isCancelled: () -> Bool = { false },
+        indexMap: ((UnsafeBufferPointer<Int32>) -> Void)? = nil
     ) throws -> ScanTree {
         let n = nodes.count
         precondition(n > 0 && n < Int(Int32.max))
@@ -237,6 +239,8 @@ enum TreeBuilder {
                 nb[old].parent = newIdx == 0 ? -1 : newIndex[Int(nb[old].parent)]
             }
             for i in links.indices { links[i].index = newIndex[Int(links[i].index)] }
+            // Abbildung Eingabe-Index → Baum-Index (verworfene: ≥ Knotenzahl).
+            indexMap?(UnsafeBufferPointer(newIndex))
 
             // 7. Zyklen-Permutation an Ort und Stelle: neu[j] = alt[order[j]].
             //    Erledigte Plätze werden mit order[j] = j markiert.
