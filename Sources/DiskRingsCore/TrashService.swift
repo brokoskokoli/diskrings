@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 // MARK: Dateisystem-Zugriff (austauschbar für Tests)
@@ -12,6 +13,56 @@ public protocol FileTrashing {
     func moveItem(at src: URL, to dst: URL) throws
     /// Existiert der Pfad (ohne einem Symlink am Ende zu folgen)?
     func itemExists(atPath path: String) -> Bool
+    /// Identität des Elements (ohne einem Symlink am Ende zu folgen);
+    /// `nil`, wenn es nicht existiert.
+    func identity(atPath path: String) -> FileIdentity?
+    /// Pfad mit allen Symlinks aufgelöst (`realpath`); `nil`, wenn er nicht existiert.
+    func resolvedPath(_ path: String) -> String?
+}
+
+extension FileTrashing {
+    public func identity(atPath path: String) -> FileIdentity? { FileIdentity(path: path) }
+
+    public func resolvedPath(_ path: String) -> String? {
+        guard let r = realpath(path, nil) else { return nil }
+        defer { free(r) }
+        return String(cString: r)
+    }
+}
+
+/// Woran sich ein Element im Papierkorb wiedererkennen lässt (für ⌘Z):
+/// Gerät und Inode (entspricht `volumeIdentifier` plus
+/// `fileResourceIdentifier`), Art, bei Dateien zusätzlich Größe und
+/// Änderungsdatum. Das Verschieben in den Papierkorb (gleiches Volume, nur
+/// umbenannt) ändert keinen dieser Werte. Bei Ordnern bleiben Größe und
+/// Änderungsdatum außen vor, weil der Finder darin z. B. `.DS_Store` anlegt.
+public struct FileIdentity: Sendable, Equatable {
+    public var device: UInt64
+    public var inode: UInt64
+    public var isDirectory: Bool
+    /// Nur bei Dateien (und Symlinks).
+    public var size: UInt64?
+    /// Änderungsdatum in Nanosekunden seit 1970; nur bei Dateien (und Symlinks).
+    public var modificationNanos: Int64?
+
+    public init(device: UInt64, inode: UInt64, isDirectory: Bool, size: UInt64? = nil, modificationNanos: Int64? = nil) {
+        self.device = device
+        self.inode = inode
+        self.isDirectory = isDirectory
+        self.size = size
+        self.modificationNanos = modificationNanos
+    }
+
+    /// Per `lstat`; `nil`, wenn der Pfad nicht existiert.
+    public init?(path: String) {
+        var st = stat()
+        guard lstat(path, &st) == 0 else { return nil }
+        let isDir = (st.st_mode & S_IFMT) == S_IFDIR
+        self.init(device: UInt64(UInt32(bitPattern: st.st_dev)), inode: UInt64(st.st_ino), isDirectory: isDir,
+                  size: isDir ? nil : UInt64(max(st.st_size, 0)),
+                  modificationNanos: isDir ? nil : Int64(st.st_mtimespec.tv_sec) * 1_000_000_000
+                      + Int64(st.st_mtimespec.tv_nsec))
+    }
 }
 
 extension FileManager: FileTrashing {
@@ -77,10 +128,14 @@ public enum TrashPlanError: Error, Sendable, Equatable {
 public struct TrashPlan: Sendable, Equatable {
     public var items: [TrashItem]
     public var sizeMode: SizeMode
+    /// Scan-Wurzel des Baums, aus dem der Plan stammt. `TrashService` prüft
+    /// vor dem Verschieben, dass der aufgelöste Pfad noch darunter liegt.
+    public var rootPath: String?
 
-    public init(items: [TrashItem], sizeMode: SizeMode = .allocated) {
+    public init(items: [TrashItem], sizeMode: SizeMode = .allocated, rootPath: String? = nil) {
         self.items = items
         self.sizeMode = sizeMode
+        self.rootPath = rootPath
     }
 
     /// Prüft Auswahl, Scan-Wurzel und Schutzliste und baut den Plan.
@@ -101,7 +156,7 @@ public struct TrashPlan: Sendable, Equatable {
                                    allocatedSize: node.allocatedSize, logicalSize: node.logicalSize,
                                    fileCount: node.isDirectory ? Int(node.fileCount) : 1))
         }
-        return .success(TrashPlan(items: items, sizeMode: sizeMode))
+        return .success(TrashPlan(items: items, sizeMode: sizeMode, rootPath: tree.rootPath))
     }
 
     public var totalSize: UInt64 {
@@ -155,12 +210,17 @@ public struct TrashRecord: Sendable, Equatable {
     public var trashURL: URL?
     public var name: String
     public var allocatedSize: UInt64
+    /// Identität beim Verschieben; ⌘Z legt nur ein Element mit derselben
+    /// Identität zurück (`nil` → kein Undo).
+    public var identity: FileIdentity?
 
-    public init(originalPath: String, trashURL: URL?, name: String, allocatedSize: UInt64) {
+    public init(originalPath: String, trashURL: URL?, name: String, allocatedSize: UInt64,
+                identity: FileIdentity? = nil) {
         self.originalPath = originalPath
         self.trashURL = trashURL
         self.name = name
         self.allocatedSize = allocatedSize
+        self.identity = identity
     }
 }
 
@@ -212,10 +272,15 @@ public struct TrashService {
                 out.missing.append(item.path)
                 continue
             }
+            if let problem = checkResolved(item.path, rootPath: plan.rootPath) {
+                out.failures.append(TrashFailure(path: item.path, message: problem))
+                continue
+            }
+            let identity = fileManager.identity(atPath: item.path)
             do {
                 let url = try fileManager.trashItem(at: URL(fileURLWithPath: item.path))
                 out.trashed.append(TrashRecord(originalPath: item.path, trashURL: url, name: item.name,
-                                               allocatedSize: item.allocatedSize))
+                                               allocatedSize: item.allocatedSize, identity: identity))
             } catch {
                 out.failures.append(TrashFailure(path: item.path, message: Self.describe(error)))
             }
@@ -223,8 +288,44 @@ public struct TrashService {
         return out
     }
 
+    /// Prüft den Pfad mit aufgelöster Elternkette erneut: Ein inzwischen
+    /// durch einen Symlink ersetzter Elternordner könnte sonst ein Element
+    /// außerhalb der Scan-Wurzel oder in einem geschützten Bereich treffen.
+    /// Der Scanner folgt keinen Symlinks; unterhalb der Wurzel muss der
+    /// aufgelöste Pfad deshalb genau der aufgelösten Wurzel plus dem
+    /// relativen Pfad entsprechen. Gibt die Fehlermeldung zurück oder `nil`.
+    func checkResolved(_ path: String, rootPath: String?) -> String? {
+        let parent = (path as NSString).deletingLastPathComponent
+        let name = (path as NSString).lastPathComponent
+        guard let resolvedParent = fileManager.resolvedPath(parent) else {
+            return "Der Pfad lässt sich nicht mehr auflösen"
+        }
+        let resolved = resolvedParent == "/" ? "/" + name : resolvedParent + "/" + name
+        if let r = protection.reason(for: resolved) {
+            return "Geschützt: \(r.message) (aufgelöster Pfad \(resolved))"
+        }
+        guard let rootPath else { return nil }
+        let rootKey = ProtectedPaths.normalize(rootPath)
+        let pathKey = ProtectedPaths.normalize(path)
+        guard ProtectedPaths.isStrictDescendant(pathKey, of: rootKey),
+              let resolvedRoot = fileManager.resolvedPath(rootPath) else {
+            return "Liegt nicht mehr unter der Scan-Wurzel"
+        }
+        let relative = pathKey.dropFirst(rootKey == "/" ? 0 : rootKey.count)
+        let base = ProtectedPaths.normalize(resolvedRoot)
+        let expected = base == "/" ? String(relative) : base + relative
+        guard ProtectedPaths.normalize(resolved) == ProtectedPaths.key(expected) else {
+            return "Liegt nicht mehr unter der Scan-Wurzel (ein Ordner im Pfad wurde durch einen Symlink ersetzt)"
+        }
+        return nil
+    }
+
     /// Legt Elemente aus dem Papierkorb an ihren alten Ort zurück. Ein
-    /// inzwischen wieder belegter Ort wird nie überschrieben.
+    /// inzwischen wieder belegter Ort wird nie überschrieben, und
+    /// zurückgelegt wird nur genau das Element, das verschoben wurde (gleiche
+    /// `FileIdentity`); liegt unter der Papierkorb-Adresse inzwischen etwas
+    /// anderes (Papierkorb geleert, neues Element gleichen Namens), bleibt es
+    /// dort.
     public func restore(_ records: [TrashRecord]) -> RestoreOutcome {
         var out = RestoreOutcome()
         for r in records {
@@ -234,6 +335,17 @@ public struct TrashService {
             }
             guard fileManager.itemExists(atPath: src.path) else {
                 out.failures.append(TrashFailure(path: r.originalPath, message: "Nicht mehr im Papierkorb"))
+                continue
+            }
+            guard let expected = r.identity else {
+                out.failures.append(TrashFailure(path: r.originalPath,
+                                                 message: "Das Objekt im Papierkorb lässt sich nicht sicher wiedererkennen"))
+                continue
+            }
+            guard fileManager.identity(atPath: src.path) == expected else {
+                out.failures.append(TrashFailure(
+                    path: r.originalPath,
+                    message: "Im Papierkorb liegt unter diesem Namen inzwischen ein anderes Objekt (wurde der Papierkorb geleert oder das Objekt verändert?)"))
                 continue
             }
             guard !fileManager.itemExists(atPath: r.originalPath) else {
