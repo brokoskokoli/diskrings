@@ -1,3 +1,4 @@
+import AppKit
 import DiskRingsCore
 import SwiftUI
 
@@ -19,17 +20,23 @@ struct SunburstView: View {
                 let geometry = Self.geometry(for: size, rings: layout.options.maxRings)
                 let palette = Palette(scheme: state.prefs.paletteScheme, appearance: PaletteAppearance(colorScheme))
                 let colors = state.colors(for: layout, palette: palette)
-                let fromColors = state.transition.map { state.colors(for: $0.zoom.from, palette: palette) }
+                let fromColors = state.transition.map {
+                    state.colors(for: $0.animation.from, palette: palette, tree: $0.fromTree)
+                }
+                let rescanning = state.rescanningNodes
                 let input = SunburstRenderer.Input(
                     tree: tree, layout: layout, colors: colors, fromColors: fromColors, geometry: geometry,
                     palette: palette, hoverArc: state.hoverArc, hoverNode: state.hoverNode,
-                    hoverCenter: state.hoverCenter, selected: state.selected, focusIsRoot: state.focus == 0,
-                    showLabels: state.prefs.showLabels, centerTitle: centerTitle(tree), sizeMode: state.prefs.sizeMode)
-                TimelineView(.animation(paused: state.transition == nil || frozenTime != nil)) { timeline in
-                    let t = state.transition.map { ZoomEasing.easeInOut($0.progress(at: frozenTime ?? timeline.date)) }
+                    hoverCenter: state.hoverCenter, selected: Set(state.selection.nodes), primarySelected: state.selected,
+                    focusIsRoot: state.focus == 0, showLabels: state.prefs.showLabels, centerTitle: centerTitle(tree),
+                    sizeMode: state.prefs.sizeMode, rescanning: rescanning)
+                let paused = frozenTime != nil || (state.transition == nil && rescanning.isEmpty)
+                TimelineView(.animation(paused: paused)) { timeline in
+                    let now = frozenTime ?? timeline.date
+                    let t = state.transition.map { ZoomEasing.easeInOut($0.progress(at: now)) }
                     Canvas(opaque: false, rendersAsynchronously: false) { gc, canvasSize in
-                        SunburstRenderer.draw(input, transition: state.transition?.zoom, progress: t, in: &gc,
-                                              size: canvasSize)
+                        SunburstRenderer.draw(input, transition: state.transition?.animation, progress: t,
+                                              time: now.timeIntervalSinceReferenceDate, in: &gc, size: canvasSize)
                     }
                 }
                 .contentShape(Rectangle())
@@ -84,7 +91,8 @@ private struct SunburstInteraction: ViewModifier {
                     }
                 }
                 .onTapGesture(count: 1, coordinateSpace: .local) { p in
-                    state.click(hit(p))
+                    // Doppelklick über `clickCount`, damit der Einzelklick nicht wartet.
+                    state.click(hit(p), clickCount: NSApp.currentEvent?.clickCount ?? 1)
                 }
                 .contextMenu {
                     if let target = contextTarget { NodeContextMenu(state: state, node: target) }

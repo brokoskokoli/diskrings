@@ -16,15 +16,19 @@ enum SunburstRenderer {
         let hoverArc: Int?
         let hoverNode: Int32?
         let hoverCenter: Bool
-        let selected: Int32?
+        /// Alle ausgewählten Knoten (Mehrfachauswahl in der Liste).
+        let selected: Set<Int32>
+        let primarySelected: Int32?
         let focusIsRoot: Bool
         let showLabels: Bool
         let centerTitle: String
         let sizeMode: SizeMode
+        /// Laufende Teil-Rescans: Knoten → geschätzter Fortschritt (-1 = unbestimmt).
+        var rescanning: [Int32: Double] = [:]
     }
 
-    static func draw(_ input: Input, transition: ZoomTransition?, progress: Double?, in gc: inout GraphicsContext,
-                     size: CGSize) {
+    static func draw(_ input: Input, transition: (any LayoutTransition)?, progress: Double?, time: TimeInterval = 0,
+                     in gc: inout GraphicsContext, size: CGSize) {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let g = input.geometry
         let palette = input.palette
@@ -52,7 +56,7 @@ enum SunburstRenderer {
         let arcs = layout.arcs
         let highlighted = highlightSet(input)
         let dimOthers = !highlighted.isEmpty
-        var selectedPath: Path?
+        var selectedPaths: [Path] = []
         var hoverPath: Path?
         for (i, arc) in arcs.enumerated() {
             let inner = g.innerRadius(ofRing: Int(arc.depth))
@@ -68,16 +72,83 @@ enum SunburstRenderer {
             if arc.kind == .unassigned { drawHatching(path, color: color, palette: palette, in: &gc, size: size) }
             if arc.span * outer > 1.2 { gc.stroke(path, with: .color(separator), lineWidth: 0.75) }
             if i == input.hoverArc || (arc.kind == .node && arc.nodeIndex == input.hoverNode) { hoverPath = path }
-            if arc.kind == .node, arc.nodeIndex == input.selected { selectedPath = path }
+            if arc.kind == .node, input.selected.contains(arc.nodeIndex) { selectedPaths.append(path) }
         }
-        if let p = selectedPath {
-            gc.stroke(p, with: .color(.accentColor), lineWidth: 2.5)
+        for p in selectedPaths {
+            gc.stroke(p, with: .color(.accentColor), lineWidth: selectedPaths.count > 1 ? 2 : 2.5)
         }
         if let p = hoverPath {
             gc.stroke(p, with: .color(Color(palette.primaryText).opacity(0.55)), lineWidth: 1.5)
         }
         if input.showLabels { drawLabels(input, center: center, in: &gc) }
         drawCenter(input, center: center, in: &gc, alpha: 1)
+        if !input.rescanning.isEmpty { drawRescanProgress(input, center: center, time: time, in: &gc) }
+    }
+
+    // MARK: Fortschrittsring beim Teil-Rescan (SPEC 3.8)
+
+    /// Je neu eingelesenem Ordner: das Segment wird abgedunkelt und bekommt
+    /// am Außenrand einen Fortschrittsring (geschätzt aus der alten Größe;
+    /// unbestimmt als umlaufender Bogen). Ist der Ordner nicht sichtbar, trägt
+    /// sein nächster sichtbarer Vorfahr den Ring; der Fokus oder ein Vorfahr
+    /// des Fokus bekommt ihn um die Mitte.
+    private static func drawRescanProgress(_ input: Input, center c: CGPoint, time: TimeInterval,
+                                           in gc: inout GraphicsContext) {
+        let g = input.geometry
+        let layout = input.layout
+        let accent = Color.accentColor
+        let veil = Color(input.palette.background).opacity(0.45)
+        for (node, fraction) in input.rescanning {
+            // Sichtbaren Arc suchen (Knoten selbst oder nächster Vorfahr unterhalb des Fokus).
+            var n = node
+            var arcIndex: Int?
+            var aboveFocus = false
+            while n >= 0 {
+                if n == layout.focus { aboveFocus = true; break }
+                if let i = layout.arcIndex(ofNode: n) { arcIndex = i; break }
+                n = input.tree.node(n).parent
+            }
+            if arcIndex == nil, !aboveFocus {
+                // Der Knoten liegt nicht unter dem Fokus, also ist der Fokus sein Nachfahre.
+                aboveFocus = true
+            }
+            let inner: Double, outer: Double, start: Double, end: Double
+            if let i = arcIndex {
+                let a = layout.arcs[i]
+                inner = g.innerRadius(ofRing: Int(a.depth))
+                outer = g.outerRadius(ofRing: Int(a.depth))
+                start = a.startAngle
+                end = a.endAngle
+                gc.fill(segment(center: c, inner: inner, outer: outer, start: start, end: end), with: .color(veil))
+            } else {
+                inner = 0
+                outer = g.centerRadius
+                start = 0
+                end = 2 * .pi
+            }
+            let ringR = outer - 3
+            let track = arcPath(center: c, radius: ringR, start: start, end: end)
+            gc.stroke(track, with: .color(accent.opacity(0.25)), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            let span = end - start
+            if fraction >= 0 {
+                let p = arcPath(center: c, radius: ringR, start: start, end: start + span * max(0.02, fraction))
+                gc.stroke(p, with: .color(accent), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            } else {
+                // Unbestimmt: ein Viertel des Segments läuft um.
+                let len = span * 0.25
+                let phase = (time.truncatingRemainder(dividingBy: 1.2) / 1.2)
+                let s = start + (span - len) * phase
+                let p = arcPath(center: c, radius: ringR, start: s, end: s + len)
+                gc.stroke(p, with: .color(accent), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            }
+        }
+    }
+
+    private static func arcPath(center c: CGPoint, radius: Double, start: Double, end: Double) -> Path {
+        var p = Path()
+        p.addArc(center: c, radius: radius, startAngle: .radians(start - .pi / 2), endAngle: .radians(end - .pi / 2),
+                 clockwise: false)
+        return p
     }
 
     /// Hervorgehobene Arcs: der unter der Maus bzw. der zum Knoten aus der Liste.

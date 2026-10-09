@@ -22,8 +22,12 @@ struct DetailListView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(rows(tree, base: layout.totalSize)) { row in
-                                DetailRowView(state: state, tree: tree, row: row, swatch: colors[row.node])
+                            let rows = rows(tree, base: layout.totalSize)
+                            let visible = rows.filter { $0.kind == .node }.map(\.node)
+                            let rescanning = state.rescanningNodes
+                            ForEach(rows) { row in
+                                DetailRowView(state: state, tree: tree, row: row, swatch: colors[row.node],
+                                              visibleNodes: visible, rescanProgress: rescanning[row.node])
                                     .id(row.id)
                             }
                         }
@@ -138,9 +142,13 @@ private struct DetailRowView: View {
     let tree: ScanTree
     let row: DetailRow
     let swatch: Color?
+    /// Knoten der sichtbaren Zeilen in Listenreihenfolge (für ⇧-Klick).
+    let visibleNodes: [Int32]
+    /// Laufender Teil-Rescan dieser Zeile (-1 = unbestimmt).
+    let rescanProgress: Double?
 
     var body: some View {
-        let isSelected = row.kind == .node && state.selected == row.node
+        let isSelected = row.kind == .node && state.selection.contains(row.node)
         let isHovered = row.kind == .node && state.hoverNode == row.node
         HStack(spacing: 6) {
             Color.clear.frame(width: CGFloat(row.level) * 14, height: 1)
@@ -150,6 +158,9 @@ private struct DetailRowView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .foregroundStyle(row.kind == .node ? .primary : .secondary)
+                // Der Name bekommt den Platz zuerst (sonst kürzt das HStack ihn
+                // in der verstellbaren Liste auf wenige Zeichen).
+                .layoutPriority(1)
             Spacer(minLength: 8)
             ShareBar(share: row.share, color: swatch ?? Color.secondary.opacity(0.6))
                 .frame(width: 54, height: 6)
@@ -157,9 +168,19 @@ private struct DetailRowView: View {
                 .font(.system(size: 11).monospacedDigit())
                 .foregroundStyle(.secondary)
                 .frame(width: 44, alignment: .trailing)
-            Text(ByteFormat.string(row.size))
-                .font(.system(size: 12).monospacedDigit())
+            if let p = rescanProgress {
+                Group {
+                    if p >= 0 { ProgressView(value: p).progressViewStyle(.circular) } else { ProgressView() }
+                }
+                .controlSize(.mini)
                 .frame(width: 72, alignment: .trailing)
+                .help("Wird neu gescannt")
+                .accessibilityLabel("Wird neu gescannt")
+            } else {
+                Text(ByteFormat.string(row.size))
+                    .font(.system(size: 12).monospacedDigit())
+                    .frame(width: 72, alignment: .trailing)
+            }
         }
         .font(.system(size: 12))
         .padding(.horizontal, 10)
@@ -176,8 +197,23 @@ private struct DetailRowView: View {
         // Nur ein Klick-Handler: ein zusätzlicher Doppelklick-Handler würde jeden
         // Einzelklick verzögern. Der Doppelklick wird über `clickCount` erkannt.
         .onTapGesture {
-            if (NSApp.currentEvent?.clickCount ?? 1) >= 2 {
-                if row.kind == .node { state.navigate(to: row.node) }
+            guard row.kind == .node else { return }
+            let event = NSApp.currentEvent
+            if (event?.clickCount ?? 1) >= 2 {
+                // Doppelklick: Ordner hineinzoomen, Datei in Quick Look (SPEC 3.4/3.5).
+                if tree.node(row.node).isDirectory {
+                    state.navigate(to: row.node)
+                } else {
+                    state.selection.select(row.node)
+                    state.perform(.quickLook, targets: [row.node])
+                }
+                return
+            }
+            let mods = event?.modifierFlags ?? []
+            if mods.contains(.command) {
+                state.selection.toggle(row.node)
+            } else if mods.contains(.shift) {
+                state.selection.extend(to: row.node, visible: visibleNodes)
             } else {
                 activate()
             }
@@ -237,7 +273,7 @@ private struct DetailRowView: View {
 
     private func activate() {
         guard row.kind == .node else { return }
-        state.selected = row.node
+        state.selection.select(row.node)
         if isExpandable { toggle() }
     }
 }

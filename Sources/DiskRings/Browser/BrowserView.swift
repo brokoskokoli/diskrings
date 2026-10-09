@@ -1,3 +1,4 @@
+import AppKit
 import DiskRingsCore
 import SwiftUI
 
@@ -15,27 +16,105 @@ struct BrowserView: View {
                 ScanSummaryBanner(state: state, result: r)
                 Divider()
             }
-            HStack(spacing: 0) {
-                SunburstView(state: state, frozenTime: frozenTime)
-                    .padding(16)
-                    .overlay(alignment: .bottomLeading) {
-                        if state.prefs.paletteScheme == .fileType {
-                            FileTypeLegend()
-                                .frame(width: 380)
-                                .padding(10)
-                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-                                .padding(12)
-                        }
-                    }
-                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-                Divider()
-                DetailListView(state: state)
-                    .frame(width: 400)
-                    .frame(maxHeight: .infinity)
-            }
+            BrowserBody(state: state, frozenTime: frozenTime)
             Divider()
             StatusBar(state: state)
         }
+        .sheet(isPresented: Binding(get: { state.trashRequest != nil }, set: { if !$0 { state.trashRequest = nil } })) {
+            if let plan = state.trashRequest {
+                TrashConfirmationView(plan: plan, onCancel: { state.trashRequest = nil },
+                                      onConfirm: { state.confirmTrash(dontAskAgain: $0) })
+            }
+        }
+        .sheet(isPresented: Binding(get: { state.infoNode != nil }, set: { if !$0 { state.infoNode = nil } })) {
+            if let n = state.infoNode { NodeInfoView(state: state, node: n) { state.infoNode = nil } }
+        }
+    }
+}
+
+/// Diagramm und Liste (Hauptansicht und Scan-Ansicht). Die Liste ist über
+/// den Teiler in der Breite verstellbar (siehe docs/DECISIONS.md: eigener
+/// Teiler statt `HSplitView`, weil dieser die Startbreite nicht übernimmt).
+struct BrowserBody: View {
+    let state: AppState
+    var frozenTime: Date?
+    @ViewState private var dragStart: Double?
+
+    var body: some View {
+        GeometryReader { proxy in
+            let maxList = max(Preferences.listWidthRange.lowerBound, min(Preferences.listWidthRange.upperBound,
+                                                                         proxy.size.width - 420))
+            let listWidth = min(state.prefs.listWidth, maxList)
+            HStack(spacing: 0) {
+                diagram
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                divider(maxList: maxList)
+                list
+                    .frame(width: listWidth)
+                    .frame(maxHeight: .infinity)
+            }
+        }
+    }
+
+    private var diagram: some View {
+        SunburstView(state: state, frozenTime: frozenTime)
+            .padding(16)
+            .overlay(alignment: .bottomLeading) {
+                if state.prefs.paletteScheme == .fileType {
+                    FileTypeLegend()
+                        .frame(width: 380)
+                        .padding(10)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        .padding(12)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let t = state.toast {
+                    ToastView(state: state, toast: t)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, state.prefs.paletteScheme == .fileType ? 96 : 14)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeOut(duration: 0.2), value: state.toast?.id)
+    }
+
+    @ViewBuilder private var list: some View {
+        if state.showSearchResults, state.searchVisible {
+            SearchResultsView(state: state)
+        } else {
+            DetailListView(state: state)
+        }
+    }
+
+    /// Teiler: 1 pt Linie, 7 pt Griffbereich, Doppelklick setzt auf 400 pt zurück.
+    private func divider(maxList: Double) -> some View {
+        Divider()
+            .frame(width: 1)
+            .overlay {
+                Color.clear
+                    .frame(width: 7)
+                    .contentShape(Rectangle())
+                    .onHover { inside in
+                        if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                    }
+                    .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                        .onChanged { g in
+                            let start = dragStart ?? min(state.prefs.listWidth, maxList)
+                            if dragStart == nil { dragStart = start }
+                            let w = start - g.translation.width
+                            state.prefs.listWidth = min(max(w, Preferences.listWidthRange.lowerBound), maxList)
+                        }
+                        .onEnded { _ in dragStart = nil })
+                    .onTapGesture(count: 2) { state.prefs.listWidth = 400 }
+            }
+            .accessibilityLabel("Breite der Liste")
+            .accessibilityValue("\(Int(state.prefs.listWidth)) Punkt")
+            .accessibilityAdjustableAction { dir in
+                let step = dir == .increment ? 20.0 : -20.0
+                state.prefs.listWidth = min(max(state.prefs.listWidth + step, Preferences.listWidthRange.lowerBound),
+                                            maxList)
+            }
     }
 }
 
@@ -58,12 +137,32 @@ struct BrowserToolbar: View {
             .fixedSize()
             BreadcrumbView(state: state)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if state.phase == .scanning {
-                ProgressView().controlSize(.small).accessibilityLabel("Scan läuft")
+            if state.phase == .scanning || !state.rescanQueue.isEmpty {
+                ProgressView().controlSize(.small)
+                    .accessibilityLabel(state.phase == .scanning ? "Scan läuft" : "Teil-Rescan läuft")
             }
-            Button { state.rescan() } label: { Label("Rescan", systemImage: "arrow.clockwise") }
-                .help("Komplett neu scannen")
-                .disabled(state.phase == .scanning)
+            let rescan = state.availability(.rescan, targets: [state.focus])
+            Menu {
+                Button("Diesen Ordner neu scannen") { state.rescanFocus() }
+                    .disabled(!rescan.isEnabled)
+                Button("Komplett neu scannen") { state.rescan() }
+                    .disabled(state.phase == .scanning)
+            } label: {
+                Label("Rescan", systemImage: "arrow.clockwise")
+            } primaryAction: {
+                state.rescanFocus()
+            }
+            .menuStyle(.button)
+            .fixedSize()
+            .disabled(state.phase == .scanning)
+            .help(rescan.isEnabled ? "Den fokussierten Ordner neu scannen (⇧⌘R)" : (rescan.reason ?? ""))
+            if state.searchVisible {
+                SearchField(state: state)
+            }
+            Button { state.toggleSearch() } label: { Image(systemName: "magnifyingglass") }
+                .help("Nach Namen suchen (⌘F)")
+                .accessibilityLabel("Suchen")
+                .disabled(state.tree == nil)
             Button { state.backToStart() } label: { Label("Neuer Scan", systemImage: "externaldrive") }
                 .help("Zurück zum Startbildschirm")
         }
@@ -153,7 +252,21 @@ struct StatusBar: View {
             } else if let p = state.progress {
                 Text("\(filesText(p.filesScanned)) · \(ByteFormat.string(p.allocatedBytes))")
             }
+            if state.volume != nil {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                    .help("Klone und Snapshots können Abweichungen verursachen: APFS-Klone teilen sich Blöcke, werden aber einzeln gezählt; lokale Time-Machine-Snapshots und bereinigbarer Speicher tauchen in keinem Ordner auf und stehen unter „Nicht zugeordnet“.")
+                    .accessibilityLabel("Klone und Snapshots können Abweichungen verursachen")
+            }
             Spacer()
+            if state.fullDiskAccess == .denied {
+                Button { state.openFullDiskAccessSettings() } label: {
+                    Label("Kein Festplattenvollzugriff", systemImage: "lock.shield")
+                }
+                .buttonStyle(.link)
+                .foregroundStyle(.orange)
+                .help("Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail unlesbar und landen unter „Nicht zugeordnet“. Klick öffnet die Systemeinstellung.")
+            }
             if let r = state.result {
                 Text("Scan: \(filesText(r.fileCount)) in \(ByteFormat.duration(r.duration))")
                     .foregroundStyle(.secondary)
@@ -163,7 +276,7 @@ struct StatusBar: View {
         .lineLimit(1)
         .padding(.horizontal, 12)
         .frame(height: 26)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
     }
 
     private func volumeText(_ v: VolumeInfo) -> String {

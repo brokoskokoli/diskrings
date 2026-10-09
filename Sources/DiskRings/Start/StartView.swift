@@ -204,24 +204,6 @@ struct ScanningView: View {
     }
 }
 
-/// Diagramm und Liste ohne Toolbar (für die Scan-Ansicht).
-struct BrowserBody: View {
-    let state: AppState
-    var frozenTime: Date?
-
-    var body: some View {
-        HStack(spacing: 0) {
-            SunburstView(state: state, frozenTime: frozenTime)
-                .padding(16)
-                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-            Divider()
-            DetailListView(state: state)
-                .frame(width: 400)
-                .frame(maxHeight: .infinity)
-        }
-    }
-}
-
 struct ScanProgressHeader: View {
     let state: AppState
 

@@ -41,6 +41,7 @@ struct RootView: View {
     let state: AppState
     @ViewState private var dropTargeted = false
     @ViewState private var swipe: SwipeNavigation?
+    @ViewState private var keyboard: KeyboardMonitor?
 
     var body: some View {
         Group {
@@ -71,6 +72,11 @@ struct RootView: View {
                 s.install()
                 swipe = s
             }
+            if keyboard == nil {
+                let k = KeyboardMonitor(state: state)
+                k.install()
+                keyboard = k
+            }
             // `--scan <pfad>` startet sofort einen Scan (für Tests und Skripte).
             let args = CommandLine.arguments
             if state.phase == .start, let i = args.firstIndex(of: "--scan"), i + 1 < args.count {
@@ -80,6 +86,8 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Festplattenvollzugriff kann in den Systemeinstellungen erteilt worden sein.
             state.fullDiskAccess = FullDiskAccess.status()
+            // Belegung kann sich außerhalb der App geändert haben.
+            if state.phase == .browsing { state.refreshUnassigned() }
         }
         // Volume-Liste aktuell halten, wenn Volumes ein- oder ausgehängt werden.
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in
@@ -105,7 +113,8 @@ struct RootView: View {
     }
 }
 
-/// Menübefehle: Navigation mit ⌘[ / ⌘] / ⌘↑, Rescan, Ordner wählen.
+/// Menübefehle: Navigation mit ⌘[ / ⌘] / ⌘↑, Rescan, Ordner wählen, das
+/// Menü „Objekt“ mit den Aktionen des Kontextmenüs und Undo für den Papierkorb.
 struct AppCommands: Commands {
     let state: AppState
 
@@ -113,9 +122,43 @@ struct AppCommands: Commands {
         CommandGroup(after: .newItem) {
             Button("Ordner wählen…") { state.chooseFolder() }
                 .keyboardShortcut("o", modifiers: .command)
-            Button("Neu scannen") { state.rescan() }
+            Button("Komplett neu scannen") { state.rescan() }
                 .keyboardShortcut("r", modifiers: [.command, .option])
                 .disabled(state.tree == nil || state.phase == .scanning)
+        }
+        CommandGroup(replacing: .undoRedo) {
+            // Im Suchfeld gehört ⌘Z dem Textfeld.
+            Button(state.canUndoTrash ? state.undoTitle : "Widerrufen") {
+                if FileActions.isEditingText {
+                    NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+                } else {
+                    state.undoTrash()
+                }
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            Button("Wiederholen") { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil) }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+        }
+        CommandGroup(after: .textEditing) {
+            Button("Suchen…") { if !state.searchVisible { state.toggleSearch() } }
+                .keyboardShortcut("f", modifiers: .command)
+                .disabled(state.tree == nil)
+        }
+        CommandMenu("Objekt") {
+            ForEach(NodeAction.allCases) { action in
+                if action.startsGroup { Divider() }
+                let targets = state.commandTargets(for: action)
+                let button = Button(action.title(count: targets.count)) { state.performCommand(action) }
+                    .disabled(!state.availability(action, targets: targets).isEnabled)
+                if action == .quickLook {
+                    // Leertaste über `KeyboardMonitor`; im Menü ⌘Y wie im Finder.
+                    button.keyboardShortcut("y", modifiers: .command)
+                } else if let s = action.shortcut?.keyboardShortcut {
+                    button.keyboardShortcut(s)
+                } else {
+                    button
+                }
+            }
         }
         CommandMenu("Gehe zu") {
             Button("Zurück") { state.goBack() }

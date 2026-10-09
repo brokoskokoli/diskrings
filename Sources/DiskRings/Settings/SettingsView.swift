@@ -40,6 +40,14 @@ struct SettingsView: View {
                 .pickerStyle(.radioGroup)
             }
             Section {
+                Toggle("Vor dem Papierkorb fragen", isOn: Binding(get: { !prefs.skipTrashConfirmation },
+                                                                  set: { prefs.skipTrashConfirmation = !$0 }))
+            } header: {
+                Text("Papierkorb")
+            } footer: {
+                Text("Elemente ab 1 GB werden immer bestätigt.").font(.footnote).foregroundStyle(.secondary)
+            }
+            Section {
                 Toggle("Versteckte Dateien zählen", isOn: $prefs.includeHidden)
                 Toggle("Andere Volumes beim Scan überqueren", isOn: $prefs.crossMountPoints)
                 VStack(alignment: .leading, spacing: 6) {

@@ -15,6 +15,8 @@ final class Preferences {
         static let crossMounts = "crossMountPoints"
         static let excluded = "excludedPaths"
         static let labels = "showLabels"
+        static let skipTrash = "skipTrashConfirmation"
+        static let listWidth = "listWidth"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -27,6 +29,11 @@ final class Preferences {
     var crossMountPoints: Bool { didSet { defaults.set(crossMountPoints, forKey: Key.crossMounts) } }
     var excludedPaths: [String] { didSet { defaults.set(excludedPaths, forKey: Key.excluded) } }
     var showLabels: Bool { didSet { defaults.set(showLabels, forKey: Key.labels) } }
+    /// „Nicht mehr fragen“ im Papierkorb-Dialog (gilt nur unter 1 GB, SPEC 3.6).
+    var skipTrashConfirmation: Bool { didSet { defaults.set(skipTrashConfirmation, forKey: Key.skipTrash) } }
+    /// Breite der Detailliste in Punkt (verstellbar über den Teiler).
+    var listWidth: Double { didSet { defaults.set(listWidth, forKey: Key.listWidth) } }
+    static let listWidthRange: ClosedRange<Double> = 300 ... 720
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -40,6 +47,9 @@ final class Preferences {
         crossMountPoints = defaults.object(forKey: Key.crossMounts) as? Bool ?? false
         excludedPaths = defaults.stringArray(forKey: Key.excluded) ?? []
         showLabels = defaults.object(forKey: Key.labels) as? Bool ?? true
+        skipTrashConfirmation = defaults.object(forKey: Key.skipTrash) as? Bool ?? false
+        let w = defaults.object(forKey: Key.listWidth) as? Double ?? 400
+        listWidth = Self.listWidthRange.contains(w) ? w : 400
     }
 
     /// Erlaubter Bereich der Winkelschwelle in Grad.
