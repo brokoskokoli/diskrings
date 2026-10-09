@@ -149,3 +149,80 @@ struct MappedBufferTests {
         #expect(t.memoryFootprint >= 2 * 40 + 9)
     }
 }
+
+@Suite("ScanTree: Pfadsuche und Zusatz-API")
+struct ScanTreePathTests {
+    /// /r ─ a/ (x 100) ─ ab/ (c/ (y 50)) ─ <name> 10
+    func tree(extraName: [UInt8] = Array("datei".utf8), root: String = "/tmp/r") throws -> ScanTree {
+        var raw = RawTree()
+        raw.append(parent: -1, name: Array("r".utf8), flags: .directory, allocated: 0, logical: 0, ownFiles: 0)
+        let a = raw.append(parent: 0, name: Array("a".utf8), flags: .directory, allocated: 0, logical: 0, ownFiles: 0)
+        raw.append(parent: a, name: Array("x".utf8), flags: [], allocated: 100, logical: 1000, ownFiles: 1)
+        let ab = raw.append(parent: 0, name: Array("ab".utf8), flags: .directory, allocated: 0, logical: 0, ownFiles: 0)
+        let c = raw.append(parent: ab, name: Array("c".utf8), flags: .directory, allocated: 0, logical: 0, ownFiles: 0)
+        raw.append(parent: c, name: Array("y".utf8), flags: [.dataless], allocated: 50, logical: 5, ownFiles: 1)
+        raw.append(parent: 0, name: extraName, flags: [.hardlinkDuplicate], allocated: 10, logical: 2000, ownFiles: 1)
+        raw.append(parent: 0, name: Array("mnt".utf8), flags: [.directory, .mountPoint], allocated: 0, logical: 0, ownFiles: 0)
+        return try TreeBuilder.build(raw, rootPath: root)
+    }
+
+    @Test("S2: Präfix gilt nur an Komponentengrenzen")
+    func componentBoundary() throws {
+        let t = try tree()
+        // „/tmp/r“ ist ein reines String-Präfix von „/tmp/rab/c“, aber kein Elternpfad.
+        #expect(t.index(ofPath: "/tmp/rab/c") == nil)
+        #expect(t.index(ofPath: "/tmp/ra") == nil)
+        #expect(t.index(ofPath: "/tmp/r/ab/c") != nil)
+        #expect(t.index(ofPath: "/tmp/r/") == 0)
+        #expect(t.index(ofPath: "/tmp/r") == 0)
+        #expect(t.index(ofPath: "ab/c") == t.index(ofPath: "/tmp/r/ab/c"))
+        let slash = try tree(root: "/")
+        #expect(slash.index(ofPath: "/ab/c") != nil)
+        #expect(slash.index(ofPath: "/") == 0)
+    }
+
+    @Test("K6: Suche findet NFD-Namen auch mit NFC-Anfrage und umgekehrt")
+    func unicodeNormalization() throws {
+        let nfd = Array("Mu\u{0308}ller".utf8)
+        let t = try tree(extraName: nfd)
+        let nfc = "/tmp/r/" + "Müller".precomposedStringWithCanonicalMapping
+        #expect(Array(nfc.utf8) != Array(("/tmp/r/" + String(decoding: nfd, as: UTF8.self)).utf8))
+        let hit = try #require(t.index(ofPath: nfc))
+        #expect(Array(t.nameBytes(of: hit)) == nfd)
+        #expect(t.root.child(named: "Müller".precomposedStringWithCanonicalMapping)?.index == hit)
+
+        let t2 = try tree(extraName: Array("Grüße".precomposedStringWithCanonicalMapping.utf8))
+        #expect(t2.index(ofPath: "/tmp/r/" + "Grüße".decomposedStringWithCanonicalMapping) != nil)
+    }
+
+    @Test("NodeRef: Flags für dataless, Einhängepunkt und Hardlink-Duplikat")
+    func nodeRefFlags() throws {
+        let t = try tree()
+        let y = try #require(t.index(ofPath: "ab/c/y"))
+        #expect(t[y].isDataless)
+        #expect(!t[y].isMountPoint)
+        #expect(t.root.child(named: "mnt")?.isMountPoint == true)
+        #expect(t.root.child(named: "datei")?.isHardlinkDuplicate == true)
+        #expect(t.root.child(named: "a")?.isHardlinkDuplicate == false)
+    }
+
+    @Test("itemCount zählt alle Einträge im Teilbaum (ohne den Knoten selbst)")
+    func itemCount() throws {
+        let t = try tree()
+        #expect(t.root.itemCount == 7) // a, x, ab, c, y, datei, mnt
+        #expect(t.root.child(named: "ab")?.itemCount == 2)
+        #expect(t.root.child(named: "datei")?.itemCount == 0)
+        #expect(t.root.child(named: "mnt")?.itemCount == 0)
+    }
+
+    @Test("Sortierte Kinder-Sicht für den logischen Größenmodus")
+    func sortedChildrenLogical() throws {
+        let t = try tree()
+        // belegt: a 100, ab 50, datei 10, mnt 0
+        #expect(t.root.children.map(\.name) == ["a", "ab", "datei", "mnt"])
+        // logisch: datei 2000, a 1000, ab 5, mnt 0
+        #expect(t.root.children(sortedBy: .logical).map(\.name) == ["datei", "a", "ab", "mnt"])
+        #expect(t.root.children(sortedBy: .allocated).map(\.name) == ["a", "ab", "datei", "mnt"])
+        #expect(t.sortedChildIndices(of: 0, by: .logical).map { t.name(of: $0) } == ["datei", "a", "ab", "mnt"])
+    }
+}
