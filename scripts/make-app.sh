@@ -75,6 +75,17 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSHumanReadableCopyright</key><string>© ${YEAR} Stefan Richter</string>
+    <!-- Datenschutz-Abfragen (TCC): macOS zeigt diese Texte, wenn der Scan
+         geschützte Orte öffnet. Ohne sie fragt macOS mit einem generischen
+         Text bzw. verweigert den Zugriff still. -->
+    <key>NSDesktopFolderUsageDescription</key><string>DiskRings liest die Größe der Dateien auf deinem Schreibtisch, um die Belegung anzuzeigen. Dateien werden weder geöffnet noch verändert.</string>
+    <key>NSDocumentsFolderUsageDescription</key><string>DiskRings liest die Größe der Dateien in deinem Ordner „Dokumente“, um die Belegung anzuzeigen. Dateien werden weder geöffnet noch verändert.</string>
+    <key>NSDownloadsFolderUsageDescription</key><string>DiskRings liest die Größe der Dateien in deinem Ordner „Downloads“, um die Belegung anzuzeigen. Dateien werden weder geöffnet noch verändert.</string>
+    <key>NSRemovableVolumesUsageDescription</key><string>DiskRings liest die Größe der Dateien auf Wechseldatenträgern (z. B. USB-Sticks), um deren Belegung anzuzeigen.</string>
+    <key>NSNetworkVolumesUsageDescription</key><string>DiskRings liest die Größe der Dateien auf Netzlaufwerken, um deren Belegung anzuzeigen.</string>
+    <key>NSFileProviderDomainUsageDescription</key><string>DiskRings liest die Größe der Dateien in Cloud-Speichern (z. B. iCloud Drive, Dropbox), um die Belegung anzuzeigen. Es werden keine Dateien heruntergeladen.</string>
+    <key>NSPhotoLibraryUsageDescription</key><string>DiskRings liest die Größe deiner Fotomediathek, um die Belegung anzuzeigen. Fotos werden weder geöffnet noch verändert.</string>
+    <key>NSAppleMusicUsageDescription</key><string>DiskRings liest die Größe deiner Musik- und Medienordner, um die Belegung anzuzeigen.</string>
 </dict>
 </plist>
 PLIST

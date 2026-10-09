@@ -62,6 +62,10 @@ final class AppState {
     private(set) var result: ScanResult?
     var scanError: String?
     var showSummary = false
+    /// Erkennt einen Scan, der still auf eine macOS-Datenschutzabfrage wartet.
+    private(set) var stallDetector: ScanStallDetector?
+    /// Pfad, vor dessen Scan der Hinweis „Kein Festplattenvollzugriff“ offen ist.
+    var fullDiskAccessPromptPath: String?
     /// Steuert den laufenden Scan; Ereignisse eines abgebrochenen oder ersetzten
     /// Scans kommen hier nicht mehr an (siehe `ScanController`).
     @ObservationIgnored private let scanner = ScanController()
@@ -129,7 +133,9 @@ final class AppState {
         scanner.handler = { [weak self] event in
             guard let self else { return }
             switch event {
-            case .progress(let p): self.progress = p
+            case .progress(let p):
+                self.progress = p
+                self.stallDetector?.observe(p, at: Date())
             case .snapshot(let t): self.applySnapshot(t)
             case .finished(let r): self.finish(r)
             case .failed(let error):
@@ -166,7 +172,38 @@ final class AppState {
         panel.allowsMultipleSelection = false
         panel.prompt = "Scannen"
         panel.message = "Ordner oder Volume zum Scannen wählen"
-        if panel.runModal() == .OK, let url = panel.url { startScan(url.path) }
+        if panel.runModal() == .OK, let url = panel.url { requestScan(url.path) }
+    }
+
+    /// Scan auf Wunsch des Nutzers (Startbildschirm, Ordner wählen, Drag &
+    /// Drop): Vor dem Scan von / oder ~ ohne Festplattenvollzugriff erscheint
+    /// zuerst ein Hinweis (`fullDiskAccessPromptPath`).
+    func requestScan(_ path: String) {
+        fullDiskAccess = FullDiskAccess.status()
+        if FullDiskAccess.shouldWarnBeforeScan(of: path, status: fullDiskAccess,
+                                               dismissed: prefs.fullDiskAccessHintDismissed) {
+            fullDiskAccessPromptPath = path
+        } else {
+            startScan(path)
+        }
+    }
+
+    /// Antwort auf den Hinweis vor dem Scan.
+    func answerFullDiskAccessPrompt(scanAnyway: Bool) {
+        guard let path = fullDiskAccessPromptPath else { return }
+        fullDiskAccessPromptPath = nil
+        if scanAnyway {
+            prefs.fullDiskAccessHintDismissed = true
+            startScan(path)
+        } else {
+            openFullDiskAccessSettings()
+        }
+    }
+
+    /// Steht der laufende Scan seit über 3 s still (z. B. wegen eines
+    /// Datenschutz-Dialogs von macOS)?
+    func isScanStalled(at date: Date) -> Bool {
+        phase == .scanning && (stallDetector?.isStalled(at: date) ?? false)
     }
 
     // MARK: Scan
@@ -185,12 +222,14 @@ final class AppState {
         compare = nil
         setTree(nil)
         phase = .scanning
+        stallDetector = ScanStallDetector(start: Date())
         scanOptionsUsed = prefs.scanOptions
         scanner.start(path, options: scanOptionsUsed)
     }
 
     func cancelScan() {
         scanner.cancel()
+        stallDetector = nil
         if phase == .scanning {
             phase = .start
             setTree(nil)
@@ -227,6 +266,7 @@ final class AppState {
     }
 
     private func finish(_ r: ScanResult) {
+        stallDetector = nil
         result = r
         let v = VolumeInfo.forPath(r.tree.rootPath)
         volume = v
@@ -744,11 +784,12 @@ final class AppState {
     }
 
     /// Scan-Ansicht mit einem Snapshot vortäuschen (Vorschaubilder).
-    func simulateScanning(path: String, snapshot: ScanTree, progress p: ScanProgress) {
+    func simulateScanning(path: String, snapshot: ScanTree, progress p: ScanProgress, stalled: Bool = false) {
         scanPath = path
         setTree(snapshot)
         progress = p
         phase = .scanning
+        stallDetector = ScanStallDetector(start: stalled ? .distantPast : .distantFuture)
     }
 
     /// Laufenden Teil-Rescan vortäuschen (Vorschaubilder).

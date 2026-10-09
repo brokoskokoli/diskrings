@@ -17,6 +17,7 @@ final class Preferences {
         static let labels = "showLabels"
         static let skipTrash = "skipTrashConfirmation"
         static let listWidth = "listWidth"
+        static let fdaHintDismissed = "fullDiskAccessHintDismissed"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -34,6 +35,11 @@ final class Preferences {
     /// Breite der Detailliste in Punkt (verstellbar über den Teiler).
     var listWidth: Double { didSet { defaults.set(listWidth, forKey: Key.listWidth) } }
     static let listWidthRange: ClosedRange<Double> = 300 ... 720
+    /// Hinweis „Kein Festplattenvollzugriff“ vor dem Scan von / oder ~ mit
+    /// „Trotzdem scannen“ quittiert.
+    var fullDiskAccessHintDismissed: Bool {
+        didSet { defaults.set(fullDiskAccessHintDismissed, forKey: Key.fdaHintDismissed) }
+    }
     /// Snapshot-Einstellungen (SPEC 3.7), siehe Snapshots/SnapshotLibrary.swift.
     let snapshots: SnapshotPreferences
 
@@ -52,6 +58,7 @@ final class Preferences {
         skipTrashConfirmation = defaults.object(forKey: Key.skipTrash) as? Bool ?? false
         let w = defaults.object(forKey: Key.listWidth) as? Double ?? 400
         listWidth = Self.listWidthRange.contains(w) ? w : 400
+        fullDiskAccessHintDismissed = defaults.object(forKey: Key.fdaHintDismissed) as? Bool ?? false
         snapshots = SnapshotPreferences(defaults: defaults)
     }
 

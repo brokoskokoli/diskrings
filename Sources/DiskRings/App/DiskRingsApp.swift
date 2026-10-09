@@ -65,7 +65,7 @@ struct RootView: View {
         .navigationTitle(title)
         .dropDestination(for: URL.self) { urls, _ in
             guard let url = urls.first, url.hasDirectoryPath || isDirectory(url) else { return false }
-            state.startScan(url.path)
+            state.requestScan(url.path)
             return true
         } isTargeted: { dropTargeted = $0 }
         .overlay {
@@ -112,6 +112,15 @@ struct RootView: View {
         }
         .onChange(of: state.prefs.layoutKey) { _, _ in state.relayout(animated: false) }
         .modifier(SnapshotUIHost(state: state))
+        .alert("Kein Festplattenvollzugriff",
+               isPresented: Binding(get: { state.fullDiskAccessPromptPath != nil },
+                                    set: { if !$0 { state.fullDiskAccessPromptPath = nil } })) {
+            Button("Festplattenvollzugriff einrichten") { state.answerFullDiskAccessPrompt(scanAnyway: false) }
+            Button("Trotzdem scannen") { state.answerFullDiskAccessPrompt(scanAnyway: true) }
+            Button("Abbrechen", role: .cancel) { state.fullDiskAccessPromptPath = nil }
+        } message: {
+            Text("Ohne Festplattenvollzugriff fragt macOS beim Scan einzeln nach Ordnern wie Schreibtisch, Dokumente und Downloads, und Bereiche wie ~/Library/Mail bleiben unlesbar. Der Scan wartet, bis du die Systemdialoge beantwortest.\n\nEmpfohlen: In den Systemeinstellungen unter „Datenschutz & Sicherheit → Festplattenvollzugriff“ DiskRings einschalten und danach erneut scannen.")
+        }
     }
 
     private var title: String {

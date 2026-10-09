@@ -186,6 +186,15 @@ enum SnapshotRenderer {
                                                                currentPath: scanPath + "/…", elapsed: 0.05))
                     failures += renderWindow(ScanningView(state: s8, frozenTime: .distantPast).frame(width: 1180, height: 700),
                                        scheme: scheme, to: dir, name: "scanning-\(suffix)")
+                    // Scan, der auf einen Datenschutz-Dialog von macOS wartet.
+                    s8.simulateScanning(path: scanPath, snapshot: snapshot ?? result.tree,
+                                        progress: ScanProgress.make(filesScanned: result.fileCount / 2,
+                                                                    directoriesScanned: result.directoryCount / 2,
+                                                                    allocatedBytes: result.allocatedSize / 2,
+                                                                    currentPath: scanPath + "/Downloads", elapsed: 7.4),
+                                        stalled: true)
+                    failures += renderWindow(ScanningView(state: s8, frozenTime: .distantPast).frame(width: 1180, height: 700),
+                                       scheme: scheme, to: dir, name: "scanning-stalled-\(suffix)")
                 } catch {
                     FileHandle.standardError.write(Data("Scan von \(scanPath) fehlgeschlagen: \(error)\n".utf8))
                     failures += 1

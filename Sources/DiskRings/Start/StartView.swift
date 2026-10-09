@@ -31,7 +31,7 @@ struct StartView: View {
                 }
                 Text("Volumes").font(.headline).accessibilityAddTraits(.isHeader)
                 VStack(spacing: 8) {
-                    ForEach(state.volumes) { v in VolumeRow(volume: v) { state.startScan(v.path) } }
+                    ForEach(state.volumes) { v in VolumeRow(volume: v) { state.requestScan(v.path) } }
                     if state.volumes.isEmpty {
                         Text("Keine Volumes gefunden.").foregroundStyle(.secondary)
                     }
@@ -42,7 +42,7 @@ struct StartView: View {
                     }
                     .controlSize(.large)
                     .keyboardShortcut("o", modifiers: .command)
-                    Button { state.startScan(NSHomeDirectory()) } label: {
+                    Button { state.requestScan(NSHomeDirectory()) } label: {
                         Label("Home-Ordner scannen", systemImage: "house")
                     }
                     .controlSize(.large)
@@ -190,7 +190,8 @@ struct ScanningView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScanProgressHeader(state: state)
+            // In den Vorschaubildern (frozenTime) ohne TimelineView, mit fester Uhrzeit.
+            ScanProgressHeader(state: state, now: frozenTime == nil ? nil : Date())
             Divider()
             if state.tree != nil {
                 BrowserBody(state: state, frozenTime: frozenTime)
@@ -207,8 +208,30 @@ struct ScanningView: View {
 
 struct ScanProgressHeader: View {
     let state: AppState
+    /// Feste Uhrzeit für die Vorschaubilder (sonst die aktuelle).
+    var now: Date?
 
     var body: some View {
+        if let now {
+            content(now: now)
+        } else {
+            // Einmal pro Sekunde prüfen, ob der Scan stillsteht (die Engine
+            // meldet zwar alle 250 ms, aber nicht, wenn sie selbst hängt).
+            TimelineView(.periodic(from: .now, by: 1)) { context in content(now: context.date) }
+        }
+    }
+
+    private func content(now: Date) -> some View {
+        VStack(spacing: 0) {
+            header
+            if state.isScanStalled(at: now) {
+                Divider()
+                StallHint(state: state)
+            }
+        }
+    }
+
+    private var header: some View {
         HStack(spacing: 14) {
             ProgressView().controlSize(.small).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
@@ -241,6 +264,35 @@ struct ScanProgressHeader: View {
     private var accessibilityText: String {
         guard let p = state.progress else { return "Scan wird gestartet" }
         return "Scan läuft: \(filesText(p.filesScanned)), \(ByteFormat.string(p.allocatedBytes))"
+    }
+}
+
+/// Hinweis, wenn sich der Scan seit über 3 s nicht bewegt: Meist wartet ein
+/// Datenschutz-Dialog von macOS (Schreibtisch, Dokumente, Downloads,
+/// Wechsel- oder Netzlaufwerk) auf eine Antwort.
+struct StallHint: View {
+    let state: AppState
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "hand.raised.fill").foregroundStyle(.orange).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Wartet auf Freigabe durch macOS … (Systemdialog prüfen)")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("macOS fragt evtl. nach dem Zugriff auf einen Ordner oder ein Laufwerk; der Dialog kann hinter anderen Fenstern liegen. Mit Festplattenvollzugriff entfallen diese Abfragen.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Button("Festplattenvollzugriff…") { state.openFullDiskAccessSettings() }
+                .buttonStyle(.link)
+                .help("Öffnet „Datenschutz & Sicherheit → Festplattenvollzugriff“ in den Systemeinstellungen")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.10))
+        .accessibilityElement(children: .combine)
     }
 }
 
