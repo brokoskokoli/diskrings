@@ -51,7 +51,7 @@ struct CompareSunburstView: View {
                                                 in: &gc, size: canvasSize)
                 }
                 .contentShape(Rectangle())
-                .modifier(CompareSunburstInteraction(session: session, geometry: geometry, size: size,
+                .modifier(CompareSunburstInteraction(state: state, session: session, geometry: geometry, size: size,
                                                      enabled: interactive))
                 .overlay(alignment: .topLeading) {
                     CompareTooltip(session: session, size: size)
@@ -165,8 +165,9 @@ enum CompareOverlayRenderer {
     }
 }
 
-/// Hover und Klick im Vergleichsdiagramm (kein Kontextmenü, siehe docs/DECISIONS.md).
+/// Hover, Klick und Kontextmenü im Vergleichsdiagramm.
 private struct CompareSunburstInteraction: ViewModifier {
+    let state: AppState
     let session: CompareSession
     let geometry: SunburstGeometry
     let size: CGSize
@@ -175,6 +176,12 @@ private struct CompareSunburstInteraction: ViewModifier {
     func hit(_ p: CGPoint) -> SunburstHit {
         SunburstHitTester(layout: session.layout, geometry: geometry)
             .hit(dx: p.x - size.width / 2, dy: p.y - size.height / 2)
+    }
+
+    /// Eintrag für das Kontextmenü: das Segment unter der Maus bzw. der Fokus (Mitte).
+    private var contextEntry: Int32? {
+        if session.hoverCenter { return session.focus }
+        return session.hoverEntry
     }
 
     func body(content: Content) -> some View {
@@ -187,6 +194,9 @@ private struct CompareSunburstInteraction: ViewModifier {
                     }
                 }
                 .onTapGesture(count: 1, coordinateSpace: .local) { p in session.click(hit(p)) }
+                .contextMenu {
+                    if let e = contextEntry { CompareContextMenu(state: state, entry: e) }
+                }
         } else {
             content
         }

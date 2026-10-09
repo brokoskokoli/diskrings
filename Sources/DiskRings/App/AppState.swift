@@ -121,6 +121,8 @@ final class AppState {
     // MARK: Snapshots und Vergleich (SPEC 3.9, siehe Snapshots/ und Compare/)
     var snapshots = SnapshotLibrary()
     var compare: CompareSession?
+    /// Zähler für die Neuberechnung des Vergleichs nach Änderungen am Baum.
+    @ObservationIgnored var compareRefreshGeneration = 0
 
     init(prefs: Preferences) {
         self.prefs = prefs
@@ -296,6 +298,7 @@ final class AppState {
             transition = nil
         }
         layout = newLayout
+        scheduleCompareRefresh()
     }
 
     /// Volume-Kennzahlen neu lesen und „Nicht zugeordnet“ neu berechnen.
@@ -481,13 +484,20 @@ final class AppState {
         }
     }
 
-    /// Aus dem Hauptmenü bzw. per Tastenkürzel. Steht der Cursor in einem
+    /// Aus dem Hauptmenü bzw. per Tastenkürzel (im Vergleichsmodus auf den
+    /// Vergleich, siehe Compare/CompareContextMenu.swift). Steht der Cursor in einem
     /// Textfeld (Suche), gehören die Tasten dem Textfeld.
     func performCommand(_ action: NodeAction) {
         if FileActions.isEditingText {
             if action == .moveToTrash {
                 NSApp.sendAction(#selector(NSResponder.deleteToBeginningOfLine(_:)), to: nil, from: nil)
             }
+            return
+        }
+        if compare != nil {
+            // Im Vergleich wirken Menü und Kürzel auf den Vergleich, nicht auf
+            // die verdeckte normale Ansicht.
+            performCompare(action, entries: compareCommandEntries(for: action))
             return
         }
         perform(action, targets: commandTargets(for: action))

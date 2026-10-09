@@ -121,9 +121,8 @@ final class KeyboardMonitor {
         guard event.keyCode == 49, mods.isEmpty, !FileActions.isEditingText else { return false }
         // Im Quick-Look-Panel selbst schließt die Leertaste es wieder.
         if NSApp.keyWindow is QLPreviewPanel { return false }
-        let targets = state.commandTargets(for: .quickLook)
-        guard !targets.isEmpty else { return false }
-        state.perform(.quickLook, targets: targets)
+        guard state.hasCommandTargets(for: .quickLook) else { return false }
+        state.performCommand(.quickLook)
         return true
     }
 }

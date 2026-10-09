@@ -148,6 +148,22 @@ enum CompareDemoRenderer {
             shot(SnapshotNameSheet(title: "Snapshot sichern", message: "Aktueller Scan von \(home)", confirm: "Sichern",
                                    name: .constant("vor macOS-Update")) { _ in }, "snapshot-save-sheet", nil)
             shot(SettingsView(prefs: makeState().prefs), "settings-snapshots", nil)
+
+            // 10. Kontextmenü im Vergleich (nachgebildet): bestehender Ordner,
+            //     entferntes Element, Vergleich zweier Snapshots.
+            let (s10, c10) = try comparing(.delta)
+            if let dl = c10.diff.entry(forPath: home + "/Downloads"),
+               let gone = c10.diff.entry(forPath: home + "/Musik/Album B"),
+               let s5c = s5.compare, let musik = s5c.diff.entry(forPath: home + "/Musik") {
+                shot(HStack(alignment: .top, spacing: 24) {
+                    CompareContextMenuPreview(state: s10, entry: dl)
+                    CompareContextMenuPreview(state: s10, entry: gone)
+                    CompareContextMenuPreview(state: s5, entry: musik)
+                }
+                .padding(24), "compare-contextmenu", nil)
+            } else {
+                failures += 1
+            }
         }
         return failures == 0 ? 0 : 1
     }

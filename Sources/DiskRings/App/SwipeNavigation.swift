@@ -1,7 +1,7 @@
 import AppKit
 import DiskRingsCore
 
-/// Trackpad-Wischgesten für Zurück/Vor (SPEC 3.4).
+/// Trackpad-Wischgesten für Zurück/Vor (SPEC 3.4); im Vergleichsmodus im Vergleich.
 ///
 /// - Zwei-Finger-Wischen (horizontales Scrollen mit Phase, wenn in den
 ///   Systemeinstellungen „Zwischen Seiten blättern“ aktiv ist) wird mit
@@ -37,19 +37,19 @@ final class SwipeNavigation {
         switch event.type {
         case .swipe:
             // deltaX > 0: Wischen nach rechts (wie Safari: zurück).
-            if event.deltaX > 0, state.history.canGoBack {
-                state.goBack()
+            if event.deltaX > 0, state.canNavigateBack {
+                state.navigateBack()
                 return true
             }
-            if event.deltaX < 0, state.history.canGoForward {
-                state.goForward()
+            if event.deltaX < 0, state.canNavigateForward {
+                state.navigateForward()
                 return true
             }
             return false
         case .scrollWheel:
             guard event.phase == .began, NSEvent.isSwipeTrackingFromScrollEventsEnabled,
                   abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) * 2 else { return false }
-            let canBack = state.history.canGoBack, canForward = state.history.canGoForward
+            let canBack = state.canNavigateBack, canForward = state.canNavigateForward
             guard canBack || canForward else { return false }
             var done = false
             event.trackSwipeEvent(options: [.lockDirection, .clampGestureAmount],
@@ -58,7 +58,7 @@ final class SwipeNavigation {
                 guard !done, phase == .ended, isComplete else { return }
                 done = true
                 MainActor.assumeIsolated {
-                    if amount > 0 { state?.goBack() } else if amount < 0 { state?.goForward() }
+                    if amount > 0 { state?.navigateBack() } else if amount < 0 { state?.navigateForward() }
                 }
             }
             return true

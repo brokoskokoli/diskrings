@@ -159,9 +159,8 @@ struct AppCommands: Commands {
         CommandMenu("Objekt") {
             ForEach(NodeAction.allCases) { action in
                 if action.startsGroup { Divider() }
-                let targets = state.commandTargets(for: action)
-                let button = Button(action.title(count: targets.count)) { state.performCommand(action) }
-                    .disabled(!state.availability(action, targets: targets).isEnabled)
+                let button = Button(state.commandTitle(action)) { state.performCommand(action) }
+                    .disabled(!state.commandAvailability(action).isEnabled)
                 if action == .quickLook {
                     // Leertaste über `KeyboardMonitor`; im Menü ⌘Y wie im Finder.
                     button.keyboardShortcut("y", modifiers: .command)
@@ -172,19 +171,20 @@ struct AppCommands: Commands {
                 }
             }
         }
+        // Im Vergleichsmodus wirkt „Gehe zu“ auf den Vergleich.
         CommandMenu("Gehe zu") {
-            Button("Zurück") { state.goBack() }
+            Button("Zurück") { state.navigateBack() }
                 .keyboardShortcut("[", modifiers: .command)
-                .disabled(!state.history.canGoBack)
-            Button("Vor") { state.goForward() }
+                .disabled(!state.canNavigateBack)
+            Button("Vor") { state.navigateForward() }
                 .keyboardShortcut("]", modifiers: .command)
-                .disabled(!state.history.canGoForward)
-            Button("Übergeordneter Ordner") { state.goUp() }
+                .disabled(!state.canNavigateForward)
+            Button("Übergeordneter Ordner") { state.navigateUp() }
                 .keyboardShortcut(.upArrow, modifiers: .command)
-                .disabled(state.tree == nil || state.focus == ScanTree.rootIndex)
-            Button("Zur Scan-Wurzel") { state.navigate(to: ScanTree.rootIndex) }
+                .disabled(!state.canNavigateUp)
+            Button(state.compare != nil ? "Zur Vergleichswurzel" : "Zur Scan-Wurzel") { state.navigateToRoot() }
                 .keyboardShortcut(.upArrow, modifiers: [.command, .shift])
-                .disabled(state.tree == nil || state.focus == ScanTree.rootIndex)
+                .disabled(!state.canNavigateUp)
             Divider()
             Button("Startbildschirm") { state.backToStart() }
                 .keyboardShortcut("0", modifiers: .command)

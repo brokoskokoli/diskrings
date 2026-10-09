@@ -253,8 +253,8 @@ Keine bestehende öffentliche API wurde umbenannt oder entfernt. Geändert bzw. 
 - **Kopfzeile:** An der Volume-Wurzel wie in der Spec („belegt · frei · davon nicht zugeordnet“). Bei einem Ordner-Scan steht zuerst das Δ des Ordners (Scan-Summe), dann „Volume belegt“ und „frei“, weil „belegt“ sonst das ganze Volume meint und mit dem Ordner nichts zu tun haben muss. Zwei Snapshots: „Von … bis …“.
 - **Liste:** Eigene Outline (`CompareListView`) statt Erweiterung der `DetailListView`, mit den Spalten Name, Vorher, Jetzt, Δ; Klick auf die Überschrift sortiert (gleiche Spalte dreht die Richtung). Standard: Δ absteigend. Entfernte Einträge durchgestrichen.
 - **„Größte Veränderungen“** ist ein Tab der rechten Spalte (neben „Inhalt“), mit Umschalter Zuwachs/Rückgang. Klick auf eine Zeile zoomt in deren Elternordner und wählt sie aus.
-- **Kein Zoom-Übergang** im Vergleichsmodus (der Fokus springt). Das Menü „Gehe zu“ (⌘[ / ⌘] / ⌘↑) und die Wischgesten wirken weiter auf die normale Ansicht, nicht auf den Vergleich; im Vergleich gibt es eigene Zurück/Vor-Knöpfe. Offener Punkt.
-- Der Vergleich wird im Hintergrund berechnet (`Task.detached`), mit Hinweis „Vergleich wird berechnet…“. Der Vergleich nutzt den aktuellen Baum (`AppState.tree`), nicht `result.tree`, damit spätere Änderungen durch Papierkorb oder Teil-Rescan enthalten sind. Ändert sich der Baum während des Vergleichs, wird der Vergleich **nicht** neu berechnet (offener Punkt für M4: nach Papierkorb/Teil-Rescan `startCompare` mit demselben Snapshot erneut aufrufen oder den Vergleich beenden).
+- **Kein Zoom-Übergang** im Vergleichsmodus (der Fokus springt). Das Menü „Gehe zu“ (⌘[ / ⌘] / ⌘↑) und die Wischgesten wirken im Vergleich auf den Vergleich (seit der Integration, siehe unten); zusätzlich gibt es eigene Zurück/Vor-Knöpfe.
+- Der Vergleich wird im Hintergrund berechnet (`Task.detached`), mit Hinweis „Vergleich wird berechnet…“. Der Vergleich nutzt den aktuellen Baum (`AppState.tree`), nicht `result.tree`, damit spätere Änderungen durch Papierkorb oder Teil-Rescan enthalten sind. Ändert sich der Baum während des Vergleichs (Papierkorb, Undo, Teil-Rescan), wird der Vergleich neu berechnet (siehe „Integration M4/M6“).
 - „Vergleichen mit…“ bietet nur Snapshots an, die **vor** dem Ende des aktuellen Scans entstanden sind; der automatisch gespeicherte Snapshot des aktuellen Scans ergäbe überall 0.
 
 ### Snapshots speichern und verwalten
@@ -263,8 +263,8 @@ Keine bestehende öffentliche API wurde umbenannt oder entfernt. Geändert bzw. 
 - Einstellungen: neuer Abschnitt „Snapshots“ (automatisch speichern, Höchstzahl), Schlüssel `snapshotAutoSave`, `snapshotMaxCount`.
 - `SnapshotLibrary` greift beim Anlegen nicht auf die Platte zu; die Vorschaubilder tauschen die Ablage gegen einen temporären Ordner aus. Tests verwenden nie `~/Library/Application Support/DiskRings`.
 
-### Kontextmenü im Vergleichsmodus (noch nicht umgesetzt)
-Der Vergleichsmodus hat bewusst noch kein Kontextmenü (die zentrale Struktur entsteht parallel in M4). Nötig sind dort:
+### Kontextmenü im Vergleichsmodus (Anforderungen; umgesetzt, siehe „Integration M4/M6“)
+Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4). Nötig sind dort:
 - Für Einträge, die im aktuellen Baum existieren (Status neu, gewachsen, geschrumpft, unverändert): alle Einträge aus SPEC 3.5, ausgeführt auf dem Knoten `state.tree.index(ofPath: diff.path(of: entry))` – also Im Finder zeigen, Öffnen, Quick Look, Hier hineinzoomen (im Vergleich: `CompareSession.navigate`), Pfad kopieren, Informationen, Diesen Ordner neu scannen, In den Papierkorb legen. Nach Papierkorb/Teil-Rescan muss der Vergleich neu berechnet werden (siehe oben).
 - Für entfernte Einträge: nur „Pfad kopieren“ und „Hier hineinzoomen“; Finder, Öffnen, Quick Look, Info, Rescan und Papierkorb ausgegraut (Datei existiert nicht mehr).
 - Beim Vergleich zweier Snapshots ohne aktuellen Scan: nur Aktionen, die auf dem Dateisystem funktionieren, wenn der Pfad noch existiert; Papierkorb ausgegraut, weil der Baum nicht aktualisiert werden kann.
@@ -282,6 +282,27 @@ Der Vergleichsmodus hat bewusst noch kein Kontextmenü (die zentrale Struktur en
 - `Browser/BrowserView.swift`: `CompareToolbarButton` in `BrowserToolbar`; `.modifier(CompareModeSwitch(…))` am Ende von `BrowserView.body`.
 - `Settings/SettingsView.swift`: `SnapshotSettingsSection(prefs: prefs.snapshots)` nach dem Abschnitt „Scan“.
 - Core: keine bestehende API geändert; neu sind die oben genannten Typen und `DiffStatus.label`.
+
+## Integration M4/M6 (nach dem Merge)
+
+### Merge
+- Konflikte nur an den in „Merge-Haken“ genannten Stellen. `CompareModeSwitch` sitzt in `BrowserView` **vor** den Sheets für Papierkorb und Info, sonst würde der Vergleich sie mit ausblenden. Der Vergleichsknopf steht links neben dem Rescan-Menü aus M4. Der Vergleich übergibt dem Renderer die Auswahl als Menge (`selected`/`primarySelected`, API aus M4).
+
+### Kontextmenü im Vergleich
+- Core: `CompareActions` (`node(forEntry:diff:in:)`, `nodes(forEntries:context:)`, `availability(_:entries:context:)`) mit `CompareActionContext`. Vergleichseinträge werden über den Pfad auf den **aktuellen** Baum abgebildet und dann mit `NodeAction.availability` geprüft, also auch gegen die Schutzliste (SPEC 9). Entfernte Einträge: nur „Pfad kopieren“ und „Hineinzoomen“, alle anderen ausgegraut mit „„x“ existiert nicht mehr (seit dem Snapshot entfernt)“. Vergleich zweier Snapshots: Finder/Öffnen/Quick Look nur, wenn der Pfad auf dem Datenträger existiert; Info, Rescan und Papierkorb aus („Beim Vergleich zweier Snapshots nicht möglich“). Ein Eintrag, den es im aktuellen Baum nicht mehr gibt (Neuberechnung steht noch aus), ist aus („Nicht mehr im aktuellen Scan“).
+- App: `ContextMenuTarget.compareEntries` kennzeichnet ein Ziel im Vergleich. Die eingebauten Abschnitte sind dann ausgeblendet; `Compare/CompareContextMenu.swift` registriert über `ContextMenuRegistry.register(_:before:)` je einen Abschnitt `compare.open|navigate|info|rescan|trash` (gleiche Reihenfolge, Titel, Symbole und Kürzel) plus „Im Diagramm zeigen“ (für „Größte Veränderungen“). Kontextmenüs hängen am Vergleichsdiagramm (Segment bzw. Mitte), an den Zeilen der Vergleichsliste und an „Größte Veränderungen“. Die Kopfzeile zeigt bei entfernten Elementen „(entfernt)“.
+- Hauptmenü „Objekt“, Tastenkürzel und Leertaste wirken im Vergleich auf den ausgewählten Vergleichseintrag (⇧⌘R ohne Auswahl auf den Fokus), nicht auf die verdeckte normale Ansicht; sonst hätte z. B. ⌘⌫ ein unsichtbar ausgewähltes Element gelöscht.
+- Vorschaubild `compare-contextmenu` (bestehender Ordner, entferntes Element, zwei Snapshots).
+
+### Neuberechnung nach Änderungen
+- `AppState.applyEdit` (gemeinsamer Weg von Papierkorb, Teil-Rescan und dem Teil-Rescan nach Undo) ruft `scheduleCompareRefresh()`. Nur Vergleiche „Snapshot ↔ aktueller Scan“ (`CompareSource.currentScan`) werden neu berechnet; der alte Snapshot steckt schon im Diff (`diff.old`), es wird nichts neu geladen. Mehrere Änderungen innerhalb von 250 ms ergeben eine Berechnung (Generationszähler); ein inzwischen beendeter oder ersetzter Vergleich wird nicht überschrieben.
+- Ansicht, Sortierung, Tab, Fokus, Historie, Auswahl und aufgeklappte Ordner werden über `CompareEntryMapping` (Core, Pfad-Zuordnung; fehlender Fokus → nächster vorhandener Vorfahr) übernommen. Dazu neu: `FocusHistory.translated(current:by:)`.
+
+### Navigation
+- `AppState.navigateBack/Forward/Up/ToRoot` und `canNavigate…` leiten im Vergleich an `CompareSession` weiter; Menü „Gehe zu“ und `SwipeNavigation` nutzen nur noch diese. ⇧⌘↑ heißt im Vergleich „Zur Vergleichswurzel“.
+
+### Startbildschirm
+- Das App-Icon (`NSApp.applicationIconImage`, wenn das Bündel eins hat) ersetzt das Kreis-Symbol. Bei `swift run` und in den Vorschaubildern gibt es kein Bündel-Icon; dann wird `Resources/DiskRings.icns` über `#filePath` aus dem Quellbaum geladen (nur Entwicklung; im Bündel greift immer der erste Weg).
 
 ## M7 – Distribution
 

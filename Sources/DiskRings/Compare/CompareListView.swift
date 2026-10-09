@@ -24,7 +24,7 @@ struct CompareListView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(rows(model)) { row in
-                            CompareRowView(session: session, row: row).id(row.id)
+                            CompareRowView(state: state, session: session, row: row).id(row.id)
                         }
                     }
                     .padding(.vertical, 4)
@@ -125,6 +125,7 @@ struct CompareRow: Identifiable {
 }
 
 private struct CompareRowView: View {
+    let state: AppState
     let session: CompareSession
     let row: CompareRow
 
@@ -184,6 +185,7 @@ private struct CompareRowView: View {
                 if isExpandable { toggle() }
             }
         }
+        .contextMenu { if isEntry { CompareContextMenu(state: state, entry: e) } }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(isEntry ? CompareText.accessibility(m, e) : "weitere Elemente")
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
@@ -217,6 +219,7 @@ private struct CompareRowView: View {
 /// Tab „Größte Veränderungen“ (SPEC 3.9): Top 50 der Ordner und Dateien mit
 /// dem größten Zuwachs (bzw. Rückgang), nur der tiefste aussagekräftige Ordner.
 struct LargestChangesView: View {
+    let state: AppState
     let session: CompareSession
 
     var body: some View {
@@ -242,7 +245,7 @@ struct LargestChangesView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(changes.enumerated()), id: \.element.entry) { i, c in
-                            LargestChangeRow(session: session, rank: i + 1, change: c,
+                            LargestChangeRow(state: state, session: session, rank: i + 1, change: c,
                                              relativePath: relative(c.path, root: m.diff.new.metadata.rootPath))
                         }
                     }
@@ -263,6 +266,7 @@ struct LargestChangesView: View {
 }
 
 private struct LargestChangeRow: View {
+    let state: AppState
     let session: CompareSession
     let rank: Int
     let change: DiffChange
@@ -309,6 +313,7 @@ private struct LargestChangeRow: View {
         .contentShape(Rectangle())
         .onHover { inside in session.hoverList(inside ? change.entry : nil) }
         .onTapGesture { session.reveal(change.entry) }
+        .contextMenu { CompareContextMenu(state: state, entry: change.entry) }
         .help(change.path)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(rank). \(change.name), \(change.status.label), \(ByteFormat.signed(change.delta))")

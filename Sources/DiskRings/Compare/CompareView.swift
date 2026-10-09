@@ -56,7 +56,7 @@ struct CompareView: View {
                     Divider()
                     switch session.tab {
                     case .contents: CompareListView(state: state, session: session)
-                    case .largest: LargestChangesView(session: session)
+                    case .largest: LargestChangesView(state: state, session: session)
                     }
                 }
                 .frame(width: Self.listWidth)

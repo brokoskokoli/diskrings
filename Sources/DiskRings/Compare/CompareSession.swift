@@ -6,6 +6,15 @@ import Observation
 /// Zustand des Vergleichsmodus (SPEC 3.9): Modell, Ansicht, Fokus (als
 /// Vergleichseintrag), Hover, Auswahl und Liste. Die Logik steckt im
 /// `CompareModel` (Core); hier liegt nur, was die Oberfläche braucht.
+/// Woraus ein Vergleich entstanden ist; bestimmt, ob er nach Änderungen am
+/// aktuellen Baum (Papierkorb, Undo, Teil-Rescan) neu berechnet wird.
+enum CompareSource {
+    /// Gespeicherter Snapshot ↔ aktueller Scan (wird neu berechnet).
+    case currentScan
+    /// Zwei gespeicherte Snapshots (unabhängig vom aktuellen Baum).
+    case snapshots
+}
+
 @MainActor
 @Observable
 final class CompareSession {
@@ -40,6 +49,8 @@ final class CompareSession {
     var showShrink = false
     /// Bitte an die Liste, zu diesem Eintrag zu scrollen.
     var scrollRequest: Int32?
+    /// `nil` nur in den Vorschaubildern (kein Neuberechnen).
+    var source: CompareSource?
 
     init(model: CompareModel, oldTitle: String, newTitle: String, comparesSnapshots: Bool, options: SunburstOptions) {
         self.model = model
@@ -67,6 +78,24 @@ final class CompareSession {
         layout = model.layout(view, focusEntry: focus, options: options)
         hoverArc = nil
     }
+
+    /// Übernimmt Ansicht, Fokus, Historie, Auswahl, Sortierung und Tab eines
+    /// vorherigen Vergleichs desselben Snapshots (nach Neuberechnung).
+    func adopt(from old: CompareSession) {
+        let map = CompareEntryMapping(from: old.diff, to: diff)
+        source = old.source
+        sort = old.sort
+        tab = old.tab
+        showShrink = old.showShrink
+        options = old.options
+        history = map.history(old.history)
+        selected = old.selected.flatMap(map.map)
+        expanded = Set(old.expanded.compactMap(map.map))
+        view = old.view // löst relayout() aus
+        relayout()
+    }
+
+    var canGoUp: Bool { focus != 0 }
 
     // MARK: Navigation
 
@@ -191,15 +220,21 @@ extension AppState {
     /// Aktuellen Scan mit einem gespeicherten Snapshot vergleichen
     /// (Toolbar „Vergleichen mit…“).
     func startCompare(with info: SnapshotInfo) {
-        guard let tree, let result else { return }
+        guard let current = currentSnapshot() else { return }
+        let store = snapshots.store
+        runCompare(oldTitle: SnapshotNaming.title(info.metadata), newTitle: "Aktueller Scan", comparesSnapshots: false,
+                   source: .currentScan) {
+            SnapshotDiff(old: try store.load(info), new: current)
+        }
+    }
+
+    /// Der aktuelle Baum als Snapshot (für „Snapshot ↔ aktueller Scan“).
+    func currentSnapshot() -> Snapshot? {
+        guard let tree, let result else { return nil }
         var meta = SnapshotMetadata.current(for: result, volume: volume, date: snapshots.currentScanDate ?? Date())
         meta.allocatedSize = tree.root.allocatedSize
         meta.logicalSize = tree.root.logicalSize
-        let current = Snapshot(metadata: meta, tree: tree)
-        let store = snapshots.store
-        runCompare(oldTitle: SnapshotNaming.title(info.metadata), newTitle: "Aktueller Scan", comparesSnapshots: false) {
-            SnapshotDiff(old: try store.load(info), new: current)
-        }
+        return Snapshot(metadata: meta, tree: tree)
     }
 
     /// Zwei gespeicherte Snapshots ohne neuen Scan vergleichen (der ältere ist „vorher“).
@@ -207,7 +242,7 @@ extension AppState {
         let (old, new) = a.metadata.date <= b.metadata.date ? (a, b) : (b, a)
         let store = snapshots.store
         runCompare(oldTitle: SnapshotNaming.title(old.metadata), newTitle: SnapshotNaming.title(new.metadata),
-                   comparesSnapshots: true) {
+                   comparesSnapshots: true, source: .snapshots) {
             SnapshotDiff(old: try store.load(old), new: try store.load(new))
         }
     }
@@ -217,7 +252,7 @@ extension AppState {
     }
 
     /// Lädt und vergleicht im Hintergrund; danach ist der Vergleichsmodus aktiv.
-    private func runCompare(oldTitle: String, newTitle: String, comparesSnapshots: Bool,
+    private func runCompare(oldTitle: String, newTitle: String, comparesSnapshots: Bool, source: CompareSource,
                             makeDiff: @escaping @Sendable () throws -> SnapshotDiff) {
         let mode = prefs.sizeMode
         let options = prefs.layoutOptions(unassigned: 0)
@@ -228,8 +263,10 @@ extension AppState {
                 let model = try await Task.detached(priority: .userInitiated) {
                     CompareModel(diff: try makeDiff(), mode: mode)
                 }.value
-                compare = CompareSession(model: model, oldTitle: oldTitle, newTitle: newTitle,
-                                         comparesSnapshots: comparesSnapshots, options: options)
+                let session = CompareSession(model: model, oldTitle: oldTitle, newTitle: newTitle,
+                                             comparesSnapshots: comparesSnapshots, options: options)
+                session.source = source
+                compare = session
                 if phase == .start { phase = .browsing }
             } catch {
                 snapshots.errorMessage = "Vergleich nicht möglich: \(error)"

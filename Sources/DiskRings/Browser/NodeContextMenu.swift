@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: Zentrale, erweiterbare Struktur des Kontextmenüs
 //
-// Diagramm, Liste (und künftig der Vergleichsmodus) bauen ihr Kontextmenü
+// Diagramm, Liste und der Vergleichsmodus bauen ihr Kontextmenü
 // aus `ContextMenuRegistry.sections(for:state:)`. Die eingebauten Einträge
 // aus SPEC 3.5 kommen aus `NodeAction` (Core: Titel, Symbol, Kürzel,
 // Verfügbarkeit samt Begründung). Weitere Einträge, z. B. für Snapshots,
@@ -23,6 +23,14 @@ struct ContextMenuTarget: Equatable {
     let nodes: [Int32]
     /// Das angeklickte Element.
     let clicked: Int32
+    /// Im Vergleichsmodus: die Ziele als Vergleichseinträge (Indizes in
+    /// `SnapshotDiff.entries`). `nodes`/`clicked` sind dann die Knoten von
+    /// `state.tree`, auf die sie über den Pfad abgebildet wurden (entfernte
+    /// Elemente fehlen dort). Die eingebauten Abschnitte erscheinen nur ohne
+    /// Vergleich; der Vergleich registriert eigene (Compare/CompareContextMenu.swift).
+    var compareEntries: [Int32]?
+
+    var isCompare: Bool { compareEntries != nil }
 }
 
 /// Ein Eintrag des Kontextmenüs.
@@ -82,12 +90,14 @@ enum ContextMenuRegistry {
         var current: [ContextMenuItem] = []
         for action in NodeAction.allCases {
             if action.startsGroup, !current.isEmpty {
-                sections.append(ContextMenuSection(id: ids[sections.count], items: current))
+                sections.append(ContextMenuSection(id: ids[sections.count], items: current,
+                                                   isVisible: { target, _ in !target.isCompare }))
                 current = []
             }
             current.append(.builtin(action))
         }
-        sections.append(ContextMenuSection(id: ids[sections.count], items: current))
+        sections.append(ContextMenuSection(id: ids[sections.count], items: current,
+                                           isVisible: { target, _ in !target.isCompare }))
         return sections
     }()
 
@@ -123,7 +133,21 @@ struct NodeContextMenu: View {
     var body: some View {
         if let tree = state.tree {
             let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node)
-            Text(target.nodes.count == 1 ? tree.name(of: node) : "\(target.nodes.count) Objekte")
+            ContextMenuItems(state: state, target: target,
+                             header: target.nodes.count == 1 ? tree.name(of: node) : "\(target.nodes.count) Objekte")
+        }
+    }
+}
+
+/// Einträge eines Kontextmenüs aus der Registry (normale Ansicht und Vergleich).
+struct ContextMenuItems: View {
+    let state: AppState
+    let target: ContextMenuTarget
+    let header: String
+
+    var body: some View {
+        Group {
+            Text(header)
             ForEach(ContextMenuRegistry.sections(for: target, state: state)) { section in
                 Divider()
                 ForEach(section.items) { item in
@@ -173,8 +197,21 @@ struct ContextMenuPreview: View {
     var body: some View {
         if let tree = state.tree {
             let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node)
+            ContextMenuPreviewBody(state: state, target: target,
+                                   header: target.nodes.count == 1 ? tree.name(of: node) : "\(target.nodes.count) Objekte")
+        }
+    }
+}
+
+struct ContextMenuPreviewBody: View {
+    let state: AppState
+    let target: ContextMenuTarget
+    let header: String
+
+    var body: some View {
+        Group {
             VStack(alignment: .leading, spacing: 0) {
-                Text(target.nodes.count == 1 ? tree.name(of: node) : "\(target.nodes.count) Objekte")
+                Text(header)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
