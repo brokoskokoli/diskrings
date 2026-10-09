@@ -77,6 +77,18 @@ enum SnapshotRenderer {
             failures += renderWindow(StartView(state: s5).frame(width: 900, height: 640), scheme: scheme, to: dir,
                                name: "start-\(suffix)")
 
+            // 5b. Startbildschirm mit erfundenem Volume (für README und Website:
+            // keine echten Datenträgernamen).
+            let s5b = makeState(tree: nil, volume: nil, unassigned: 0)
+            let GB: UInt64 = 1_000_000_000
+            s5b.volumes = [
+                VolumeInfo(name: "Macintosh HD", path: "/", totalCapacity: 994 * GB, availableCapacity: 212 * GB,
+                           availableForImportantUsage: 251 * GB, isRootFileSystem: true, isInternal: true),
+            ]
+            s5b.fullDiskAccess = .granted
+            failures += renderWindow(StartView(state: s5b).frame(width: 900, height: 470), scheme: scheme, to: dir,
+                                     name: "start-demo-\(suffix)")
+
             // 6. Einstellungen.
             let s6 = makeState(tree: nil, volume: nil, unassigned: 0)
             s6.prefs.paletteScheme = .fileType
