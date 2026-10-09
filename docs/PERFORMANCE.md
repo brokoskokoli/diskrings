@@ -84,5 +84,26 @@ Gemessen mit `DISKRINGS_DEBUG_SNAPSHOT=1 diskrings-cli scan ~ --top 0 --live --l
 - Bei Tiefe 6 kostet ein Snapshot etwa 10 ms auf dem Koordinator-Thread (rund 4 % eines Kerns bei 4 Snapshots pro Sekunde). Die Worker warten nur während der Kopie unter dem Lock (unter 2 ms). Ein messbarer Einfluss auf die Scandauer ist nicht erkennbar (innerhalb der Schwankung).
 - Ein Snapshot dieser Größe belegt rund 6 MB. Standard ist deshalb jetzt `snapshotDepth = 6`, passend zu den 6 Standardringen.
 
+## Teil-Rescan, Snapshots und Vergleich (M6-Kern)
+
+| Messung | Debug-Build | Release-Build |
+|---|---:|---:|
+| Teil-Rescan einhängen (300 Dateien in einen Baum mit 2 010 101 Knoten, ohne den Scan) | 3,8 ms | 3,3 ms |
+| Vergleich 2 010 101 gegen 2 010 101 synthetische Knoten (`SnapshotDiff`) | 5,4 s | 0,34 s |
+| „Größte Veränderungen“ und Wachstumsbaum dazu (1 Mio. Knoten im Wachstumsbaum) | 5,1 s | 0,24 s |
+
+- Ziele: Einhängen unter 100 ms (SPEC 3.8 / Befund S7), Vergleich unter 2 s (SPEC 3.9). Beide erreicht; die Performance-Tests laufen in `scripts/check.sh` zusätzlich im Release-Build mit der strengen Grenze.
+- Das Einhängen kostet fast nur die Kopie von Knoten-Array und Namenspuffer in die neue Baum-Version (copy-on-write, siehe DECISIONS.md).
+
+**Snapshot von `~`** (`diskrings-cli snapshot save ~`, 2 888 607 Knoten, 297,8 GB):
+
+| Mindestgröße | gespeicherte Knoten | Dateigröße | Speichern |
+|---:|---:|---:|---:|
+| 1 MB (Standard) | 440 962 | 5,8 MB | 0,2 s |
+| 0 (alles) | 2 888 607 | 35,9 MB | 1,2 s |
+
+- SPEC 3.9 erwartet 5–15 MB für 2 Mio. Dateien: erreicht. Spitze des Prozesses beim Speichern: 259 MB (Scan-Spitze plus gefilterter Baum und Kompressionspuffer).
+- `diskrings-cli diff <snapshot>` gegen einen frischen Scan von `~`: 0,1 s für den Vergleich (440 963 Einträge, kleine Dateien zählen nur über die Ordnersumme).
+
 ## Offene Punkte
 - Kalter Cache (nach Neustart) ist nicht gemessen; die Zahlen oben sind Bestwerte.

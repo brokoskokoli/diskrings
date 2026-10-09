@@ -78,3 +78,53 @@
 ### Hardlinks beim Teil-Rescan
 - Der Baum behält eine schlanke Tabelle aller Dateien mit `nlink > 1`: Knotenindex, Gerät, Inode und echte Größe (32 Byte pro Eintrag, nur für Hardlinks). Beim Rescan fliegen die Einträge toter Knoten heraus, die neuen kommen hinzu, und jede betroffene Gruppe wird neu bereinigt: Weiterhin zählt das lebende Vorkommen mit dem bytewise kleinsten Pfad, die anderen mit 0 Byte und Flag `hardlinkDuplicate`. Größenwechsel (auch außerhalb des Teilbaums) werden wie oben propagiert.
 - **Grenze:** Hatte eine Datei beim Scan `nlink == 1` und bekommt sie danach einen weiteren Link im neu eingelesenen Teilbaum, steht das alte Vorkommen nicht in der Tabelle; die Datei zählt dann doppelt, bis ein gemeinsamer Vorfahre neu eingelesen wird (Test „Bekannte Grenze“). Alle Inodes zu speichern kostete 12 Byte pro Knoten.
+
+### Snapshots (`.drsnap`)
+- Format wie in SPEC 3.9: Knoten-Array (40 Byte pro Knoten wie `Node`) plus Namenspuffer, LZFSE-komprimiert über `compression_encode_buffer` (Compression-Framework). Davor ein **unkomprimierter** JSON-Kopf (`SnapshotMetadata`), damit die Snapshot-Liste ohne Dekompression auskommt. Alle Zahlen little-endian, Formatversion 1; eine unbekannte Version ergibt `SnapshotError.unsupportedVersion`.
+- Beim Laden werden Kennung, Version, Längen, eine FNV-1a-Prüfsumme der komprimierten Daten, die exakte Dekompressionslänge, die Struktur (Eltern vor Kindern, Bereiche, Namen) und schließlich `validate()` geprüft. Beschädigte oder abgeschnittene Dateien ergeben einen `SnapshotError`, nie einen Absturz.
+- **Mindestgröße:** Dateien mit einer belegten Größe unter `minimumFileSize` (Standard 1 MB = 1 000 000 Byte) werden nicht gespeichert; ihre Größe und Anzahl stecken weiter in der Ordnersumme. Der geladene Baum hat dann `isComplete == false`. Ordner werden immer gespeichert. Mit `minimumFileSize = 0` ist der Roundtrip bytegenau identisch (`isIdentical`).
+- Gespeichert werden auch die logische Größe und alle Flags (kostet nach Kompression wenig), nicht aber die Hardlink-Tabelle.
+- Zeitpunkte werden auf ganze Millisekunden gespeichert. Dateiname `<zeitstempel>.drsnap` in UTC (`20261009T170632609Z.drsnap`), bei Kollision mit Zähler. Ohne Volume-UUID landet der Snapshot im Unterordner `unbekannt`.
+- „Nicht zugeordnet“ wird in den Volume-Kennzahlen nur gespeichert, wenn die Scan-Wurzel die Volume-Wurzel ist (sonst ist der Wert nicht aussagekräftig).
+- `delete` und `rename` arbeiten nur auf `.drsnap`-Dateien innerhalb des Basisverzeichnisses (`SnapshotError.outsideStore`). `rename` schreibt die Datei mit neuem Kopf atomar neu.
+- `prune(maxCount:rootPath:volumeUUID:)` löscht die ältesten Snapshots einer Scan-Wurzel über der Höchstzahl (Standard 20, SPEC 3.7).
+
+### Vergleich (`SnapshotDiff`)
+- Beide Seiten sind ein `Snapshot` (Metadaten plus `ScanTree`); ein frischer Scan wird mit `Snapshot(metadata: .current(for: result), tree: result.tree)` zur Seite. Ergebnis ist ein Vereinigungsbaum (`entries`, Breitensuche, Kinder nach Name sortiert) mit Indizes in beide Bäume; Größen werden nicht kopiert, sondern aus den Bäumen gelesen (20 Byte pro Eintrag plus je 4 Byte pro Knoten für die Rückabbildung).
+- **Kleine Dateien:** Verglichen wird mit der größeren der beiden Mindestgrößen. Dateien darunter bekommen auf keiner Seite einen eigenen Eintrag (sie stecken im Delta ihres Ordners); sonst erschienen alle kleinen Dateien eines frischen Scans gegenüber einem Snapshot als „neu“. Eine Datei, die über die Schwelle wächst, erscheint als „neu“.
+- **Status** nach belegter Größe: neu, entfernt, gewachsen, geschrumpft, unverändert. Umbenannte oder verschobene Ordner erscheinen als „entfernt“ plus „neu“ (SPEC 3.9, Grenzen).
+- **Wachstumsbaum:** Die Größe jedes Knotens ist sein Brutto-Zuwachs: Summe des Zuwachses seiner Kinder plus ein positiver, nicht aufgeschlüsselter Rest (kleine Dateien, Eigengröße). Schrumpfende Zweige zählen nicht dagegen, sonst würde ein gleichzeitig geleerter Ordner den Zuwachs woanders verdecken. Die Wurzel ist deshalb so groß wie der gesamte Brutto-Zuwachs, nicht wie das Netto-Delta. Der Baum ist ein normaler `ScanTree` (Wurzelpfad und Namen des neuen Baums); `entryForGrowth` bildet seine Indizes auf Vergleichseinträge ab.
+- **„Größte Veränderungen“, tiefster aussagekräftiger Knoten:** Von der Wurzel abwärts wird der Brutto-Zuwachs betrachtet. Erklärt ein einzelnes Kind **mehr als die Hälfte** davon, steigt die Suche in alle Kinder mit mindestens `minimumDelta` (Standard 1 MB) ab und der Ordner selbst erscheint nicht; sonst ist der Zuwachs verteilt, und der Ordner erscheint. Die Einträge sind so nie Vorfahren voneinander. Beispiele: 20 GB in `~/Library/Caches/foo` (viele Dateien) → `foo`; ein neuer Ordner `x` mit fünf gleich großen Dateien → `x`; ein Ordner, in dem eine einzige große Datei dazukam → die Datei. Mit `growth: false` dasselbe für den Rückgang. Sortiert wird nach dem Brutto-Wert (`amount`), angezeigt wird zusätzlich das Netto-Delta.
+- **Warnungen:** andere Scan-Optionen (versteckte Dateien, Ausschlussliste, Volumes), andere Scan-Wurzel, anderes Volume, unterschiedliche Mindestgröße (nur, wenn beide Seiten eine haben; ein frischer Scan ohne Mindestgröße ist der Normalfall).
+
+### Performance-Tests im Release-Build
+- Die Zielwerte (Einhängen unter 100 ms, Vergleich von 2 Mio. Knoten unter 2 s) gelten für das optimierte Programm. Der Debug-Build ist beim Vergleich etwa 15-mal langsamer (5,4 s). `scripts/check.sh` führt die Performance-Tests deshalb zusätzlich mit `swift test -c release -Xswiftc -enable-testing` aus; dort gilt die strenge Grenze, im Debug-Build eine lockere.
+
+## API-Änderungen (für den Merge mit dem UI-Branch)
+
+Keine bestehende öffentliche API wurde umbenannt oder entfernt. Geändert bzw. neu:
+
+**Verhalten, das die Oberfläche betreffen kann**
+- `ScanTree.nodes` kann nach `replacingSubtree`/`removingNode` tote Knoten (`NodeFlags.dead`) enthalten. Sie sind über `childIndices` nie erreichbar; wer `nodes` linear durchläuft (z. B. „größte Dateien“), muss sie überspringen. `count` zählt sie mit, `liveCount` nicht. Frische Scans und geladene Snapshots haben keine toten Knoten.
+- Nach einer Änderung gilt „Eltern vor Kindern“ weiterhin, die globale Breitensuche-Reihenfolge aber erst wieder nach einer Kompaktierung.
+- Ordnergrößen enthalten die Eigengröße des Ordners (auf APFS 0). Belegt ist ein Ordner damit *mindestens* die Summe seiner Kinder.
+- `ScanOptions.snapshotDepth` ist standardmäßig 6 statt 3.
+- `ScanEngine.events(_:)` puffert höchstens 8 Ereignisse (die neuesten bleiben); `ScanEvent` ist unverändert.
+- `ScanTree.index(ofPath:)` und `NodeRef.child(named:)` vergleichen bei Bedarf kanonisch äquivalent (NFC/NFD) und akzeptieren den Wurzelpfad nur an Komponentengrenzen.
+
+**Neu in bestehenden Typen**
+- `NodeFlags.dead`
+- `ScanProgress.activeWorkers: Int` (mit Standardwert 0; der memberwise-Initialisierer bleibt ohne den Parameter aufrufbar)
+- `ScanEngine.eventBufferLimit` (statisch, 8)
+- `ScanTree`: `isComplete`, `deadCount`, `liveCount`, `validate(limit:) -> [String]`, `childIndex(of:nameBytes:)`, `sortedChildIndices(of:by:)`, `itemCount(of:)`, `needsCompaction`, `compactionThreshold` (statisch), `replacingSubtree(at:with:compactIfNeeded:) -> TreeEdit`, `removingNode(at:compactIfNeeded:) -> TreeEdit`, `compacted() -> TreeEdit`
+- `NodeRef`: `isDataless`, `isMountPoint`, `isHardlinkDuplicate`, `itemCount`, `children(sortedBy:)`
+- `ScanEngine`: `rescanBlocking(subtree:in:cancellation:) -> RescanResult`, `rescan(subtree:in:) async -> RescanResult`, `rescanBlocking(path:in:cancellation:) -> RescanResult`
+
+**Neue Typen**
+- `TreeEdit` (`tree`, `index`, `allocatedBefore/After`, `logicalBefore/After`, `allocatedDelta`, `logicalDelta`, `compacted`, `translate(_:)`)
+- `RescanResult` (`edit`, `tree`, `path`, `removed`, `unreadablePaths`, `scanDuration`, `mergeDuration`)
+- `Snapshot`, `SnapshotMetadata` (`current(for:volume:name:date:)`), `SnapshotScanOptions`, `VolumeMetrics`, `SnapshotInfo`, `SnapshotError`, `SnapshotFile` (`encode`, `decode`, `readMetadata`, `normalized`), `SnapshotStore` (`save`, `condense`, `list`, `load`, `delete`, `rename`, `prune`, `defaultBaseDirectory`)
+- `SnapshotDiff` (`entries`, `entryForOld/New`, `oldSize`, `newSize`, `delta`, `status`, `name(of:)`, `path(of:)`, `childEntries(of:)`, `childEntriesSortedByDelta(of:)`, `entry(forPath:)`, `largestChanges(limit:minimumDelta:growth:mode:)`, `growthTree(mode:)`, `summary`, `warnings`), `DiffEntry`, `DiffStatus`, `DiffChange`, `DiffSummary` (`headline`), `DiffWarning`
+
+**Intern, aber vom UI-Branch genutzt und unverändert in der Signatur**
+- `TreeBuilder.build(_:rootPath:…)` (neue optionale Parameter `hardlinks`, `indexMap` mit Standardwerten), `RawTree.append(…)`, `RawTree.reserve(_:nameBytes:)`. Der `ScanTreeBuilder` des UI-Branchs funktioniert damit unverändert.
