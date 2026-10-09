@@ -27,7 +27,7 @@ See at a glance what fills your Mac, compare scans over time, and free up space 
 
 DiskRings scans a volume or folder and draws its disk usage as a sunburst: every ring is one folder level, every segment is as wide as its share of the storage. Click into any folder to zoom, go back with a swipe, and clean up right from the chart. It is a native SwiftUI app for Apple Silicon and Intel Macs, and a macOS alternative to tools like WinDirStat, TreeSize, SpaceSniffer or Scanner on Windows.
 
-> **Note:** The user interface is currently in German. Translations are welcome (see [Contributing](#contributing)).
+> **Languages:** English, German, French, Spanish, Italian, Portuguese (Brazil), Dutch, Polish, Russian, Japanese, Chinese (Simplified), Korean, Turkish and Swedish. DiskRings follows your system language automatically; you can also pick a language in Settings or per app in System Settings → General → Language & Region → Applications. See [Translations](#translations) to improve or add one.
 
 ## Features
 
@@ -40,6 +40,7 @@ DiskRings scans a volume or folder and draws its disk usage as a sunburst: every
 - **Color by branch or by file type**, light and dark mode.
 - **Command-line tool** `diskrings-cli` for scans, top folders, snapshots and diffs (handy for scripts).
 - **Private by design:** no network access, no telemetry, no account.
+- **Localized** into 14 languages, with sizes, numbers and dates formatted for your region.
 
 ### Sunburst chart
 
@@ -166,6 +167,16 @@ Issues and pull requests are welcome, especially translations, bug reports with 
 - Run `scripts/check.sh` before submitting. It must pass without warnings.
 - All logic lives in `Sources/DiskRingsCore` and is covered by tests in `Tests/DiskRingsCoreTests`. The SwiftUI app in `Sources/DiskRings` stays thin.
 - The specification is in [SPEC.md](SPEC.md) and design decisions are in [docs/DECISIONS.md](docs/DECISIONS.md) (both in German).
+
+## Translations
+
+The translations were created with machine assistance and reviewed for Apple's macOS terminology, but not yet by native speakers of every language. Corrections are very welcome.
+
+- All texts live in `Sources/DiskRingsCore/Resources/<language>.lproj/`: `Localizable.strings` (UI texts), `Localizable.stringsdict` (plural forms) and `InfoPlist.strings` (the privacy texts macOS shows). English (`en.lproj`) is the source.
+- **Improve a language:** edit the values in that folder and open a pull request. Keep the keys and placeholders (`%@`, `%1$@`, `%2$@`, …) unchanged; you may reorder positional placeholders.
+- **Add a language:** copy `en.lproj` to `<code>.lproj` (e.g. `cs.lproj`), translate it, provide the plural categories your language needs in the `.stringsdict`, and add the code and the language's own name to `L10n.supportedLanguages` and `L10n.nativeName(of:)` in `Sources/DiskRingsCore/Localization/L10n.swift`.
+- `scripts/check.sh` runs tests that catch missing or extra keys, mismatched placeholders and missing plural forms.
+- Screenshots in any language: `swift run DiskRings --render-snapshots build/snapshots/fr --language fr`.
 
 ## License
 

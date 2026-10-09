@@ -19,6 +19,8 @@ Auf einen Blick sehen, was den Mac füllt, Scans über die Zeit vergleichen und 
 
 DiskRings scannt ein Volume oder einen Ordner und zeigt die Belegung als Sunburst-Diagramm: Jeder Ring ist eine Ordnerebene, jedes Segment so breit wie sein Anteil am Speicher. Ein Klick zoomt in den Ordner, eine Wischgeste geht zurück, und aufgeräumt wird direkt im Diagramm. DiskRings ist eine native SwiftUI-App für Apple Silicon und Intel, vergleichbar mit WinDirStat, TreeSize, SpaceSniffer oder Scanner unter Windows.
 
+> **Sprachen:** Englisch, Deutsch, Französisch, Spanisch, Italienisch, Portugiesisch (Brasilien), Niederländisch, Polnisch, Russisch, Japanisch, Chinesisch (vereinfacht), Koreanisch, Türkisch und Schwedisch. DiskRings folgt automatisch der Systemsprache; die Sprache lässt sich auch in den Einstellungen wählen oder pro App unter Systemeinstellungen → Allgemein → Sprache & Region → Apps. Übersetzungen verbessern: siehe [Übersetzungen](#übersetzungen).
+
 ## Funktionen
 
 - **Schneller, genauer Scan** ganzer Volumes oder einzelner Ordner, parallel über `getattrlistbulk`. Gezählt wird der tatsächlich belegte Platz: Hardlinks nur einmal, Sparse- und komprimierte Dateien mit ihrer echten Belegung, Firmlinks des Data-Volumes ohne Doppelzählung, iCloud-Dateien ohne Download.
@@ -26,10 +28,11 @@ DiskRings scannt ein Volume oder einen Ordner und zeigt die Belegung als Sunburs
 - **Detailliste** neben dem Diagramm mit Prozentbalken, Mehrfachauswahl und Suche, synchron mit dem Diagramm.
 - **„Nicht zugeordnet“ sichtbar:** An der Volume-Wurzel zeigt ein schraffiertes Segment, was kein Ordner erklärt: lokale APFS- und Time-Machine-Snapshots, bereinigbarer Speicher, Systemdaten und nicht lesbare Ordner.
 - **Snapshots und Vergleich („Wo ist mein Speicher hin?“):** einen Scan sichern, später neu scannen und genau sehen, was gewachsen, geschrumpft, neu oder entfernt ist.
-- **Sicher aufräumen:** Kontextmenü mit Im Finder zeigen, Öffnen, Quick Look, Pfad kopieren, Ordner neu scannen und In den Papierkorb legen. Gelöscht wird nur über den Papierkorb, mit Rückfrage und Widerrufen per ⌘Z. Systembereiche sind geschützt.
+- **Sicher aufräumen:** Kontextmenü mit Im Finder zeigen, Öffnen, Übersicht (Quick Look), Pfad kopieren, Ordner neu scannen und In den Papierkorb legen. Gelöscht wird nur über den Papierkorb, mit Rückfrage und Widerrufen per ⌘Z. Systembereiche sind geschützt.
 - **Färbung** nach Ast oder nach Dateityp, hell und dunkel.
 - **Kommandozeilen-Werkzeug** `diskrings-cli` für Scan, Top-Ordner, Snapshots und Vergleich.
 - **Datenschutz:** keine Netzwerkzugriffe, keine Telemetrie, kein Konto.
+- **Lokalisiert** in 14 Sprachen, Größen, Zahlen und Datum im Format der Region.
 
 ### Sunburst-Diagramm
 
@@ -138,6 +141,16 @@ Keine Netzwerkverbindungen, keine Telemetrie, keine Analyse- oder Absturzbericht
 ## Mitmachen
 
 Issues und Pull Requests sind willkommen. Vor dem Einreichen muss `scripts/check.sh` ohne Warnungen durchlaufen. Weitere Dokumente: [SPEC.md](../SPEC.md) (Spezifikation), [DECISIONS.md](DECISIONS.md) (Entscheidungen), [PERFORMANCE.md](PERFORMANCE.md) (Messwerte).
+
+## Übersetzungen
+
+Die Übersetzungen sind maschinell erstellt und auf Apples macOS-Begriffe geprüft, aber noch nicht von Muttersprachlern aller Sprachen durchgesehen. Verbesserungen sind willkommen.
+
+- Alle Texte liegen in `Sources/DiskRingsCore/Resources/<sprache>.lproj/`: `Localizable.strings` (Oberfläche), `Localizable.stringsdict` (Pluralformen) und `InfoPlist.strings` (Datenschutz-Texte von macOS). Quelle ist Englisch (`en.lproj`).
+- **Sprache verbessern:** Werte im jeweiligen Ordner ändern und einen Pull Request öffnen. Schlüssel und Platzhalter (`%@`, `%1$@`, …) bleiben gleich; positionierte Platzhalter dürfen umgestellt werden.
+- **Sprache hinzufügen:** `en.lproj` nach `<code>.lproj` kopieren, übersetzen, die Pluralkategorien der Sprache in der `.stringsdict` angeben und den Code samt Eigennamen in `L10n.supportedLanguages` und `L10n.nativeName(of:)` eintragen.
+- `scripts/check.sh` prüft fehlende oder zusätzliche Schlüssel, Platzhalter und Pluralformen.
+- Vorschaubilder in einer Sprache: `swift run DiskRings --render-snapshots build/snapshots/fr --language fr`.
 
 ## Lizenz
 
