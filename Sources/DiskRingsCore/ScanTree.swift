@@ -84,6 +84,11 @@ public final class ScanTree: Sendable {
         return current
     }
 
+    /// Speicherbedarf von Knoten-Array und Namenspuffer in Byte.
+    public var memoryFootprint: Int {
+        nodes.capacity * MemoryLayout<Node>.stride + names.capacity
+    }
+
     /// Strukturgleichheit (Knoten, Namen und Wurzelpfad).
     public func isIdentical(to other: ScanTree) -> Bool {
         rootPath == other.rootPath && nodes == other.nodes && names == other.names

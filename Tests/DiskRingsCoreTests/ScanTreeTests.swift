@@ -85,10 +85,10 @@ struct ScanTreeTests {
 
     @Test("Abbruch während des Aufbaus")
     func cancelBuild() {
-        var raw = RawTree()
-        raw.append(parent: -1, name: [0x72], flags: .directory, allocated: 0, logical: 0, ownFiles: 0)
         #expect(throws: TreeBuildError.self) {
-            try TreeBuilder.build(raw, rootPath: "/r") { true }
+            var raw = RawTree()
+            raw.append(parent: -1, name: [0x72], flags: .directory, allocated: 0, logical: 0, ownFiles: 0)
+            return try TreeBuilder.build(raw, rootPath: "/r") { true }
         }
     }
 
@@ -100,5 +100,52 @@ struct ScanTreeTests {
         #expect(t.root != t2.root)
         #expect(Set([t.root, t.root, t[1]]).count == 2)
         #expect(t.isIdentical(to: t2))
+    }
+}
+
+@Suite("MappedBuffer")
+struct MappedBufferTests {
+    @Test("Wachsen, Lesen, Schreiben und Kopieren")
+    func growAndCopy() {
+        var b = MappedBuffer<UInt64>()
+        let wasEmpty = b.isEmpty
+        #expect(wasEmpty)
+        for i in 0 ..< 100_000 { b.append(UInt64(i) * 3) }
+        let (count, capacity, last) = (b.count, b.capacity, b[99_999])
+        #expect(count == 100_000)
+        #expect(capacity >= 100_000)
+        #expect(last == 299_997)
+        b[5] = 42
+        let c = b.copy()
+        b[5] = 7
+        let copied = c.toArray()
+        #expect(copied[5] == 42)
+        #expect(copied.count == 100_000)
+        #expect(copied.prefix(3) == [0, 3, 6])
+        #expect(b.toArray()[5] == 7)
+    }
+
+    @Test("Genullt angelegt und Anhängen ganzer Puffer")
+    func zeroedAndAppend() {
+        let z = MappedBuffer<Int32>(zeroedCount: 10_000).toArray()
+        #expect(z.count == 10_000)
+        #expect(z.allSatisfy { $0 == 0 })
+        var a = MappedBuffer<UInt8>()
+        let bytes: [UInt8] = Array("hallo".utf8)
+        bytes.withUnsafeBufferPointer { a.append(contentsOf: $0) }
+        let b = a.copy()
+        a.append(contentsOf: b)
+        let text = String(decoding: a.toArray(), as: UTF8.self)
+        #expect(text == "hallohallo")
+    }
+
+    @Test("Speicherbedarf des Baums: 40 Byte pro Knoten plus Namen")
+    func treeFootprint() throws {
+        var raw = RawTree()
+        raw.append(parent: -1, name: Array("wurzel".utf8), flags: .directory, allocated: 0, logical: 0, ownFiles: 0)
+        raw.append(parent: 0, name: Array("abc".utf8), flags: [], allocated: 1, logical: 1, ownFiles: 1)
+        let t = try TreeBuilder.build(raw, rootPath: "/w")
+        #expect(t.names.count == 9)
+        #expect(t.memoryFootprint >= 2 * 40 + 9)
     }
 }
