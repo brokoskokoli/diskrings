@@ -74,6 +74,7 @@ struct SettingsView: View {
             } footer: {
                 Text("Diese Einstellungen wirken beim nächsten Scan.").font(.footnote).foregroundStyle(.secondary)
             }
+            SnapshotSettingsSection(prefs: prefs.snapshots)
         }
         .formStyle(.grouped)
         .frame(width: 480)

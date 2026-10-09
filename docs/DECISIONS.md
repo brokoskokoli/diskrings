@@ -238,6 +238,51 @@ Keine bestehende öffentliche API wurde umbenannt oder entfernt. Geändert bzw. 
 - Geändert: `ScanEngine.nearestExistingIndex(of:in:)` ist öffentlich; `TreeEdit.translate` liefert für entfernte Knoten zuverlässig `nil` (Fehlerbehebung, siehe oben).
 - App: `AppState.selected` ist jetzt eine berechnete Eigenschaft über `selection` (Mehrfachauswahl); `ActiveTransition` hält statt `zoom` ein `animation: any LayoutTransition` und `fromTree`; `BrowserBody` liegt jetzt in `BrowserView.swift`.
 
+## M6 – Snapshots und Vergleich (Oberfläche)
+
+### Aufteilung
+- Logik in Core (getestet): `CompareModel` (Anzeigebäume, Fokus, Layout, Arc/Hit-Test → Vergleichseintrag, Delta-Farben, Sortierung, Breadcrumb), `CompareHeadline`, `DeltaScale` und die Delta-Farben in `Palette+Delta.swift`, `SnapshotRetention`, `SnapshotMatching`, `SnapshotNaming`, `SnapshotStore.saveAndPrune/autoSave`, `CompareDemo` (Beispielbaum).
+- Oberfläche in neuen Dateien: `Sources/DiskRings/Snapshots/SnapshotLibrary.swift` (Einstellungen, Ablage, Speichern), `Snapshots/SnapshotsWindow.swift` (Fenster, ⌘S-Dialog, Menübefehle, Einstellungsabschnitt), `Compare/*` (Vergleichsmodus, Toolbar-Button, Vorschaubilder).
+- Bestehende Dateien haben nur kleine Haken bekommen (Liste im Merge-Abschnitt unten).
+
+### Vergleichsmodus
+- **Fokus als Vergleichseintrag:** Navigation, Liste und Breadcrumb arbeiten auf `SnapshotDiff.entries`, nicht auf Knoten eines Baums. So bleibt der Fokus beim Umschalten zwischen „Wachstum“ und „Delta-Färbung“ erhalten. Fehlt der Eintrag im Wachstumsbaum (kein Zuwachs), zeigt das Diagramm den nächsten vorhandenen Vorfahren.
+- **Delta-Färbung braucht einen eigenen Baum:** Entfernte Elemente haben im neuen Baum keine Größe und damit keinen Winkel. Der „Vergleichsbaum“ enthält alle Einträge; bestehende mit ihrer neuen Größe, entfernte mit der alten. Ein Ordner ist damit so groß wie jetzt plus die darin entfernten Teilbäume. Abweichung von „normale Ansicht“: Die Winkel weichen um die entfernten Elemente von der normalen Ansicht ab; dafür sind entfernte Elemente (grau gestrichelt) sichtbar, wie die Spec es verlangt.
+- **Wachstum:** Segmentgröße = Brutto-Zuwachs (`growthTree`), gefärbt mit dem normalen Farbschema (Ast bzw. Dateityp), neue Elemente mit Punkt. Die Mitte zeigt „+X Zuwachs“; das kann größer sein als das Netto-Δ in der Liste (z. B. Downloads +70 MB Zuwachs, Δ +62 MB, weil eine Datei kleiner wurde). Der Tooltip zeigt beides.
+- **Delta-Farben:** Rot (Farbton 4°) gewachsen und neu, Grün (142°) geschrumpft, Grau unverändert, sehr helles bzw. sehr dunkles Grau mit gestricheltem Rand für entfernt, Punkt in Kontrastfarbe für neu. Intensität: Wurzelskala zwischen 0,15 und 1, Referenz ist die größte Änderung im ersten Ring des aktuellen Layouts. Eine logarithmische Skala (erster Versuch) ließ in der Vorschau fast alle gewachsenen Ordner gleich rot erscheinen.
+- **Kopfzeile:** An der Volume-Wurzel wie in der Spec („belegt · frei · davon nicht zugeordnet“). Bei einem Ordner-Scan steht zuerst das Δ des Ordners (Scan-Summe), dann „Volume belegt“ und „frei“, weil „belegt“ sonst das ganze Volume meint und mit dem Ordner nichts zu tun haben muss. Zwei Snapshots: „Von … bis …“.
+- **Liste:** Eigene Outline (`CompareListView`) statt Erweiterung der `DetailListView`, mit den Spalten Name, Vorher, Jetzt, Δ; Klick auf die Überschrift sortiert (gleiche Spalte dreht die Richtung). Standard: Δ absteigend. Entfernte Einträge durchgestrichen.
+- **„Größte Veränderungen“** ist ein Tab der rechten Spalte (neben „Inhalt“), mit Umschalter Zuwachs/Rückgang. Klick auf eine Zeile zoomt in deren Elternordner und wählt sie aus.
+- **Kein Zoom-Übergang** im Vergleichsmodus (der Fokus springt). Das Menü „Gehe zu“ (⌘[ / ⌘] / ⌘↑) und die Wischgesten wirken weiter auf die normale Ansicht, nicht auf den Vergleich; im Vergleich gibt es eigene Zurück/Vor-Knöpfe. Offener Punkt.
+- Der Vergleich wird im Hintergrund berechnet (`Task.detached`), mit Hinweis „Vergleich wird berechnet…“. Der Vergleich nutzt den aktuellen Baum (`AppState.tree`), nicht `result.tree`, damit spätere Änderungen durch Papierkorb oder Teil-Rescan enthalten sind. Ändert sich der Baum während des Vergleichs, wird der Vergleich **nicht** neu berechnet (offener Punkt für M4: nach Papierkorb/Teil-Rescan `startCompare` mit demselben Snapshot erneut aufrufen oder den Vergleich beenden).
+- „Vergleichen mit…“ bietet nur Snapshots an, die **vor** dem Ende des aktuellen Scans entstanden sind; der automatisch gespeicherte Snapshot des aktuellen Scans ergäbe überall 0.
+
+### Snapshots speichern und verwalten
+- Automatisch nach jedem vollständigen Scan (`AppState.finish`), abschaltbar; manuell mit „Ablage → Snapshot sichern…“ (⌘S, ersetzt den Menüpunkt „Sichern“) und optionalem Namen. Nach jedem Speichern wird auf die Höchstzahl pro Scan-Wurzel aufgeräumt (Standard 20, Bereich 1–500). Auch benannte Snapshots werden dabei gelöscht, wenn sie die ältesten sind (so steht es in der Spec; ein Schutz für benannte Snapshots wäre eine Erweiterung).
+- Fenster „Snapshots“ (Menü „Ablage → Snapshots…“, ⌥⌘S): Tabelle mit Datum, Name, Scan-Wurzel, Gesamtgröße und Dateigröße; Umbenennen, Löschen (Bestätigungsdialog; gelöscht wird nur die `.drsnap`-Datei in der Ablage, über `SnapshotStore.delete`), Im Finder zeigen, „Vergleichen“ bei genau zwei ausgewählten (der ältere ist „vorher“).
+- Einstellungen: neuer Abschnitt „Snapshots“ (automatisch speichern, Höchstzahl), Schlüssel `snapshotAutoSave`, `snapshotMaxCount`.
+- `SnapshotLibrary` greift beim Anlegen nicht auf die Platte zu; die Vorschaubilder tauschen die Ablage gegen einen temporären Ordner aus. Tests verwenden nie `~/Library/Application Support/DiskRings`.
+
+### Kontextmenü im Vergleichsmodus (noch nicht umgesetzt)
+Der Vergleichsmodus hat bewusst noch kein Kontextmenü (die zentrale Struktur entsteht parallel in M4). Nötig sind dort:
+- Für Einträge, die im aktuellen Baum existieren (Status neu, gewachsen, geschrumpft, unverändert): alle Einträge aus SPEC 3.5, ausgeführt auf dem Knoten `state.tree.index(ofPath: diff.path(of: entry))` – also Im Finder zeigen, Öffnen, Quick Look, Hier hineinzoomen (im Vergleich: `CompareSession.navigate`), Pfad kopieren, Informationen, Diesen Ordner neu scannen, In den Papierkorb legen. Nach Papierkorb/Teil-Rescan muss der Vergleich neu berechnet werden (siehe oben).
+- Für entfernte Einträge: nur „Pfad kopieren“ und „Hier hineinzoomen“; Finder, Öffnen, Quick Look, Info, Rescan und Papierkorb ausgegraut (Datei existiert nicht mehr).
+- Beim Vergleich zweier Snapshots ohne aktuellen Scan: nur Aktionen, die auf dem Dateisystem funktionieren, wenn der Pfad noch existiert; Papierkorb ausgegraut, weil der Baum nicht aktualisiert werden kann.
+- Zusätzlich sinnvoll: „Im Vergleich hineinzoomen“ und für Zeilen in „Größte Veränderungen“ „Im Diagramm zeigen“.
+- Anschlussstellen: `CompareSunburstInteraction` (Hover-Eintrag `session.hoverEntry`) und `CompareRowView`/`LargestChangeRow`.
+
+### Vorschaubilder
+- `DiskRings --render-snapshots <ordner> --compare-demo` legt den Beispielbaum in einem temporären Ordner an, speichert Snapshots in eine temporäre Ablage, verändert den Baum, scannt neu und rendert hell und dunkel: `compare-growth`, `compare-growth-downloads`, `compare-delta`, `compare-largest`, `compare-largest-shrink`, `compare-two-snapshots-warning`, `compare-browser-toolbar`, `compare-picker`, `snapshots-window`, `snapshot-save-sheet`, `settings-snapshots`. Der temporäre Ordner wird danach gelöscht. Volume-Kennzahlen und Zeitpunkte sind fest vorgegeben (die Beispielwurzel gilt als Volume-Wurzel „Macintosh HD“), damit die Kopfzeile reproduzierbar ist.
+- Der Tooltip in `compare-growth` steht nur ungefähr am Segment (die Mausposition wird aus einer geschätzten Diagrammgröße berechnet).
+
+### Merge-Haken in bestehenden Dateien
+- `App/AppState.swift`: Eigenschaften `snapshots` und `compare`; `compare = nil` in `startScan` und `backToStart`; `snapshots.didFinishScan(…)` am Ende von `finish`.
+- `App/Preferences.swift`: `let snapshots: SnapshotPreferences` und dessen Initialisierung.
+- `App/DiskRingsApp.swift`: `--compare-demo` in `Entry.main`; `SnapshotCommands` in `.commands`; Szene `Window("Snapshots")`; `.modifier(SnapshotUIHost(state:))` in `RootView`.
+- `Browser/BrowserView.swift`: `CompareToolbarButton` in `BrowserToolbar`; `.modifier(CompareModeSwitch(…))` am Ende von `BrowserView.body`.
+- `Settings/SettingsView.swift`: `SnapshotSettingsSection(prefs: prefs.snapshots)` nach dem Abschnitt „Scan“.
+- Core: keine bestehende API geändert; neu sind die oben genannten Typen und `DiffStatus.label`.
+
 ## M7 – Distribution
 
 ### Icon

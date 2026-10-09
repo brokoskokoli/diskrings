@@ -12,6 +12,9 @@ enum Entry {
         if let i = args.firstIndex(of: "--render-snapshots") {
             let dir = i + 1 < args.count ? args[i + 1] : "build/snapshots"
             let scanPath = args.firstIndex(of: "--scan").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
+            if args.contains("--compare-demo") {
+                MainActor.assumeIsolated { exit(CompareDemoRenderer.run(outputDirectory: dir)) }
+            }
             MainActor.assumeIsolated {
                 exit(SnapshotRenderer.run(outputDirectory: dir, scanPath: scanPath))
             }
@@ -29,7 +32,15 @@ struct DiskRingsApp: App {
                 .frame(minWidth: 900, minHeight: 600)
         }
         .defaultSize(width: 1180, height: 760)
-        .commands { AppCommands(state: state) }
+        .commands {
+            AppCommands(state: state)
+            SnapshotCommands(state: state)
+        }
+
+        Window("Snapshots", id: SnapshotsWindow.id) {
+            SnapshotsWindow(state: state)
+        }
+        .defaultSize(width: 760, height: 420)
 
         Settings {
             SettingsView(prefs: state.prefs)
@@ -100,6 +111,7 @@ struct RootView: View {
             state.refreshVolumes()
         }
         .onChange(of: state.prefs.layoutKey) { _, _ in state.relayout(animated: false) }
+        .modifier(SnapshotUIHost(state: state))
     }
 
     private var title: String {

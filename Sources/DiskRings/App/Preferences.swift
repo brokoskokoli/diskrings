@@ -34,6 +34,8 @@ final class Preferences {
     /// Breite der Detailliste in Punkt (verstellbar über den Teiler).
     var listWidth: Double { didSet { defaults.set(listWidth, forKey: Key.listWidth) } }
     static let listWidthRange: ClosedRange<Double> = 300 ... 720
+    /// Snapshot-Einstellungen (SPEC 3.7), siehe Snapshots/SnapshotLibrary.swift.
+    let snapshots: SnapshotPreferences
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -50,6 +52,7 @@ final class Preferences {
         skipTrashConfirmation = defaults.object(forKey: Key.skipTrash) as? Bool ?? false
         let w = defaults.object(forKey: Key.listWidth) as? Double ?? 400
         listWidth = Self.listWidthRange.contains(w) ? w : 400
+        snapshots = SnapshotPreferences(defaults: defaults)
     }
 
     /// Erlaubter Bereich der Winkelschwelle in Grad.

@@ -118,6 +118,10 @@ final class AppState {
     var showSearchResults = false
     @ObservationIgnored private var searchGeneration = 0
 
+    // MARK: Snapshots und Vergleich (SPEC 3.9, siehe Snapshots/ und Compare/)
+    var snapshots = SnapshotLibrary()
+    var compare: CompareSession?
+
     init(prefs: Preferences) {
         self.prefs = prefs
         scanner.handler = { [weak self] event in
@@ -176,6 +180,7 @@ final class AppState {
         showSummary = false
         undoStack = []
         clearSearch()
+        compare = nil
         setTree(nil)
         phase = .scanning
         scanOptionsUsed = prefs.scanOptions
@@ -201,6 +206,7 @@ final class AppState {
     @ObservationIgnored private var pendingFocusPath: String?
 
     func backToStart() {
+        compare = nil
         cancelScan()
         cancelPartialRescans()
         setTree(nil)
@@ -228,6 +234,7 @@ final class AppState {
         pendingFocusPath = nil
         phase = .browsing
         showSummary = true
+        snapshots.didFinishScan(r, volume: v, retention: prefs.snapshots.retention)
         relayout(animated: false)
     }
 

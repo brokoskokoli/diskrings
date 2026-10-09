@@ -20,6 +20,7 @@ struct BrowserView: View {
             Divider()
             StatusBar(state: state)
         }
+        .modifier(CompareModeSwitch(state: state, frozenTime: frozenTime))
         .sheet(isPresented: Binding(get: { state.trashRequest != nil }, set: { if !$0 { state.trashRequest = nil } })) {
             if let plan = state.trashRequest {
                 TrashConfirmationView(plan: plan, onCancel: { state.trashRequest = nil },
@@ -141,6 +142,7 @@ struct BrowserToolbar: View {
                 ProgressView().controlSize(.small)
                     .accessibilityLabel(state.phase == .scanning ? "Scan läuft" : "Teil-Rescan läuft")
             }
+            CompareToolbarButton(state: state)
             let rescan = state.availability(.rescan, targets: [state.focus])
             Menu {
                 Button("Diesen Ordner neu scannen") { state.rescanFocus() }
