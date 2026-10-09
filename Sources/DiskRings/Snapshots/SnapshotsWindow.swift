@@ -132,7 +132,7 @@ struct SnapshotsWindow: View {
     private func compare(_ infos: [SnapshotInfo]) {
         guard infos.count == 2 else { return }
         state.compareSnapshots(infos[0], infos[1])
-        openWindow(id: "main")
+        openWindow(id: WindowLifecycle.mainWindowID)
     }
 }
 

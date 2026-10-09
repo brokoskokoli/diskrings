@@ -24,11 +24,12 @@ enum Entry {
 }
 
 struct DiskRingsApp: App {
-    @ViewState private var state = AppState(prefs: Preferences())
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    private var state: AppState { delegate.state }
 
     var body: some Scene {
-        Window("DiskRings", id: "main") {
-            RootView(state: state)
+        Window("DiskRings", id: WindowLifecycle.mainWindowID) {
+            RootView(state: state, delegate: delegate)
                 .frame(minWidth: 900, minHeight: 600)
         }
         .defaultSize(width: 1180, height: 760)
@@ -50,6 +51,9 @@ struct DiskRingsApp: App {
 
 struct RootView: View {
     let state: AppState
+    let delegate: AppDelegate
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     @ViewState private var dropTargeted = false
     @ViewState private var swipe: SwipeNavigation?
     @ViewState private var keyboard: KeyboardMonitor?
@@ -77,6 +81,8 @@ struct RootView: View {
             }
         }
         .onAppear {
+            delegate.openWindow = openWindow
+            delegate.openSettings = openSettings
             state.refreshVolumes()
             if swipe == nil {
                 let s = SwipeNavigation(state: state)
