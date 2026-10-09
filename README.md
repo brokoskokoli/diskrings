@@ -88,4 +88,4 @@ Fehlt das Profil, bricht `release.sh` vor der Notarisierung mit dieser Anleitung
 
 ## Lizenz
 
-Noch offen.
+MIT, siehe [LICENSE](LICENSE).

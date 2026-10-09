@@ -28,7 +28,10 @@ IDENTITY=${DISKRINGS_IDENTITY:-"Developer ID Application: Stefan Richter (AGRWTK
 SIGN_TIMEOUT=${DISKRINGS_SIGN_TIMEOUT:-60}
 VERSION=${VERSION:-$(tr -d '[:space:]' < VERSION)}
 BUILD=${BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}
+# Copyright: Erstveröffentlichung 2026 (MIT, siehe LICENSE); ab 2027 als Spanne.
 YEAR=$(date +%Y)
+COPYRIGHT_YEARS=2026
+if [ "$YEAR" -gt 2026 ]; then COPYRIGHT_YEARS="2026–$YEAR"; fi
 
 # --- Build -----------------------------------------------------------------
 ARCHS=${DISKRINGS_ARCHS:-"arm64 x86_64"}
@@ -74,7 +77,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSPrincipalClass</key><string>NSApplication</string>
-    <key>NSHumanReadableCopyright</key><string>© ${YEAR} Stefan Richter</string>
+    <key>NSHumanReadableCopyright</key><string>Copyright © ${COPYRIGHT_YEARS} Stefan Richter. MIT License.</string>
     <!-- Datenschutz-Abfragen (TCC): macOS zeigt diese Texte, wenn der Scan
          geschützte Orte öffnet. Ohne sie fragt macOS mit einem generischen
          Text bzw. verweigert den Zugriff still. -->
