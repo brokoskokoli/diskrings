@@ -40,6 +40,7 @@ struct DiskRingsApp: App {
 struct RootView: View {
     let state: AppState
     @ViewState private var dropTargeted = false
+    @ViewState private var swipe: SwipeNavigation?
 
     var body: some View {
         Group {
@@ -65,6 +66,11 @@ struct RootView: View {
         }
         .onAppear {
             state.refreshVolumes()
+            if swipe == nil {
+                let s = SwipeNavigation(state: state)
+                s.install()
+                swipe = s
+            }
             // `--scan <pfad>` startet sofort einen Scan (für Tests und Skripte).
             let args = CommandLine.arguments
             if state.phase == .start, let i = args.firstIndex(of: "--scan"), i + 1 < args.count {
@@ -74,6 +80,16 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Festplattenvollzugriff kann in den Systemeinstellungen erteilt worden sein.
             state.fullDiskAccess = FullDiskAccess.status()
+        }
+        // Volume-Liste aktuell halten, wenn Volumes ein- oder ausgehängt werden.
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in
+            state.refreshVolumes()
+        }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didUnmountNotification)) { _ in
+            state.refreshVolumes()
+        }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didRenameVolumeNotification)) { _ in
+            state.refreshVolumes()
         }
         .onChange(of: state.prefs.layoutKey) { _, _ in state.relayout(animated: false) }
     }

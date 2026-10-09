@@ -97,3 +97,13 @@
 ### Bündel
 - `scripts/make-app.sh` baut `build/DiskRings.app` (Release, Info.plist mit `de.stefanrichter.DiskRings`, `LSMinimumSystemVersion` 14.0) und signiert ad hoc. Developer ID, Hardened Runtime, Icon und Notarisierung kommen in M7.
 - `--scan <pfad>` als Startargument startet sofort einen Scan (zum Testen: `open build/DiskRings.app --args --scan /usr/share`).
+
+### Nachbesserungen nach der Prüfung (M2/M3)
+- **Scan-Wettlauf:** Die Ereignisschleife liegt jetzt in `ScanController` (Core, testbar). Jeder Scan hat eine Generationsnummer; vor jeder Weitergabe und im Fehlerfall wird `Task.isCancelled` und die Generation geprüft. So überschreiben gepufferte Ereignisse eines abgebrochenen oder ersetzten Scans den neuen nicht mehr. Der Stream ist für Tests austauschbar; der Regressionstest arbeitet mit einem vorgefüllten Stream, weil sich der Wettlauf mit der echten Engine nicht zuverlässig auslösen lässt.
+- **Prozentwerte:** Liste und Tooltip beziehen alle Anteile auf dieselbe Größe wie das Diagramm (`layout.totalSize`: der Fokus, an der Volume-Wurzel samt „Nicht zugeordnet“). Damit summiert sich die oberste Ebene zu 100 %. Auch aufgeklappte Unterzeilen zeigen den Anteil am Fokus, nicht am Elternordner. Der Tooltip schreibt „x % von <Fokus>“.
+- **Beschriftung:** Zu lange Namen werden in einer Schleife gekürzt, bis sie passen (mindestens 4 Zeichen plus „…“). Geprüft mit einem Render von `/Applications`.
+- **Wischgesten:** Zwei-Finger-Wischen über `trackSwipeEvent` (wenn „Zwischen Seiten blättern“ aktiv ist) und Drei-Finger-Wischen (`NSEvent.swipe`), Richtung wie in Safari. Nur in der Hauptansicht. Die Richtung ist nach der Dokumentation umgesetzt, aber nicht von Hand am Trackpad geprüft. Horizontales Wischen über der Breadcrumb navigiert ebenfalls, statt sie zu scrollen.
+- **Volumes:** Die Liste aktualisiert sich bei `NSWorkspace.didMount`/`didUnmount`/`didRenameVolume`.
+- **Liste:** Nur ein Klick-Handler; der Doppelklick wird über `NSEvent.clickCount` erkannt, sodass der Einzelklick nicht mehr auf den Doppelklick wartet.
+- **Farben** werden je Layout (Baum, Fokus, Optionen, Schema, Modus) im `AppState` gecacht; Hover rechnet sie nicht mehr neu.
+- **Bereinigbar** im Belegungsbalken: eigener Ton (`systemTeal`) statt halbtransparentem Akzent, gut sichtbar in beiden Modi.

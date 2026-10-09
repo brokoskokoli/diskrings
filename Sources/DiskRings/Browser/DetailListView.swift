@@ -1,3 +1,4 @@
+import AppKit
 import DiskRingsCore
 import SwiftUI
 
@@ -14,14 +15,14 @@ struct DetailListView: View {
     var body: some View {
         if let tree = state.tree, let layout = state.layout {
             let palette = Palette(scheme: state.prefs.paletteScheme, appearance: PaletteAppearance(colorScheme))
-            let colors = colorMap(layout: layout, tree: tree, palette: palette)
+            let colors = colorMap(layout: layout, palette: palette)
             VStack(spacing: 0) {
                 header(tree)
                 Divider()
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            ForEach(rows(tree)) { row in
+                            ForEach(rows(tree, base: layout.totalSize)) { row in
                                 DetailRowView(state: state, tree: tree, row: row, swatch: colors[row.node])
                                     .id(row.id)
                             }
@@ -69,15 +70,19 @@ struct DetailListView: View {
     }
 
     /// Farbe je Knoten aus dem Diagramm (kleines Farbfeld in der Liste).
-    private func colorMap(layout: SunburstLayout, tree: ScanTree, palette: Palette) -> [Int32: Color] {
-        let colors = palette.colors(for: layout, tree: tree)
+    private func colorMap(layout: SunburstLayout, palette: Palette) -> [Int32: Color] {
+        let colors = state.colors(for: layout, palette: palette)
         var m: [Int32: Color] = [:]
         for (i, a) in layout.arcs.enumerated() where a.kind == .node && a.depth <= 3 { m[a.nodeIndex] = Color(colors[i]) }
         return m
     }
 
     /// Sichtbare Zeilen: Kinder des Fokus, aufgeklappte Ordner rekursiv.
-    private func rows(_ tree: ScanTree) -> [DetailRow] {
+    /// Alle Anteile beziehen sich auf dieselbe Größe wie das Diagramm
+    /// (`layout.totalSize`: der Fokus, an der Volume-Wurzel samt „Nicht
+    /// zugeordnet“), damit sich die oberste Ebene zu 100 % summiert.
+    private func rows(_ tree: ScanTree, base: UInt64) -> [DetailRow] {
+        let total = Double(max(base, 1))
         var out: [DetailRow] = []
         let mode = state.prefs.sizeMode
         func add(_ parent: Int32, level: Int) {
@@ -85,23 +90,20 @@ struct DetailListView: View {
             if mode == .logical {
                 kids.sort { tree.node($0).logicalSize > tree.node($1).logicalSize }
             }
-            let psize = tree.node(parent).size(mode)
             for (n, k) in kids.enumerated() {
                 if n == Self.rowsPerLevel {
                     let rest = kids[n...].reduce(UInt64(0)) { $0 + tree.node($1).size(mode) }
                     out.append(DetailRow(kind: .more(parent: parent, count: kids.count - n), node: k, level: level,
-                                         size: rest, share: psize > 0 ? Double(rest) / Double(psize) : 0))
+                                         size: rest, share: Double(rest) / total))
                     break
                 }
                 let s = tree.node(k).size(mode)
-                out.append(DetailRow(kind: .node, node: k, level: level, size: s,
-                                     share: psize > 0 ? Double(s) / Double(psize) : 0))
+                out.append(DetailRow(kind: .node, node: k, level: level, size: s, share: Double(s) / total))
                 if state.expanded.contains(k) { add(k, level: level + 1) }
             }
         }
         add(state.focus, level: 0)
         if state.focus == ScanTree.rootIndex, state.unassigned > 0, mode == .allocated {
-            let total = Double(tree.root.allocatedSize + state.unassigned)
             let row = DetailRow(kind: .unassigned, node: -1, level: 0, size: state.unassigned,
                                 share: Double(state.unassigned) / total)
             // Nach Größe in die oberste Ebene einsortieren.
@@ -171,8 +173,15 @@ private struct DetailRowView: View {
         .onHover { inside in
             if row.kind == .node { state.hoverList(inside ? row.node : (state.hoverNode == row.node ? nil : state.hoverNode)) }
         }
-        .onTapGesture(count: 2) { if row.kind == .node { state.navigate(to: row.node) } }
-        .onTapGesture(count: 1) { activate() }
+        // Nur ein Klick-Handler: ein zusätzlicher Doppelklick-Handler würde jeden
+        // Einzelklick verzögern. Der Doppelklick wird über `clickCount` erkannt.
+        .onTapGesture {
+            if (NSApp.currentEvent?.clickCount ?? 1) >= 2 {
+                if row.kind == .node { state.navigate(to: row.node) }
+            } else {
+                activate()
+            }
+        }
         .contextMenu { if row.kind == .node { NodeContextMenu(state: state, node: row.node) } }
         .help(row.kind == .unassigned ? "Nicht zugeordnet (System, lokale Snapshots, bereinigbarer Speicher): Belegung des Volumes, die in keinem Ordner auftaucht." : "")
         .accessibilityElement(children: .ignore)

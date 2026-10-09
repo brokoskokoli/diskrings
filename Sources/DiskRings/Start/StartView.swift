@@ -110,7 +110,7 @@ struct VolumeRow: View {
                     HStack(spacing: 12) {
                         legend(Color.accentColor, "Belegt \(ByteFormat.string(volume.usedCapacity - min(volume.purgeableCapacity, volume.usedCapacity)))")
                         if volume.purgeableCapacity > 0 {
-                            legend(Color.accentColor.opacity(0.4), "Bereinigbar \(ByteFormat.string(volume.purgeableCapacity))")
+                            legend(Color.purgeable, "Bereinigbar \(ByteFormat.string(volume.purgeableCapacity))")
                         }
                         legend(Color.primary.opacity(0.12), "Frei \(ByteFormat.string(volume.availableCapacity))")
                     }
@@ -151,7 +151,7 @@ struct UsageBar: View {
             let used = Double(volume.usedCapacity) - purge
             HStack(spacing: 0) {
                 Rectangle().fill(Color.accentColor).frame(width: g.size.width * used / total)
-                Rectangle().fill(Color.accentColor.opacity(0.4)).frame(width: g.size.width * purge / total)
+                Rectangle().fill(Color.purgeable).frame(width: g.size.width * purge / total)
                 Spacer(minLength: 0)
             }
             .background(Color.primary.opacity(0.12))
@@ -259,4 +259,10 @@ struct ScanProgressHeader: View {
         guard let p = state.progress else { return "Scan wird gestartet" }
         return "Scan läuft: \(filesText(p.filesScanned)), \(ByteFormat.string(p.allocatedBytes))"
     }
+}
+
+extension Color {
+    /// Farbe für bereinigbaren Speicher im Belegungsbalken und in der Legende;
+    /// heller Ton mit genug Kontrast auf hellem und dunklem Hintergrund.
+    static let purgeable = Color(nsColor: .systemTeal)
 }

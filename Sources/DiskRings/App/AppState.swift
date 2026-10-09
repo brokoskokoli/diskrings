@@ -34,7 +34,9 @@ final class AppState {
     private(set) var result: ScanResult?
     var scanError: String?
     var showSummary = false
-    @ObservationIgnored private var scanTask: Task<Void, Never>?
+    /// Steuert den laufenden Scan; Ereignisse eines abgebrochenen oder ersetzten
+    /// Scans kommen hier nicht mehr an (siehe `ScanController`).
+    @ObservationIgnored private let scanner = ScanController()
 
     // MARK: Baum und Navigation
     private(set) var tree: ScanTree?
@@ -59,6 +61,18 @@ final class AppState {
 
     init(prefs: Preferences) {
         self.prefs = prefs
+        scanner.handler = { [weak self] event in
+            guard let self else { return }
+            switch event {
+            case .progress(let p): self.progress = p
+            case .snapshot(let t): self.applySnapshot(t)
+            case .finished(let r): self.finish(r)
+            case .failed(let error):
+                self.scanError = "\(error)"
+                self.setTree(nil)
+                self.phase = .start
+            }
+        }
     }
 
     var focus: Int32 { history.current }
@@ -89,6 +103,7 @@ final class AppState {
 
     func startScan(_ path: String) {
         cancelScan()
+        pendingFocusPath = nil
         scanPath = path
         progress = nil
         result = nil
@@ -96,29 +111,11 @@ final class AppState {
         showSummary = false
         setTree(nil)
         phase = .scanning
-        let engine = ScanEngine(options: prefs.scanOptions)
-        scanTask = Task { [weak self] in
-            do {
-                for try await event in engine.events(path) {
-                    guard let self else { return }
-                    switch event {
-                    case .progress(let p): self.progress = p
-                    case .snapshot(let t): self.applySnapshot(t)
-                    case .finished(let r): self.finish(r)
-                    }
-                }
-            } catch is CancellationError {
-                // Abbruch durch den Nutzer: nichts weiter.
-            } catch {
-                self?.scanError = "\(error)"
-                self?.phase = .start
-            }
-        }
+        scanner.start(path, options: prefs.scanOptions)
     }
 
     func cancelScan() {
-        scanTask?.cancel()
-        scanTask = nil
+        scanner.cancel()
         if phase == .scanning {
             phase = .start
             setTree(nil)
@@ -158,7 +155,6 @@ final class AppState {
         pendingFocusPath = nil
         phase = .browsing
         showSummary = true
-        scanTask = nil
     }
 
     /// Setzt einen neuen Baum (Snapshot, Endergebnis, Fixture) und überträgt
@@ -318,6 +314,32 @@ final class AppState {
         setTree(snapshot)
         progress = p
         phase = .scanning
+    }
+
+    // MARK: Farben (gecacht, damit Hover nicht jedes Mal alle Arcs neu einfärbt)
+
+    private struct ColorKey: Hashable {
+        let tree: ObjectIdentifier
+        let focus: Int32
+        let options: SunburstOptions
+        let arcCount: Int
+        let scheme: PaletteScheme
+        let appearance: PaletteAppearance
+    }
+
+    @ObservationIgnored private var colorCache: [ColorKey: [DiskRingsCore.RGBColor]] = [:]
+
+    /// Farben aller Arcs eines Layouts (das Layout ist durch Baum, Fokus und
+    /// Optionen eindeutig bestimmt).
+    func colors(for layout: SunburstLayout, palette: Palette) -> [DiskRingsCore.RGBColor] {
+        guard let tree else { return [] }
+        let key = ColorKey(tree: ObjectIdentifier(tree), focus: layout.focus, options: layout.options,
+                           arcCount: layout.arcs.count, scheme: palette.scheme, appearance: palette.appearance)
+        if let c = colorCache[key] { return c }
+        if colorCache.count > 8 { colorCache.removeAll() }
+        let c = palette.colors(for: layout, tree: tree)
+        colorCache[key] = c
+        return c
     }
 
     /// Größe eines Knotens im aktuellen Größenmodus.

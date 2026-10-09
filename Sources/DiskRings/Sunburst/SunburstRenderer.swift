@@ -190,15 +190,20 @@ enum SunburstRenderer {
                                                   textWidth: m.width, textHeight: m.height)
             var text = full
             if placement == .none {
-                // Gekürzt versuchen (mindestens 4 Zeichen plus „…“).
+                // Gekürzt versuchen: in einer Schleife kürzen, bis der Text passt
+                // (mindestens 4 sichtbare Zeichen plus „…“). Startwert aus dem
+                // verfügbaren Platz geschätzt, damit es meist nur wenige Schritte sind.
                 let avail = max(2 * (midR - m.height / 2) * sin(min(arc.span, .pi) / 2) - 8, outer - inner - 8)
-                let chars = Int(Double(name.count) * avail / max(m.width, 1))
-                guard chars >= 5 else { continue }
-                text = gc.resolve(Text(LabelPlacement.truncate(name, maxCharacters: chars)).font(font)
-                    .foregroundColor(textColor))
-                let m2 = text.measure(in: CGSize(width: 10_000, height: 100))
-                placement = LabelPlacement.decide(span: arc.span, innerRadius: inner, outerRadius: outer,
-                                                  textWidth: m2.width, textHeight: m2.height)
+                var visible = min(name.count - 1, Int(Double(name.count) * avail / max(m.width, 1)))
+                while visible >= 4 {
+                    text = gc.resolve(Text(LabelPlacement.truncate(name, maxCharacters: visible + 1)).font(font)
+                        .foregroundColor(textColor))
+                    let m2 = text.measure(in: CGSize(width: 10_000, height: 100))
+                    placement = LabelPlacement.decide(span: arc.span, innerRadius: inner, outerRadius: outer,
+                                                      textWidth: m2.width, textHeight: m2.height)
+                    if placement != .none { break }
+                    visible -= max(1, visible / 8)
+                }
             }
             guard placement != .none else { continue }
             let mid = arc.midAngle

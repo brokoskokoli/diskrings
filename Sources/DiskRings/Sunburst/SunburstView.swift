@@ -18,8 +18,8 @@ struct SunburstView: View {
             if let tree = state.tree, let layout = state.layout {
                 let geometry = Self.geometry(for: size, rings: layout.options.maxRings)
                 let palette = Palette(scheme: state.prefs.paletteScheme, appearance: PaletteAppearance(colorScheme))
-                let colors = palette.colors(for: layout, tree: tree)
-                let fromColors = state.transition.map { palette.colors(for: $0.zoom.from, tree: tree) }
+                let colors = state.colors(for: layout, palette: palette)
+                let fromColors = state.transition.map { state.colors(for: $0.zoom.from, palette: palette) }
                 let input = SunburstRenderer.Input(
                     tree: tree, layout: layout, colors: colors, fromColors: fromColors, geometry: geometry,
                     palette: palette, hoverArc: state.hoverArc, hoverNode: state.hoverNode,
@@ -139,8 +139,9 @@ private struct SunburstTooltip: View {
                 }
                 HStack(spacing: 6) {
                     Text(ByteFormat.string(content.size)).font(.system(size: 11, weight: .medium).monospacedDigit())
-                    Text(ByteFormat.percent(content.share)).font(.system(size: 11).monospacedDigit())
+                    Text("\(ByteFormat.percent(content.share)) von \(focusName)").font(.system(size: 11).monospacedDigit())
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 Text(content.detail).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
             }
@@ -154,6 +155,13 @@ private struct SunburstTooltip: View {
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
+    }
+
+    /// Bezugsgröße des Anteils: der Fokus (an der Volume-Wurzel samt
+    /// „Nicht zugeordnet“), wie in der Liste.
+    private var focusName: String {
+        if state.focus == ScanTree.rootIndex, state.isVolumeRoot, let v = state.volume { return v.name }
+        return tree.name(of: state.focus)
     }
 
     private var content: ArcDescription? {
