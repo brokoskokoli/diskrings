@@ -11,8 +11,8 @@ public struct ScanOptions: Sendable, Equatable {
     /// `/System/Volumes/Data` wird auch dann nie betreten, wenn `/` gescannt
     /// wird, weil seine Inhalte schon über die Firmlinks erscheinen.
     public var crossMountPoints: Bool = false
-    /// Anzahl paralleler Worker; `nil` = Performance-Kerne (höchstens 8).
-    /// `1` ergibt einen sequenziellen Scan.
+    /// Anzahl paralleler Worker; `nil` = alle Kerne, höchstens 8 (siehe
+    /// docs/DECISIONS.md). `1` ergibt einen sequenziellen Scan.
     public var workerCount: Int? = nil
     /// Abstand der Fortschrittsmeldungen und Live-Snapshots in Sekunden.
     public var progressInterval: Double = 0.25
@@ -43,7 +43,7 @@ public struct ScanOptions: Sendable, Equatable {
     /// Tatsächlich verwendete Worker-Anzahl.
     public var effectiveWorkerCount: Int {
         if let w = workerCount { return max(1, w) }
-        return min(8, max(1, SystemInfo.performanceCoreCount))
+        return min(8, max(1, ProcessInfo.processInfo.activeProcessorCount))
     }
 }
 

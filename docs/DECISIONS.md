@@ -18,7 +18,7 @@
 
 ### Parallelität
 - Worker sind eigene `Thread`s (nicht der kooperative Swift-Concurrency-Pool), weil sie in blockierenden Syscalls stecken.
-- Standard: Anzahl Performance-Kerne (`hw.perflevel0.physicalcpu`), höchstens 8.
+- **Abweichung:** Standard sind alle Kerne, höchstens 8, statt „Anzahl Performance-Kerne“. Der Scan verbringt fast die ganze Zeit im Kernel (`getattrlistbulk`), nicht in eigener Rechenarbeit. Gemessen auf dem Entwicklungsrechner (5 Performance-, 6 Effizienzkerne), Scan von `~` mit 2,9 Mio. Einträgen: 5 Worker 12,8–13,6 s, 8 Worker 9,8–10,3 s, 11 Worker 11,5 s. Beim Scan von `/`: 18,5 s gegenüber 14,1 s. Details in docs/PERFORMANCE.md.
 - Statt fester Teilbaum-Jobs mit `fts` arbeitet jeder Worker einen lokalen Stapel offener Ordner ab. Er gibt die Hälfte davon an die gemeinsame Queue ab, sobald ein anderer Worker untätig ist oder er seit der letzten Abgabe mehr als `splitThreshold` (Standard 50 000) Einträge gelesen hat. Das ist das „Aufteilen großer Teilbäume“ aus 4.3.
 - Es gibt keinen laufenden Merger; die lokalen Puffer werden am Ende in einem Schritt zusammengeführt. Die Live-Ansicht kommt stattdessen aus einem kleinen gemeinsamen „Skelett“ (Ordner bis Tiefe k), in das die Worker pro Ordner unter einem Lock ihre Summen eintragen. Daraus entsteht alle `progressInterval` Sekunden ein vorläufiger `ScanTree`. In diesen Snapshots erscheinen nur Ordner; Dateien stecken in der Größe ihres Ordners. Hardlinks sind darin noch nicht bereinigt, die vorläufigen Bytes können also etwas zu hoch sein.
 
