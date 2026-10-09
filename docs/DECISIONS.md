@@ -187,3 +187,23 @@ Keine bestehende öffentliche API wurde umbenannt oder entfernt. Geändert bzw. 
 - **Liste:** Nur ein Klick-Handler; der Doppelklick wird über `NSEvent.clickCount` erkannt, sodass der Einzelklick nicht mehr auf den Doppelklick wartet.
 - **Farben** werden je Layout (Baum, Fokus, Optionen, Schema, Modus) im `AppState` gecacht; Hover rechnet sie nicht mehr neu.
 - **Bereinigbar** im Belegungsbalken: eigener Ton (`systemTeal`) statt halbtransparentem Akzent, gut sichtbar in beiden Modi.
+
+## M7 – Distribution
+
+### Icon
+- Das Icon wird programmatisch mit CoreGraphics gezeichnet (`swift scripts/make-icon.swift`): drei Sunburst-Ringe mit fünf Ästen auf einem dunklen, abgerundeten Quadrat (Superellipse im 824/1024-Raster der macOS-Icons). Für 16 und 32 px gibt es vereinfachte Varianten (ein bzw. zwei Ringe, breitere Fugen), sonst verschwimmen die Segmente. `iconutil` macht daraus `Resources/DiskRings.icns`, die eingecheckt ist; das iconset liegt nur in `build/`. Kein Asset-Katalog (`actool` gibt es nur mit Xcode).
+
+### Bündel und Signatur (`scripts/make-app.sh`)
+- **Universal:** `swift build -c release --arch arm64 --arch x86_64` funktioniert mit den Command Line Tools (Swift 6.4). Produkt liegt dann unter `.build/out/Products/Release`. Falls der Universal-Build einmal scheitert, fällt das Skript mit Warnung auf die Rechner-Architektur zurück.
+- **Version** aus der Datei `VERSION`, Build-Nummer = `git rev-list --count HEAD`.
+- **Signatur:** Developer ID mit Hardened Runtime (`--options runtime --timestamp`). **Keine Entitlements:** Die App ist nicht sandboxed, nutzt weder JIT noch Apple Events. Sollte „Informationen“ (SPEC 3.5) später per `NSAppleScript` umgesetzt werden, braucht es `com.apple.security.automation.apple-events` und `NSAppleEventsUsageDescription`.
+- codesign läuft mit einem Zeitlimit (60 s), weil ein Schlüsselbund-Dialog es sonst unbemerkt hängen lässt. Fehlt die Identität oder ist `DISKRINGS_ADHOC=1` gesetzt, wird ad hoc signiert.
+
+### Release (`scripts/release.sh`)
+- Zwei Notarisierungen: zuerst die App (als ZIP eingereicht), damit das endgültige ZIP und das DMG die geheftete App enthalten; danach das signierte DMG, damit auch dieses ein Ticket bekommt.
+- Das Profil `diskrings` wird erst unmittelbar vor der Notarisierung geprüft, damit Tests und Bündel vorher schon laufen; fehlt es, bricht das Skript mit der `store-credentials`-Anleitung ab.
+- `gh release create` nur mit `--publish`, nur bei sauberem Arbeitsverzeichnis und neuem Tag.
+
+### CI
+- `Package.swift` setzt `-plugin-path` jetzt nur, wenn die Command Line Tools die aktive Toolchain sind (erkannt über `SDKROOT`, das SwiftPM beim Auswerten des Manifests setzt; Rückfall `DEVELOPER_DIR` bzw. `/var/db/xcode_select_link`). Grund: GitHub-Runner haben Xcode **und** die CLT installiert; die alte Bedingung („Pfad existiert“) hätte dort Xcodes Compiler das Makro-Plugin einer anderen Swift-Version untergeschoben. Die CI prüft das mit `swift package dump-package`.
+- Die Performance-Tests laufen in der CI nicht (`swift test --skip 'Performance|performance'`): Die Grenzen sind auf einem lokalen Apple-Silicon-Rechner kalibriert, die geteilten Runner schwanken zu stark. Sie bleiben in `scripts/check.sh`.
