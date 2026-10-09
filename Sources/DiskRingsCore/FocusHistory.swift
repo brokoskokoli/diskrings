@@ -91,6 +91,16 @@ public struct FocusHistory: Sendable, Equatable {
         return h
     }
 
+    /// Allgemeine Übertragung: neuer Fokus (vom Aufrufer bestimmt, z. B. der
+    /// nächste vorhandene Vorfahr) und Abbildung für die Stapel; nicht
+    /// abbildbare Einträge entfallen.
+    public func translated(current newCurrent: Int32, by map: (Int32) -> Int32?) -> FocusHistory {
+        var h = FocusHistory(root: newCurrent)
+        h.backStack = Self.dedupe(backStack.compactMap(map), excluding: h.current)
+        h.forwardStack = Self.dedupe(forwardStack.compactMap(map), excluding: h.current)
+        return h
+    }
+
     /// Entfernt direkt aufeinanderfolgende Duplikate und einen Eintrag gleich
     /// dem aktuellen Fokus am Stapelende.
     private static func dedupe(_ a: [Int32], excluding current: Int32) -> [Int32] {
