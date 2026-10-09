@@ -127,12 +127,18 @@ public enum L10n {
         return Bundle.module
     }()
 
+    /// Bundles je Sprache. Die Ordnernamen werden normalisiert verglichen:
+    /// Der Build mit Xcode legt z. B. `pt-BR.lproj` und `zh-Hans.lproj` als
+    /// `pt_BR.lproj` bzw. in anderer Schreibweise ab (in der CI beobachtet).
     private static let languageBundles: [String: Bundle] = {
+        func norm(_ s: String) -> String { s.replacingOccurrences(of: "_", with: "-").lowercased() }
+        var found: [String: String] = [:]
+        for path in bundle.paths(forResourcesOfType: "lproj", inDirectory: nil) {
+            found[norm(((path as NSString).lastPathComponent as NSString).deletingPathExtension)] = path
+        }
         var out: [String: Bundle] = [:]
         for code in supportedLanguages {
-            if let path = bundle.path(forResource: code, ofType: "lproj"), let b = Bundle(path: path) {
-                out[code] = b
-            }
+            if let path = found[norm(code)], let b = Bundle(path: path) { out[code] = b }
         }
         return out
     }()

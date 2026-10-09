@@ -165,7 +165,8 @@ struct LocalizationFileTests {
     @Test("Laufzeit-Bündel enthält jede Sprache")
     func runtimeBundles() {
         for lang in languages {
-            #expect(L10n.bundle(for: lang) != nil, "\(lang)")
+            #expect(L10n.bundle(for: lang) != nil,
+                    "\(lang) fehlt; vorhanden: \(L10n.bundle.paths(forResourcesOfType: "lproj", inDirectory: nil).map { ($0 as NSString).lastPathComponent })")
             #expect(L10n.raw("menu.chooseFolder", language: lang) != "menu.chooseFolder", "\(lang)")
         }
     }
