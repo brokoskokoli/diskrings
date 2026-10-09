@@ -1,7 +1,7 @@
 import Foundation
 
 /// Einstellungen für die Berechnung des Sunburst-Layouts (SPEC 3.4, 5).
-public struct SunburstOptions: Sendable, Equatable {
+public struct SunburstOptions: Sendable, Hashable {
     /// Erlaubter Bereich der Ringanzahl.
     public static let ringRange: ClosedRange<Int> = 3 ... 10
     public static let defaultRings = 6
