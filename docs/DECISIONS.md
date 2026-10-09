@@ -158,15 +158,15 @@ Keine bestehende öffentliche API wurde umbenannt oder entfernt. Geändert bzw. 
 ### Navigation
 - `FocusHistory` speichert Knotenindizes. Bei jedem neuen Baum (Live-Snapshot → Endergebnis, Rescan) wird die Historie über die Pfade übertragen; ein verschwundener Fokus fällt auf den nächsten vorhandenen Vorfahren zurück. Man kann also schon während des Scans hineinzoomen.
 - Klick auf ein Sammelsegment zoomt in dessen Elternordner (falls nicht schon Fokus). Klick auf eine Datei wählt sie aus und klappt die Liste bis dorthin auf.
-- „Rescan“ in der Toolbar ist vorerst ein kompletter neuer Scan der Wurzel; der Fokus wird danach über den Pfad wiederhergestellt.
+- „Rescan“ in der Toolbar liest seit M4 den fokussierten Ordner neu ein (Teil-Rescan, siehe unten); der komplette neue Scan steht im Menü des Knopfs und unter „Ablage → Komplett neu scannen“ (⌥⌘R). Der Fokus wird danach über den Pfad wiederhergestellt.
 
 ### Oberfläche
 - Die Toolbar (Zurück/Vor, Breadcrumb, Rescan) liegt im Fensterinhalt statt in der `NSToolbar` des Fensters. Grund: So lässt sie sich in den Vorschaubildern mitrendern, und die Breadcrumb hat die volle Breite.
-- Diagramm und Liste stehen in einem `HStack` mit fester Listenbreite (400 pt), nicht in einem `HSplitView`; die Liste ist also nicht in der Breite verstellbar.
+- Diagramm und Liste: seit M4 mit verstellbarer Listenbreite (siehe „M4/M5 – Oberfläche“).
 - Die Detailliste ist eine eigene Outline aus `ScrollView` + `LazyVStack` (keine `List`/`OutlineGroup`): Prozentbalken, Farbfeld aus dem Diagramm und Hover-Sync sind so einfacher. Je Ebene höchstens 400 Zeilen, der Rest als eine Zeile „N kleinere Elemente“. An der Volume-Wurzel steht „Nicht zugeordnet“ als eigene Zeile, nach Größe einsortiert. Der Prozentwert einer Zeile bezieht sich auf ihren Elternordner.
 - Die Liste zeigt ein Farbfeld nur für Knoten, die im Diagramm bis Ring 3 sichtbar sind.
 - Das Fenster ist ein einzelnes `Window` (keine `WindowGroup`), damit die Menübefehle (⌘[ / ⌘] / ⌘↑) ohne Fokus-Verwaltung auf den einen `AppState` wirken.
-- Kontextmenü: Struktur, Reihenfolge und Tastenkürzel aller Einträge aus SPEC 3.5 stehen in `NodeAction`; in M3 ist nur „Hier hineinzoomen“ aktiv, die übrigen Einträge sind ausgegraut mit „(folgt)“. M4 implementiert `NodeActions.perform` und `isImplemented`.
+- Kontextmenü: seit M4 vollständig, siehe „M4 – Kontextmenü“.
 - Einstellungen, die schon wirken: Ringanzahl, Farbschema (mit Legende), Schwelle für das Sammelsegment (0,1–3°), Beschriftung an/aus, Größenmodus, versteckte Dateien, andere Volumes überqueren, Ausschlussliste. Die Scan-Optionen wirken beim nächsten Scan. Snapshot-Einstellungen fehlen noch (M6).
 
 ### Vorschaubilder (visuelle Prüfung)
@@ -187,3 +187,53 @@ Keine bestehende öffentliche API wurde umbenannt oder entfernt. Geändert bzw. 
 - **Liste:** Nur ein Klick-Handler; der Doppelklick wird über `NSEvent.clickCount` erkannt, sodass der Einzelklick nicht mehr auf den Doppelklick wartet.
 - **Farben** werden je Layout (Baum, Fokus, Optionen, Schema, Modus) im `AppState` gecacht; Hover rechnet sie nicht mehr neu.
 - **Bereinigbar** im Belegungsbalken: eigener Ton (`systemTeal`) statt halbtransparentem Akzent, gut sichtbar in beiden Modi.
+
+## M4 – Kontextmenü, Papierkorb, Schutzliste; Teil-Rescan in der Oberfläche; M5-Rest
+
+### Kontextmenü: zentrale, erweiterbare Struktur
+- **Core:** `NodeAction` (Reihenfolge, Titel, SF-Symbol, `ActionShortcut`, Gruppen) und `NodeAction.availability(targets:context:) -> ActionAvailability` (an/aus plus Begründung für den Tooltip). Kontextmenü, Hauptmenü „Objekt“ und Tastenkürzel nutzen **dieselbe** Prüfung; `AppState.perform` prüft sie vor jeder Ausführung noch einmal. Damit wirkt auch ein Tastenkürzel auf einen geschützten Pfad nicht (SPEC 9).
+- **App (`Browser/NodeContextMenu.swift`):** `ContextMenuRegistry.sections(for:state:)` liefert die Abschnitte. Eingebaut sind (IDs in dieser Reihenfolge) `open` (Finder, Öffnen, Quick Look), `navigate` (Hineinzoomen), `info` (Pfad kopieren, Informationen), `rescan`, `trash`. Ein Eintrag ist ein `ContextMenuItem` (`id`, `title(target, state)`, `systemImage`, `shortcut`, `availability(target, state)`, `perform(target, state)`, optional `showsReasonInline`); ein Abschnitt ist eine `ContextMenuSection` (`id`, `items`, optional `isVisible(target, state)`, z. B. „nur im Vergleichsmodus“).
+- **Erweitern (z. B. Snapshots/Vergleich):** `ContextMenuRegistry.register(ContextMenuSection(...), before: "trash")` einmal beim Start aufrufen (z. B. im `init` der eigenen Komponente oder in `RootView.onAppear`); eine erneute Registrierung mit derselben ID ersetzt den Abschnitt, `unregister(id)` entfernt ihn. Am bestehenden Code muss dafür nichts geändert werden. Ziel eines Menüs ist ein `ContextMenuTarget` (`nodes` = alle Ziele, `clicked` = angeklickter Knoten); Knotenindizes beziehen sich auf `state.tree`. Ein Vergleichsmodus mit eigenem Baum braucht dafür ggf. eine Abbildung auf `state.tree` (z. B. über den Pfad).
+- **Ziele:** Rechtsklick auf ein Element der Auswahl wirkt auf die ganze Auswahl, sonst nur auf das Element (wie im Finder). Hauptmenü und Kürzel wirken auf die Auswahl; „Neu scannen“ ohne Auswahl auf den Fokus.
+- **Begründung bei ausgegrauten Einträgen:** `.help(...)` (Tooltip) und beim Papierkorb zusätzlich eine graue Textzeile unter dem Eintrag, weil Tooltips in Menüs erst verzögert erscheinen.
+- **Tastenkürzel:** ⌘R, ⌥⌘C, ⌘I, ⇧⌘R, ⌘⌫ hängen am Menü „Objekt“. Steht der Cursor im Suchfeld, gehören die Tasten dem Textfeld (⌘⌫ löscht dann bis zum Zeilenanfang, ⌘Z/⇧⌘Z gehen an das Textfeld). Die **Leertaste** für Quick Look läuft über einen lokalen Tastatur-Monitor (`KeyboardMonitor`), weil ein Menü-Kürzel ohne Modifikator Leerzeichen im Suchfeld schlucken würde; im Menü steht zusätzlich ⌘Y wie im Finder.
+- **Informationen (⌘I):** eigenes Info-Fenster (Ort, belegte/logische Größe, Inhalt, Daten, Kennzeichen, ggf. Schutzgrund). Die Spec erlaubt das; das Finder-Info-Fenster per AppleScript bräuchte die Automations-Freigabe.
+- **Quick Look:** `QLPreviewPanel`; der `QuickLookController` hängt sich als Responder hinter das Fenster. Doppelklick auf eine Datei (Liste und Diagramm) öffnet Quick Look, Doppelklick auf einen Ordner zoomt hinein.
+- Das Kontextmenü wird für die Vorschaubilder als `ContextMenuPreview` nachgebildet (gleiche Abschnitte, Titel, Kürzel, Verfügbarkeit); ein echtes `NSMenu` lässt sich offscreen nicht rendern.
+
+### Papierkorb (SPEC 3.6)
+- `TrashPlan.make` (Core) baut aus der Auswahl den Plan: nur die obersten Knoten (ein mit ausgewählter Unterordner wandert mit dem Vorfahren), Abbruch bei Scan-Wurzel, toten Knoten oder einem geschützten Pfad (die ganze Aktion ist dann aus, nicht nur das eine Element). Titel und Text des Dialogs kommen aus dem Plan.
+- **„Nicht mehr fragen“** (`TrashConfirmation`): nur, wenn die Summe unter 1 GB (dezimal, 1 000 000 000 Byte) liegt; bei Mehrfachauswahl zählt die Summe. Als Größe gilt das Maximum aus belegter und logischer Größe, damit eine Sparse-Datei mit kleiner Belegung nicht durchrutscht. Die Einstellung lässt sich unter „Einstellungen → Papierkorb“ wieder abschalten.
+- `TrashService` arbeitet über das Protokoll `FileTrashing` (`FileManager` erfüllt es; Tests nutzen einen Papierkorb im Temp-Verzeichnis). Gelöscht wird nur über `trashItem(at:resultingItemURL:)`. Der Dienst prüft die Schutzliste **ein zweites Mal**. Ein schon verschwundenes Element wird nicht als Fehler, sondern als „fehlt“ gemeldet und aus dem Baum entfernt.
+- Danach `ScanTree.removingNodes(atPaths:)` → `TreeEditChain`; Fokus, Auswahl, Historie, aufgeklappte Ordner und Suchtreffer werden über `translate` nachgeführt (`AppState.applyEdit`).
+- **Undo (⌘Z):** `TrashService.restore` legt per `moveItem` an den alten Ort zurück, überschreibt aber nie ein inzwischen dort liegendes Objekt und legt keinen fehlenden Elternordner an (dann Fehlermeldung). Danach Teil-Rescan des nächsten vorhandenen Vorfahren (des Elternordners). Der Undo-Stapel gilt pro Scan; ein neuer Scan leert ihn.
+- **Papierkorb im Baum:** Liegt der Papierkorb-Ordner (z. B. `~/.Trash` beim Scan von „/“ oder „~“) im Baum, wird er nach Papierkorb und Undo still neu eingelesen; sonst stimmte die Summe nicht.
+- **„Nicht zugeordnet“ nach dem Papierkorb:** wird aus den frischen Volume-Kennzahlen neu berechnet. Weil der Papierkorb auf demselben Volume liegt, bleibt „belegt“ gleich; liegt der Papierkorb nicht im Baum, wächst „Nicht zugeordnet“ deshalb um die verschobene Größe, bis der Papierkorb geleert wird. Das ist korrekt (der Platz ist noch belegt), wird aber im Hinweis nicht eigens erklärt.
+- Fehlerbehebung im Core: `TreeEdit.translate` lieferte für einen mit `removingNode` entfernten Knoten das nachgerückte Geschwister statt `nil` (der tote Datensatz wurde verschoben, aber nicht als verschoben vermerkt).
+
+### Schutzliste (`ProtectedPaths`, Core)
+- Wie SPEC 3.6, dazu **Ordner, die einen geschützten Bereich enthalten** (z. B. `/Users`, `/Library`, `/private`, `/Applications` mit der laufenden App): Mit ihnen würde der geschützte Bereich mitverschoben. Das ist eine Erweiterung der Spec, die nur mehr schützt.
+- Normalisierung vor dem Vergleich: `.`/`..`, Mehrfach- und Endschrägstriche, `/var|/etc|/tmp` → `/private/…`, Firmlink-Pfade unter `/System/Volumes/Data/…` → `/…`, Vergleich ohne Groß-/Kleinschreibung und NFC/NFD-unabhängig.
+- Volume-Wurzeln über `getmntinfo`; die laufende App über `Bundle.main.bundlePath` (nur, wenn es ein `.app` ist; bei `swift run` gibt es keine).
+
+### Teil-Rescan in der Oberfläche (SPEC 3.8)
+- Rechtsklick → „Diesen Ordner neu scannen“, ⇧⌘R (Auswahl bzw. Fokus) und der Rescan-Knopf (Fokus).
+- **Ablauf:** Der Ordner wird auf einem eigenen Thread mit den Optionen des ursprünglichen Scans gelesen (`PartialRescan.scan`); das Ergebnis wird erst beim Eintreffen in den **dann aktuellen** Baum eingehängt (`PartialRescan.merge`). Der vorhandene `ScanEngine.rescan(subtree:in:)` hängt dagegen in den Baum vom Start ein; zwei parallele Rescans würden sich damit gegenseitig überschreiben.
+- **Spezialfälle** (`RescanQueue`, Core, getestet): Während eines vollständigen Scans gibt es keinen Teil-Rescan (Hinweis; Menüeintrag ausgegraut). Ein neuer vollständiger Scan bricht laufende Teil-Rescans ab. Derselbe Ordner oder ein Unterordner eines laufenden Rescans startet nicht doppelt. Ein Vorfahr ersetzt laufende Rescans seiner Unterordner (deren Ergebnis wird verworfen). Unabhängige Ordner laufen parallel. Existiert der Ordner nicht mehr, wird er entfernt („x: nicht mehr vorhanden (−…)“). Ist die Scan-Wurzel selbst verschwunden, bleibt der Baum unverändert, und eine Fehlermeldung erscheint.
+- **Fortschritt:** Das Segment wird abgedunkelt und bekommt am Außenrand einen Fortschrittsring. Der Fortschritt wird aus den bisher gelesenen Bytes und der alten Größe geschätzt (höchstens 97 %); bei alter Größe 0 läuft ein unbestimmter Bogen um. Ist der Ordner nicht als Segment sichtbar, trägt sein nächster sichtbarer Vorfahr den Ring, beim Fokus selbst die Mitte. In der Liste steht statt der Größe ein kleiner Fortschrittskreis. Die App bleibt bedienbar.
+- **Hinweis:** „Name: alt → neu (±Δ)“ als Toast unten im Diagramm (ohne Änderung „Name: x (unverändert)“).
+- Die Kompaktierung läuft wie im Core vorgesehen sofort beim Einhängen (`compactIfNeeded: true`), nicht im Hintergrund; bei den gemessenen Zeiten (siehe M6) war das nicht nötig.
+
+### Animation nach Änderungen (`EditTransition`, Core)
+- Nach Papierkorb, Teil-Rescan und Undo werden Arcs über die Index-Übersetzung zugeordnet: Gleiche Knoten wandern von alter zu neuer Lage, entfernte schrumpfen auf ihre Mitte und blenden aus, neue wachsen aus ihrer Mitte (450 ms). Sammel- und Restsegmente werden über ihren Elternknoten zugeordnet. Die Farben des Ausgangsbilds kommen aus dem alten Baum (`ActiveTransition.fromTree`). Bei „Bewegung reduzieren“ entfällt die Animation.
+
+### M4/M5 – Oberfläche
+- **Verstellbare Liste:** eigener Teiler (1 pt Linie, 7 pt Griff, Doppelklick = 400 pt) statt `HSplitView`, Breite 300–720 pt, in den Einstellungen gespeichert. `HSplitView` übernahm die Startbreite nicht (die Liste startete mit Minimal- oder halber Fensterbreite) und kürzte die Namen in den Vorschaubildern auf wenige Zeichen.
+- **Mehrfachauswahl** in der Liste (`NodeSelection`, Core): Klick wählt aus, ⌘-Klick schaltet um, ⇧-Klick wählt den Bereich der sichtbaren Zeilen ab dem Anker. Das Diagramm umrandet alle ausgewählten Segmente.
+- **Suche** (Lupe in der Toolbar, ⌘F): Teilzeichenfolge im ganzen Baum ohne Groß-/Kleinschreibung und Akzente (`TreeSearch`, Core; 2 Mio. Knoten in rund 40 ms im Release-Build). Die Treffer (größte zuerst, höchstens 300) ersetzen rechts die Liste; ein Klick fokussiert den Elternordner, wählt den Treffer aus und klappt die Liste bis dorthin auf; ⏎ springt zum größten Treffer, Esc schließt die Suche.
+- **M5-Prüfung:** „Nicht zugeordnet“ (Segment, Listenzeile, Statusleiste) und Live-Update während des Scans waren vollständig. Ergänzt: Statusleiste mit Hinweis-Symbol „Klone und Snapshots können Abweichungen verursachen“ (SPEC 4.1 Punkt 3, vorher nur im Tooltip von „nicht zugeordnet“), Hinweis „Kein Festplattenvollzugriff“ in der Statusleiste der Hauptansicht (vorher nur auf dem Startbildschirm und in der aufgeklappten Scan-Zusammenfassung), Neuberechnung von „Nicht zugeordnet“ nach Änderungen und bei Rückkehr in die App, Volume-Kennzahlen schon während des Scans.
+
+### API-Änderungen M4 (Core)
+- Neu: `ProtectedPaths` (`reason(for:)`, `isProtected`, `Reason.message`, `mountedVolumeRoots()`, `runningAppBundlePath()`), `NodeSelection`, `NodeAction`, `ActionShortcut`, `ActionAvailability`, `ActionContext`, `FileTrashing` (mit `FileManager`-Konformität), `TrashItem`, `TrashPlan`, `TrashPlanError`, `TrashConfirmation`, `TrashRecord`, `TrashFailure`, `TrashOutcome`, `RestoreOutcome`, `TrashService`, `TreeEditChain`, `ScanTree.removingNodes(_:)`/`removingNodes(atPaths:)`, `FocusHistory.translated(from:by:)`, `RescanQueue`, `RescanMerge`, `PartialRescan` (`scan`, `merge`, `summary`, `estimatedProgress`), `EditTransition`, `TreeSearch`.
+- Geändert: `ScanEngine.nearestExistingIndex(of:in:)` ist öffentlich; `TreeEdit.translate` liefert für entfernte Knoten zuverlässig `nil` (Fehlerbehebung, siehe oben).
+- App: `AppState.selected` ist jetzt eine berechnete Eigenschaft über `selection` (Mehrfachauswahl); `ActiveTransition` hält statt `zoom` ein `animation: any LayoutTransition` und `fromTree`; `BrowserBody` liegt jetzt in `BrowserView.swift`.

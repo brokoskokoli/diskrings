@@ -83,6 +83,82 @@ enum SnapshotRenderer {
             s6.prefs.excludedPaths = ["/Users/demo/Library/Caches", "/Volumes/Backup"]
             failures += renderWindow(SettingsView(prefs: s6.prefs), scheme: scheme, to: dir, name: "settings-\(suffix)")
 
+            // 9. Kontextmenü (nachgebildet, siehe `ContextMenuPreview`): Datei,
+            //    geschützter Ordner (~/Library) und Mehrfachauswahl.
+            let demoProtection = ProtectedPaths(home: "/Users/demo", appBundlePath: nil, volumeRoots: ["/"])
+            let s9 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            s9.protection = demoProtection
+            if let file = demo.index(ofPath: "Documents/Rechnung 1.pdf"), let lib = demo.index(ofPath: "Library"),
+               let d1 = demo.index(ofPath: "Downloads/Installer 1.dmg"),
+               let d2 = demo.index(ofPath: "Downloads/Installer 2.dmg"),
+               let d3 = demo.index(ofPath: "Downloads/Datei 1.zip") {
+                let s9b = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+                s9b.protection = demoProtection
+                s9b.selection = NodeSelection([d1, d2, d3])
+                failures += renderWindow(
+                    HStack(alignment: .top, spacing: 24) {
+                        ContextMenuPreview(state: s9, node: file)
+                        ContextMenuPreview(state: s9, node: lib)
+                        ContextMenuPreview(state: s9b, node: d2)
+                    }
+                    .padding(24), scheme: scheme, to: dir, name: "contextmenu-\(suffix)")
+
+                // 10. Papierkorb-Dialog: ein Ordner unter 1 GB (mit „Nicht mehr fragen“)
+                //     und eine Mehrfachauswahl über 1 GB (ohne).
+                let small = demo.childIndices(of: demo.index(ofPath: "Library/Caches") ?? 0)
+                    .first { demo.node($0).allocatedSize < 1_000_000_000 } ?? file
+                if case .success(let p1) = TrashPlan.make(targets: [small], in: demo, protection: demoProtection),
+                   case .success(let p2) = TrashPlan.make(
+                       targets: [demo.index(ofPath: "Documents/Archiv") ?? d1, d1, d2], in: demo,
+                       protection: demoProtection) {
+                    failures += renderWindow(
+                        HStack(alignment: .top, spacing: 24) {
+                            TrashConfirmationView(plan: p1, onCancel: {}, onConfirm: { _ in })
+                                .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                                .shadow(radius: 8)
+                            TrashConfirmationView(plan: p2, onCancel: {}, onConfirm: { _ in })
+                                .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                                .shadow(radius: 8)
+                        }
+                        .padding(24)
+                        .background(Color.gray.opacity(0.3)), scheme: scheme, to: dir, name: "trash-dialog-\(suffix)")
+                }
+
+                // 11. Info-Fenster.
+                failures += renderWindow(NodeInfoView(state: s9, node: lib, onClose: {}), scheme: scheme, to: dir,
+                                         name: "info-\(suffix)")
+            }
+
+            // 12. Teil-Rescan läuft (Library: bestimmter Fortschritt, Movies:
+            //     unbestimmt), dazu der Hinweis eines fertigen Teil-Rescans.
+            let s12 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            s12.showSummary = false
+            s12.simulateRescan(path: "/Users/demo/Library", fraction: 0.6)
+            s12.simulateRescan(path: "/Users/demo/Movies", fraction: -1)
+            s12.showToast(.success, PartialRescan.summary(name: "Downloads", before: 9_800_000_000,
+                                                         after: 6_300_000_000, removed: false))
+            failures += renderWindow(BrowserView(state: s12, frozenTime: .distantPast).frame(width: 1180, height: 760),
+                                     scheme: scheme, to: dir, name: "main-rescan-\(suffix)")
+
+            // 13. Suche mit Trefferliste.
+            let s13 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            s13.showSummary = false
+            s13.simulateSearch("cache")
+            failures += renderWindow(BrowserView(state: s13, frozenTime: .distantPast).frame(width: 1180, height: 760),
+                                     scheme: scheme, to: dir, name: "main-search-\(suffix)")
+
+            // 14. Animation nach dem Papierkorb (Mitte des Übergangs): Movies entfernt.
+            let s14 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            if let movies = demo.index(ofPath: "Movies") {
+                let chain = demo.removingNodes([movies])
+                s14.applyEdit(chain.tree, translate: chain.translate)
+                if let tr = s14.transition {
+                    let mid = tr.start.addingTimeInterval(tr.duration * 0.5)
+                    failures += render(SunburstView(state: s14, interactive: false, frozenTime: mid)
+                        .frame(width: 600, height: 600), scheme: scheme, to: dir, name: "sunburst-trash-anim-\(suffix)")
+                }
+            }
+
             // 7. Echter Scan.
             if let scanPath {
                 do {
