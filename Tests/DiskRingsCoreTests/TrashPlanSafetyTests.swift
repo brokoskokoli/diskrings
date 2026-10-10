@@ -115,6 +115,55 @@ struct TrashPlanSafetyTests {
         #expect(TrashConfirmation.needsConfirmation(checked, dontAskAgain: true))
     }
 
+    /// Setzt die logische Größe einer Datei (dünn belegt, schreibt keine Daten).
+    private func setLength(_ path: String, _ size: Int64) throws {
+        guard truncate(path, off_t(size)) == 0 else { throw FixtureError.failed("truncate") }
+    }
+
+    @Test("Datei seit dem Scan deutlich gewachsen → Größe unsicher, immer fragen")
+    func fileGrewOnDisk() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        try fx.file("scan/wächst.log", size: 100)
+        try fx.file("scan/bleibt", size: 100)
+        let t = try ScanEngine(options: ScanOptions(workerCount: 1)).scanBlocking(fx.path("scan")).tree
+        let plan = try TrashPlan.make(targets: [try node(t, "wächst.log"), try node(t, "bleibt")], in: t,
+                                      protection: noProtection).get()
+        try setLength(fx.path("scan/wächst.log"), 50_000_000)
+        let checked = plan.checkingCurrentKinds(using: FileManager.default)
+        #expect(checked.items.map(\.sizeIsUncertain) == [true, false])
+        #expect(TrashConfirmation.needsConfirmation(checked, dontAskAgain: true))
+    }
+
+    @Test("Datei nur wenig gewachsen → Größe bleibt sicher")
+    func fileGrewSlightly() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        try fx.file("scan/a.txt", size: 100_000)
+        let t = try ScanEngine(options: ScanOptions(workerCount: 1)).scanBlocking(fx.path("scan")).tree
+        let plan = try TrashPlan.make(targets: [try node(t, "a.txt")], in: t, protection: noProtection).get()
+        try setLength(fx.path("scan/a.txt"), 105_000)
+        #expect(!plan.checkingCurrentKinds(using: FileManager.default).hasUncertainSize)
+        // Geschrumpft: ebenfalls unkritisch (die Scan-Größe ist dann zu groß).
+        try setLength(fx.path("scan/a.txt"), 10)
+        #expect(!plan.checkingCurrentKinds(using: FileManager.default).hasUncertainSize)
+    }
+
+    @Test("Datei wächst knapp über die 1-GB-Grenze → Größe unsicher")
+    func fileCrossesLimit() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        try fx.file("scan/gross.img", size: 0)
+        try setLength(fx.path("scan/gross.img"), 995_000_000)
+        let t = try ScanEngine(options: ScanOptions(workerCount: 1)).scanBlocking(fx.path("scan")).tree
+        let plan = try TrashPlan.make(targets: [try node(t, "gross.img")], in: t, protection: noProtection).get()
+        #expect(plan.allowsDontAskAgain)
+        try setLength(fx.path("scan/gross.img"), 1_000_000_001)
+        let checked = plan.checkingCurrentKinds(using: FileManager.default)
+        #expect(checked.hasUncertainSize)
+        #expect(!checked.allowsDontAskAgain)
+    }
+
     @Test("Schutzliste: Volume-Wurzeln lassen sich zur Laufzeit auffrischen")
     func refreshVolumes() {
         let p = ProtectedPaths(home: "/nonexistent-home", appBundlePath: nil, volumeRoots: ["/"])

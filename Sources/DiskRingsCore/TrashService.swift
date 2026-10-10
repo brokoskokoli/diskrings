@@ -111,7 +111,8 @@ public struct TrashItem: Sendable, Equatable {
     /// Die Größe ist nicht verlässlich: Im Teilbaum liegt etwas nur in der
     /// Cloud, nicht Lesbares oder ein Einhängepunkt (zählt mit 0 Byte), der
     /// Baum ist dort unvollständig, oder die Art auf der Platte hat sich
-    /// seit dem Scan geändert. Dann wird immer nachgefragt.
+    /// seit dem Scan geändert bzw. die Datei ist deutlich gewachsen. Dann
+    /// wird immer nachgefragt.
     public var sizeIsUncertain: Bool
 
     public init(node: Int32, path: String, name: String, isDirectory: Bool, allocatedSize: UInt64,
@@ -222,16 +223,40 @@ public struct TrashPlan: Sendable, Equatable {
         return (nil, uncertain)
     }
 
-    /// Vergleicht die Art (Ordner oder nicht, per `lstat`) jedes Elements
-    /// mit dem Scan; hat sie sich geändert, ist die Größe unsicher.
+    /// Vergleicht jedes Element per `lstat` mit dem Scan: Hat sich die Art
+    /// (Ordner oder nicht) geändert, ist die Größe unsicher. Bei Dateien
+    /// ebenso, wenn die logische Größe deutlich über der Scan-Größe
+    /// (`limitSize`) liegt (`grewNoticeably`) oder das Wachstum den Plan über
+    /// die 1-GB-Grenze für „Nicht mehr fragen“ hebt.
     public func checkingCurrentKinds(using fileManager: any FileTrashing) -> TrashPlan {
         var out = self
+        var currentLimit: UInt64 = 0
+        var grown: [Int] = []
         for i in out.items.indices {
-            if let id = fileManager.identity(atPath: out.items[i].path), id.isDirectory != out.items[i].isDirectory {
-                out.items[i].sizeIsUncertain = true
+            let item = out.items[i]
+            var size = item.limitSize
+            if let id = fileManager.identity(atPath: item.path) {
+                if id.isDirectory != item.isDirectory {
+                    out.items[i].sizeIsUncertain = true
+                } else if !id.isDirectory, let now = id.size, now > item.limitSize {
+                    size = now
+                    grown.append(i)
+                    if Self.grewNoticeably(from: item.limitSize, to: now) { out.items[i].sizeIsUncertain = true }
+                }
             }
+            currentLimit &+= size
+        }
+        if limitSize < TrashConfirmation.dontAskLimit, currentLimit >= TrashConfirmation.dontAskLimit {
+            for i in grown { out.items[i].sizeIsUncertain = true }
         }
         return out
+    }
+
+    /// Wachstum über die Scan-Größe hinaus, das mehr als 10 % und mehr als
+    /// 1 MB beträgt.
+    static func grewNoticeably(from scanned: UInt64, to now: UInt64) -> Bool {
+        guard now > scanned else { return false }
+        return now - scanned > max(1_000_000, scanned / 10)
     }
 
     public var hasUncertainSize: Bool { items.contains { $0.sizeIsUncertain } }

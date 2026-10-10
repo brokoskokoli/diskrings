@@ -439,3 +439,6 @@ Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4).
 
 ### Vergleich: veraltete Neuberechnung räumt keinen neueren Hinweis ab
 - Der Zähler der Neuberechnung ist jetzt ein `GenerationGate` (`compareRefreshGate`). Neuer Vergleich (`runCompare`), neuer Scan, `backToStart` und `endCompare` verwerfen auch laufende Neuberechnungen (`invalidateCompareWork`). Eine Neuberechnung räumt den Hinweis „Vergleich wird aktualisiert“ nur ab, wenn ihr Gate noch aktuell ist; sonst gehört der Hinweis einem neueren Vorgang. Kein eigener Test (App-Schicht, `GenerationGate` selbst ist getestet).
+
+### Papierkorb: gewachsene Dateien
+- `checkingCurrentKinds` vergleicht bei Dateien zusätzlich die aktuelle logische Größe (`lstat`, `st_size`) mit der Scan-Größe (`limitSize`, das Größere aus belegter und logischer Größe). Unsicher wird die Größe, wenn die Datei um mehr als 10 % und mehr als 1 MB gewachsen ist oder wenn das Wachstum die Summe des Plans über die 1-GB-Grenze hebt. Geschrumpfte Dateien bleiben sicher (die Scan-Größe ist dann zu groß, die Rückfrage also strenger). Ordner werden aus Zeitgründen nicht neu summiert (siehe oben).
