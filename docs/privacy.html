@@ -87,9 +87,9 @@
       <h2>What stays on your Mac</h2>
       <ul>
         <li>To show disk usage, DiskRings reads the names and sizes of files and folders you choose to scan. It does not read file contents.</li>
-        <li>Scan snapshots (folder structure and sizes, used for comparing scans) and settings are saved locally in the app’s own storage. In the Mac App Store version this is the app’s container, <code>~/Library/Containers/de.stefanrichter.DiskRings</code>. You can delete snapshots in the app at any time; removing the app removes its container.</li>
+        <li>Scan snapshots (folder structure and sizes, used for comparing scans) and settings are saved locally in the app’s own storage. In the Mac App Store version this is the app’s container, <code>~/Library/Containers/de.stefanrichter.DiskRings</code>. You can delete snapshots in the app at any time. Removing the app does not remove this data on macOS: it stays in <code>~/Library/Containers/de.stefanrichter.DiskRings</code> until you delete that folder (in the Finder, choose Go → Go to Folder…, enter <code>~/Library/Containers</code>, and move the folder “DiskRings” or <code>de.stefanrichter.DiskRings</code> to the Trash after quitting the app).</li>
         <li>In the Mac App Store version, DiskRings only reads folders and volumes you select in the Open dialog or drag onto its window. It remembers these choices on your Mac so it doesn’t have to ask again; you can remove them in Settings.</li>
-        <li>“Move to Trash” only moves items to the macOS Trash after you confirm. Nothing is deleted permanently by the app.</li>
+        <li>“Move to Trash” moves items you choose to the macOS Trash. It asks for confirmation first; for smaller items you can turn this off with “Don’t ask again”. Nothing is deleted permanently by the app: items always go to the Trash, and you can put them back (with Undo in DiskRings or “Put Back” in the Finder) until you empty the Trash.</li>
       </ul>
     </div>
 

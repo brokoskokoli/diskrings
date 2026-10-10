@@ -34,7 +34,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 
 ### Core: App-Store-Variante (Sandbox, SPEC 11)
 - `AppEnvironment.swift`: `isSandboxed` (über `APP_SANDBOX_CONTAINER_ID`, übergebbar), `homeDirectory` (in der Sandbox der echte Home-Ordner statt des Containers).
-- `FolderAccess.swift`: `FolderAccessStore` (Ordnerfreigaben: laden mit Erneuern/Verwerfen, `grant`, `covers`/`grantedAncestor`, `revoke`, gezählte Leases `beginAccess`/`endAccess`), Protokolle `SecurityScopedBookmarks` (echt: `SystemBookmarks`) und `GrantPersistence` (`UserDefaultsGrantPersistence`, `InMemoryGrantPersistence` für Vorschaubilder).
+- `FolderAccess.swift`: `FolderAccessStore` (Ordnerfreigaben: laden mit Erneuern/Verwerfen, `grant`, `covers`/`grantedAncestor`, `revoke` (beendet alle Leases der Freigabe), gezählte Leases `beginAccess`/`endAccess`/`isActive`, Abgleich auch über aufgelöste Pfade `resolvedPath`), Protokolle `SecurityScopedBookmarks` (echt: `SystemBookmarks`) und `GrantPersistence` (`UserDefaultsGrantPersistence`, `InMemoryGrantPersistence` für Vorschaubilder).
 - `MappedBuffer.swift`: wachsender `mmap`-Puffer für Zwischenstände (gibt Speicher sofort zurück).
 - `MemDebug.swift`: Speicher- und Snapshot-Messausgaben über `DISKRINGS_DEBUG_MEM` / `DISKRINGS_DEBUG_SNAPSHOT`.
 
@@ -89,7 +89,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 
 ### App (`Sources/DiskRings`)
 - `App/DiskRingsApp.swift`: Einstieg (`Entry`: `--render-snapshots`, `--compare-demo`, `--language`; sonst normaler Start, `--scan <pfad>` scannt sofort), Szenen, `RootView`, Menübefehle `AppCommands`.
-- `App/AppState.swift`: zentraler `@Observable`-Zustand auf dem MainActor: Scan, Baum, Layout, Fokus, Auswahl, Papierkorb/Undo, Teil-Rescans, Suche, Toasts; in der Sandbox Ordnerfreigaben (`ensureAccess`, `askForAccess`, `grantAccess`, Lease auf die Scan-Wurzel).
+- `App/AppState.swift`: zentraler `@Observable`-Zustand auf dem MainActor: Scan, Baum, Layout, Fokus, Auswahl, Papierkorb/Undo, Teil-Rescans, Suche, Toasts; in der Sandbox Ordnerfreigaben (`ensureAccess`, `askForAccess`, `grantAccess`, `revokeAccess`, Lease auf die Scan-Wurzel bzw. die Wurzeln eines Snapshot-Vergleichs).
 - `App/AppDelegate.swift`: Beenden mit dem letzten Fenster, Dock-Klick, Abbruch beim Schließen, Selbsttest `--selftest-close`.
 - `App/FileActions.swift`: AppKit-Seite der Aktionen (Finder, Öffnen, Pfad kopieren), `QuickLookController`, `KeyboardMonitor` (Leertaste).
 - `App/Preferences.swift`: Einstellungen in den UserDefaults.
