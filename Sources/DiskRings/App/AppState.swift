@@ -133,7 +133,10 @@ final class AppState {
 
     // MARK: Snapshots und Vergleich (SPEC 3.9, siehe Snapshots/ und Compare/)
     var snapshots = SnapshotLibrary()
-    var compare: CompareSession?
+    var compare: CompareSession? {
+        // Zugriff für „Snapshot ↔ Snapshot“ endet mit dem Vergleich.
+        didSet { if compare?.source != .snapshots { releaseCompareAccess() } }
+    }
     /// Generation für die Neuberechnung des Vergleichs nach Änderungen am
     /// Baum. Auch ein neuer Vergleich, ein neuer Scan, `backToStart` und
     /// `endCompare` verwerfen laufende (`invalidateCompareWork`), damit eine
@@ -162,6 +165,10 @@ final class AppState {
     /// Zugriff auf die Scan-Wurzel, solange ihr Baum gezeigt wird (Scan,
     /// Teil-Rescans, Papierkorb, Finder, Quick Look, Snapshots).
     @ObservationIgnored private var rootLease: FolderAccessStore.Lease?
+    /// Zugriff auf die Scan-Wurzeln zweier verglichener Snapshots (ohne
+    /// Baum, vom Startbildschirm aus), solange der Vergleich offen ist:
+    /// für Im Finder zeigen, Öffnen und Quick Look.
+    @ObservationIgnored private var compareLeases: [FolderAccessStore.Lease] = []
 
     init(prefs: Preferences, environment: AppEnvironment = .current,
          grantPersistence: (any GrantPersistence)? = nil) {
@@ -296,8 +303,32 @@ final class AppState {
 
     func revokeAccess(_ path: String) {
         guard let store = folderAccess else { return }
-        store.revoke(path: path)
+        guard store.revoke(path: path) else { return }
         grantedFolders = store.grants
+        // Freigabe des gezeigten Baums (oder des laufenden Scans) widerrufen:
+        // ohne Zugriff zurück zum Startbildschirm, mit Hinweis.
+        if let lease = rootLease, !store.isActive(lease) {
+            rootLease = nil
+            backToStart()
+            scanError = L("sandbox.accessRevoked", accessDisplayName(path))
+        } else if compareLeases.contains(where: { !store.isActive($0) }) {
+            endCompare()
+            scanError = L("sandbox.accessRevoked", accessDisplayName(path))
+        }
+    }
+
+    /// Hält Zugriff auf die Scan-Wurzeln eines Vergleichs zweier Snapshots
+    /// (ohne Nachfrage; ohne Freigabe kein Lease). Neue Leases vor dem
+    /// Freigeben der alten, damit dieselbe Freigabe nicht kurz endet.
+    func holdCompareAccess(roots: [String]) {
+        let fresh = folderAccess.map { store in Set(roots).compactMap { store.beginAccess(for: $0) } } ?? []
+        releaseCompareAccess()
+        compareLeases = fresh
+    }
+
+    private func releaseCompareAccess() {
+        for lease in compareLeases { folderAccess?.endAccess(lease) }
+        compareLeases = []
     }
 
     private func accessDisplayName(_ path: String) -> String {

@@ -452,3 +452,4 @@
 "settings.access.remove" = "Удалить доступ";
 "settings.access.footer" = "DiskRings читает только эти папки и всё их содержимое. Удаление доступа не изменяет файлы.";
 "arc.unreadableSystem.sandboxHint" = "Сюда также входят папки, к которым у DiskRings нет доступа.";
+"sandbox.accessRevoked" = "Доступ к «%@» удалён. Выберите папку снова, чтобы просканировать её.";

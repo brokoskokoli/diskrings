@@ -452,3 +452,4 @@
 "settings.access.remove" = "Remover Acesso";
 "settings.access.footer" = "O DiskRings só lê estas pastas e tudo o que há nelas. Remover o acesso não altera nenhum arquivo.";
 "arc.unreadableSystem.sandboxHint" = "Isso também inclui pastas às quais o DiskRings não tem acesso.";
+"sandbox.accessRevoked" = "O acesso a “%@” foi removido. Escolha a pasta novamente para analisá-la.";

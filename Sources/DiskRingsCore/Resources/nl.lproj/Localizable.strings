@@ -452,3 +452,4 @@
 "settings.access.remove" = "Verwijder toegang";
 "settings.access.footer" = "DiskRings leest alleen deze mappen en alles daarin. Het verwijderen van toegang wijzigt geen bestanden.";
 "arc.unreadableSystem.sandboxHint" = "Hiertoe behoren ook mappen waartoe DiskRings geen toegang heeft.";
+"sandbox.accessRevoked" = "Toegang tot ‘%@’ is verwijderd. Kies de map opnieuw om hem te scannen.";

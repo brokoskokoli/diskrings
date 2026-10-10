@@ -452,3 +452,4 @@
 "settings.access.remove" = "Erişimi Kaldır";
 "settings.access.footer" = "DiskRings yalnızca bu klasörleri ve içindeki her şeyi okur. Erişimi kaldırmak hiçbir dosyayı değiştirmez.";
 "arc.unreadableSystem.sandboxHint" = "DiskRings’in erişimi olmayan klasörler de buna dahildir.";
+"sandbox.accessRevoked" = "“%@” erişimi kaldırıldı. Taramak için klasörü yeniden seçin.";

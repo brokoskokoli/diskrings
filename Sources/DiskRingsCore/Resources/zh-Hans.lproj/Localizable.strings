@@ -452,3 +452,4 @@
 "settings.access.remove" = "移除访问权限";
 "settings.access.footer" = "DiskRings 只读取这些文件夹及其中的全部内容。移除访问权限不会更改任何文件。";
 "arc.unreadableSystem.sandboxHint" = "其中也包括 DiskRings 无权访问的文件夹。";
+"sandbox.accessRevoked" = "已移除对“%@”的访问权限。请重新选择该文件夹以进行扫描。";

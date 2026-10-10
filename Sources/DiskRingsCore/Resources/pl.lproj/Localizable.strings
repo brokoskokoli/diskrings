@@ -452,3 +452,4 @@
 "settings.access.remove" = "Usuń dostęp";
 "settings.access.footer" = "DiskRings odczytuje tylko te foldery i całą ich zawartość. Usunięcie dostępu nie zmienia żadnych plików.";
 "arc.unreadableSystem.sandboxHint" = "Obejmuje to również foldery, do których DiskRings nie ma dostępu.";
+"sandbox.accessRevoked" = "Dostęp do „%@” został usunięty. Wybierz folder ponownie, aby go przeskanować.";

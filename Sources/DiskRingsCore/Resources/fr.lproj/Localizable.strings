@@ -452,3 +452,4 @@
 "settings.access.remove" = "Retirer l’accès";
 "settings.access.footer" = "DiskRings ne lit que ces dossiers et leur contenu. Retirer l’accès ne modifie aucun fichier.";
 "arc.unreadableSystem.sandboxHint" = "Cela comprend aussi les dossiers auxquels DiskRings n’a pas accès.";
+"sandbox.accessRevoked" = "L’accès à « %@ » a été supprimé. Choisissez de nouveau le dossier pour l’analyser.";

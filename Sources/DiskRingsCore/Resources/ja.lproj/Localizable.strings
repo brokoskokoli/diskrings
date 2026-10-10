@@ -452,3 +452,4 @@
 "settings.access.remove" = "アクセスを削除";
 "settings.access.footer" = "DiskRingsはこれらのフォルダとその中身だけを読み取ります。アクセスを削除してもファイルは変更されません。";
 "arc.unreadableSystem.sandboxHint" = "DiskRingsがアクセスできないフォルダもここに含まれます。";
+"sandbox.accessRevoked" = "“%@”へのアクセスを削除しました。スキャンするにはフォルダをもう一度選択してください。";

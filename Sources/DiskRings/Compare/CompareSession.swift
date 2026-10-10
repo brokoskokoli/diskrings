@@ -285,6 +285,9 @@ extension AppState {
                                              comparesSnapshots: comparesSnapshots, options: options)
                 session.source = source
                 compare = session
+                if source == .snapshots {
+                    holdCompareAccess(roots: [model.diff.old.metadata.rootPath, model.diff.new.metadata.rootPath])
+                }
                 if phase == .start { phase = .browsing }
                 // Baum während der Berechnung geändert (Papierkorb, Teil-Rescan):
                 // gleich neu rechnen.

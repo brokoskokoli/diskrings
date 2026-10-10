@@ -452,3 +452,4 @@
 "settings.access.remove" = "Rimuovi accesso";
 "settings.access.footer" = "DiskRings legge solo queste cartelle e tutto il loro contenuto. Rimuovere l’accesso non modifica alcun file.";
 "arc.unreadableSystem.sandboxHint" = "Comprende anche cartelle a cui DiskRings non ha accesso.";
+"sandbox.accessRevoked" = "L’accesso a “%@” è stato rimosso. Scegli di nuovo la cartella per analizzarla.";

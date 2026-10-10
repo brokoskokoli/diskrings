@@ -452,3 +452,4 @@
 "settings.access.remove" = "접근 제거";
 "settings.access.footer" = "DiskRings는 이 폴더와 그 안의 모든 항목만 읽습니다. 접근을 제거해도 파일은 변경되지 않습니다.";
 "arc.unreadableSystem.sandboxHint" = "DiskRings가 접근할 수 없는 폴더도 여기에 포함됩니다.";
+"sandbox.accessRevoked" = "‘%@’에 대한 접근 권한이 제거되었습니다. 스캔하려면 폴더를 다시 선택하십시오.";
