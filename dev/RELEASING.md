@@ -15,7 +15,8 @@ Beteiligte Skripte:
 - `scripts/notarize.sh`: `check` prüft die Zugangsdaten, `submit <datei>` reicht ein und wartet. Nutzt den API Key, wenn `NOTARY_API_KEY_ID` gesetzt ist, sonst das Profil `diskrings`.
 - `scripts/release.sh`: Tests, `make-app.sh`, Notarisierung von App und DMG, `stapler`, `spctl`, `SHA256SUMS`.
 - `scripts/ci-release.sh`: Schritte nur für den Workflow (Vorprüfung, temporäre Keychain).
-- `scripts/setup-release-secrets.sh`: richtet die Secrets einmalig ein.
+- `scripts/ci-appstore.sh`: Schritte des Workflows „App Store Upload“ (`.github/workflows/appstore.yml`): Vorprüfung, Keychain mit beiden Store-Identitäten, `make-app.sh --appstore`, Prüfung, `altool` Validierung und Upload. Nutzt die Keychain-Funktionen aus `ci-release.sh`.
+- `scripts/setup-release-secrets.sh`: richtet die Secrets einmalig ein (`--appstore`: für den Store-Workflow im Environment `appstore`).
 
 ## Einmalige Einrichtung (GitHub Actions)
 
@@ -175,6 +176,10 @@ Nicht beide Wege für dieselbe Version mischen: Wenn der Tag-Workflow schon ein 
 ## Mac App Store
 
 Die Store-Variante (App Sandbox, SPEC 11) entsteht aus demselben Code, wird aber nicht notarisiert, sondern als `.pkg` bei App Store Connect hochgeladen. Einmalige Einrichtung (Zertifikate „Apple Distribution“ und „Mac Installer Distribution“, App-ID, Provisioning Profile, App in App Store Connect): [APPSTORE.md](APPSTORE.md).
+
+**Per Workflow (empfohlen):** Nach dem Release-Tag `v<version>` unter Actions → **App Store Upload** → Run workflow auf dem Tag starten, `dry_run` abhaken, freigeben (Environment `appstore`). Der Workflow baut, signiert, validiert und lädt hoch; den Build in App Store Connect auswählen und zur Prüfung einreichen bleibt Handarbeit. Einrichtung (Environment, sechs Secrets per `scripts/setup-release-secrets.sh --appstore`, API Key mit Rolle App Manager) und Build-Nummern: [APPSTORE.md](APPSTORE.md), Schritt 6 und „Je Version“.
+
+**Von Hand:**
 
 ```sh
 # 1. Prüfen

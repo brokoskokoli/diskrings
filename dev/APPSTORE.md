@@ -2,7 +2,7 @@
 
 Die Store-Variante entsteht aus demselben Code wie die Download-Version. Sie läuft in der **App Sandbox**: DiskRings liest dort nur Ordner, die über den Öffnen-Dialog freigegeben wurden, und merkt sich die Freigaben. Gebaut wird sie mit `scripts/make-app.sh --appstore` (Spezifikation: SPEC 11; Befehle auch in [RELEASING.md](RELEASING.md), Abschnitt „Mac App Store“).
 
-**Stand:** Code, Build-Skript, CI-Schritt und Datenschutzseite sind fertig. Ohne die Zertifikate unten baut das Skript eine ad hoc signierte Sandbox-App und ein **unsigniertes** `.pkg` (zum lokalen Testen, nicht hochladbar). Was noch von dir kommt: Schritte 1–5.
+**Stand:** Code, Build-Skript, CI-Schritt, Upload-Workflow und Datenschutzseite sind fertig. Der erste Build (0.2.0, Build 118) wurde von Hand hochgeladen. Ohne die Zertifikate unten baut das Skript eine ad hoc signierte Sandbox-App und ein **unsigniertes** `.pkg` (zum lokalen Testen, nicht hochladbar). Für den Upload per Workflow fehlt noch Schritt 6.
 
 Dieses Dokument beschreibt die **einmaligen Schritte von Hand** und den Ablauf je Version. Alles ist im Apple-Developer-Programm enthalten, es fallen keine Zusatzkosten an.
 
@@ -68,26 +68,61 @@ Danach in der App:
   /Applications/Transporter.app/Contents/itms/bin/iTMSTransporter -m upload \
     -assetFile build/DiskRings-<version>.pkg -apiKey <KEY_ID> -apiIssuer <ISSUER_ID> -v informational
   ```
-  Der Key braucht in App Store Connect mindestens die Rolle **App Manager**; der Notarisierungs-Key (Rolle Developer) reicht dafür vermutlich nicht. Mit installiertem Xcode geht alternativ `xcrun altool --upload-app -f build/DiskRings-<version>.pkg -t macos --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>`. Ein Workflow „App Store Upload“ (von Hand gestartet, Environment mit Freigabe) kann folgen, sobald der manuelle Weg einmal geklappt hat.
+  Der Key braucht in App Store Connect mindestens die Rolle **App Manager**; der Notarisierungs-Key (Rolle Developer) reicht dafür vermutlich nicht. Mit installiertem Xcode geht alternativ `xcrun altool --upload-app -f build/DiskRings-<version>.pkg -t macos --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>`. Der übliche Weg ab Version 0.2.1 ist der Workflow „App Store Upload“ (unten).
+
+### 6. Upload per Workflow einrichten (einmalig, ca. 15 Minuten)
+
+Der Workflow [`.github/workflows/appstore.yml`](../.github/workflows/appstore.yml) („App Store Upload“) baut die Store-Variante auf einem macOS-Runner, signiert App und `.pkg`, lässt das Paket von App Store Connect prüfen (`altool --validate-app`) und lädt es hoch. Er startet nur von Hand und lädt nur auf einem Tag `v<VERSION>` hoch, der zu `VERSION` passt; sonst (oder mit `dry_run`) ist es ein Trockenlauf ohne Upload. Die Logik steht in `scripts/ci-appstore.sh`; das Sicherheitsmodell ist dasselbe wie beim Release-Workflow (siehe [RELEASING.md](RELEASING.md), „Sicherheitsabwägungen“): Token ohne Schreibrechte, gepinnte Actions, Secrets nur im Environment, temporäre Keychain mit Zufallspasswort, `.p8` nur während des `altool`-Aufrufs auf der Platte.
+
+1. **Environment `appstore` anlegen:** GitHub → Settings → Environments → **New environment** `appstore` → *Required reviewers*: du; *Wait timer* nach Wunsch (z. B. 5 Minuten, Zeit zum Abbrechen); *Deployment branches and tags* → „Selected branches and tags“ → Tag-Regel `v*` und Branch `main`.
+2. **API Key mit Rolle App Manager:** Der Workflow nutzt dieselben Secret-Namen wie die Notarisierung (`NOTARY_API_KEY_*`), aber im Environment `appstore`. Hat der vorhandene Key nur die Rolle **Developer**, in App Store Connect (Users and Access → Integrations → App Store Connect API → Team Keys) einen neuen Team Key mit Rolle **App Manager** anlegen und hier dessen `.p8`, Key-ID und Issuer-ID verwenden. Der Release-Workflow kann bei seinem Developer-Key bleiben.
+3. **Secrets setzen** (im Terminal, interaktiv; braucht beide Zertifikate aus Schritt 1 im Anmelde-Schlüsselbund und das Profil aus Schritt 3):
+   ```sh
+   scripts/setup-release-secrets.sh --appstore
+   ```
+   Antworten wie in [RELEASING.md](RELEASING.md), Schritt 2; zusätzlich der Pfad zum Provisioning Profile. Das Skript führt „Apple Distribution“ und „3rd Party Mac Developer Installer“ in ein `.p12` zusammen und setzt sechs Secrets im Environment `appstore`:
+
+   | Secret | Inhalt |
+   |---|---|
+   | `APPSTORE_CERTIFICATES_P12_BASE64` | `.p12` mit beiden Identitäten (Zertifikat + privater Schlüssel), base64 |
+   | `APPSTORE_CERTIFICATES_PASSWORD` | Passwort dieses `.p12` |
+   | `APPSTORE_PROVISIONING_PROFILE_BASE64` | `DiskRings_App_Store.provisionprofile`, base64 |
+   | `NOTARY_API_KEY_P8_BASE64` | `AuthKey_<KeyID>.p8` (Rolle App Manager), base64 |
+   | `NOTARY_API_KEY_ID` | Key-ID (10 Zeichen) |
+   | `NOTARY_API_ISSUER_ID` | Issuer-ID (UUID) |
+4. **Trockenlauf:** `gh workflow run appstore.yml -f dry_run=true`, unter Actions freigeben. Er baut, signiert und validiert bei Apple, lädt aber nichts hoch; das `.pkg` hängt einen Tag lang als Artefakt am Lauf.
+
+Falls eine künftige Xcode-Version `altool --upload-app` nicht mehr kennt, weicht das Skript auf `altool --upload-package` aus; das braucht die numerische **Apple ID** der App (App Store Connect → App-Informationen) als Variable `APPSTORE_APP_ID` (Settings → Environments → appstore → Environment variables).
 
 ## Je Version
 
-1. `VERSION` erhöhen (die Build-Nummer ergibt sich aus der Zahl der Commits und steigt damit automatisch; der Store verlangt eine höhere als beim letzten Upload).
+**Mit dem Workflow (empfohlen):**
+
+1. `VERSION` erhöhen, committen, nach `main` pushen, Tag setzen und pushen (wie in [RELEASING.md](RELEASING.md), „Release erstellen“; der Tag startet auch den Release-Workflow für die Download-Version).
+2. GitHub → **Actions** → **App Store Upload** → **Run workflow** → „Use workflow from“ → **Tags** → `v<version>`, **dry_run abhaken** → Run. Oder: `gh workflow run appstore.yml --ref v<version> -f dry_run=false`.
+3. Lauf freigeben (**Review deployments** → `appstore` → Approve), Wartezeit abwarten. Nach etwa 10–15 Minuten ist das Paket validiert und hochgeladen; die Zusammenfassung des Laufs nennt Version und Build-Nummer.
+4. Nach weiteren 10–30 Minuten erscheint der Build in App Store Connect (Apple schickt eine E-Mail, wenn er verarbeitet ist).
+5. Optional **TestFlight** (Mac): Build an dich selbst verteilen und testen.
+6. In App Store Connect die macOS-Version `<version>` anlegen bzw. öffnen, unter **Build** den Build auswählen → **Zur Prüfung einreichen**.
+7. Nach der Freigabe automatisch oder von Hand veröffentlichen.
+
+**Build-Nummer:** `CFBundleVersion` ist die Zahl der Commits bis zum Tag (`git rev-list --count v<version>`). Da Tags auf `main` gesetzt werden und `main` nicht umgeschrieben werden kann (Ruleset), steigt sie mit jedem neuen Tag. App Store Connect lehnt einen Build ab, dessen Build-Nummer nicht höher ist als die des letzten Uploads. Der erste Upload (von Hand) war Version 0.2.0 mit **Build 118**, gebaut vom damaligen Stand von `main`; der Tag `v0.2.0` selbst hat nur 114 Commits. Den Tag `v0.2.0` deshalb **nicht** über den Workflow hochladen, erst die nächste Version (ihr Tag liegt nach Commit 118). Ein Tag auf einem Seitenzweig hätte eine kleinere Commit-Zahl und würde ebenfalls abgelehnt.
+
+**Von Hand (ohne Workflow):**
+
+1. `VERSION` erhöhen (siehe Build-Nummer oben).
 2. Bauen (Tests vorher mit `scripts/check.sh`):
    ```sh
    DISKRINGS_PROVISIONING_PROFILE="$HOME/Library/MobileDevice/Provisioning Profiles/DiskRings_App_Store.provisionprofile" \
      scripts/make-app.sh --appstore
    ```
-   Erwartet in der Ausgabe: `codesign (Apple Distribution: …)`, die Entitlements (drei Sandbox-Schlüssel plus `application-identifier`/`team-identifier`) und `productbuild (3rd Party Mac Developer Installer: …)`. Prüfen:
+   Erwartet in der Ausgabe: `codesign (Apple Distribution: …)`, die Entitlements (drei Sandbox-Schlüssel plus `application-identifier`/`team-identifier`) und `productsign (3rd Party Mac Developer Installer: …)`. Prüfen:
    ```sh
    codesign -d --entitlements - build/appstore/DiskRings.app
    pkgutil --check-signature build/DiskRings-<version>.pkg
    ```
    Steht dort `adhoc-sandbox` oder „unsigniert“, fehlt ein Zertifikat (Schritt 1). Andere Identitäten: `DISKRINGS_APPSTORE_IDENTITY=…`, `DISKRINGS_INSTALLER_IDENTITY=…`.
-3. Hochladen (Transporter oder `altool`), nach ca. 10–30 Minuten erscheint der Build in App Store Connect.
-4. Optional **TestFlight** (Mac): Build an dich selbst verteilen und testen.
-5. In der Version den Build auswählen → **Zur Prüfung einreichen**.
-6. Nach der Freigabe automatisch oder von Hand veröffentlichen.
+3. Hochladen (Transporter oder `altool`, Schritt 5), weiter wie oben ab Schritt 4.
 
 ## Screenshots
 
