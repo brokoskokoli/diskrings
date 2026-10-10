@@ -378,7 +378,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, delta %4$@";
 "compare.listPicker" = "Lijst";
 "compare.viewPicker" = "Weergave";
-"compare.viewPicker.help" = "Groei: segmentgrootte = groei. Deltakleuren: normale groottes, rood gegroeid, groen gekrompen.";
+"compare.viewPicker.help" = "Groei: segmentgrootte = groei. Deltakleuren: normale groottes, oranje gegroeid, blauw gekrompen.";
 "compare.end" = "Beëindig vergelijking";
 "compare.end.help" = "Terug naar de normale weergave (Esc)";
 "compare.breadcrumb" = "Pad in vergelijking";
@@ -408,3 +408,13 @@
 "trash.error.containsMountPoint" = "Bevat een ander volume (koppelpunt ‘%@’) en kan niet naar de prullenmand worden verplaatst";
 "trash.confirm.sizeUncertain" = "De grootte is niet volledig bekend (onderdelen alleen in de cloud, onleesbaar of nog niet gescand), daarom wordt altijd om bevestiging gevraagd.";
 "reason.targetsChanged" = "De onderdelen zijn inmiddels gewijzigd (bijvoorbeeld door een nieuwe scan). Er is niets uitgevoerd – probeer het opnieuw.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "niveau %@";
+"outline.value.expanded" = "uitgevouwen, niveau %@";
+"outline.value.collapsed" = "samengevouwen, niveau %@";
+"accessibility.expand" = "Vouw uit";
+"accessibility.collapse" = "Vouw samen";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

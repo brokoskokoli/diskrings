@@ -378,7 +378,7 @@
 "compare.entry.accessibility" = "%1$@、%2$@、%3$@、差分%4$@";
 "compare.listPicker" = "リスト";
 "compare.viewPicker" = "表示";
-"compare.viewPicker.help" = "増加：セグメントのサイズ＝増加量。差分カラー：通常のサイズで、増加は赤、減少は緑。";
+"compare.viewPicker.help" = "増加：セグメントのサイズ＝増加量。差分カラー：通常のサイズで、増加はオレンジ、減少は青。";
 "compare.end" = "比較を終了";
 "compare.end.help" = "通常の表示に戻る（Esc）";
 "compare.breadcrumb" = "比較内のパス";
@@ -408,3 +408,13 @@
 "trash.error.containsMountPoint" = "別のボリューム（マウントポイント“%@”）を含むため、ゴミ箱に入れられません";
 "trash.confirm.sizeUncertain" = "サイズが完全には分かっていません（クラウドのみ、読み取り不可、または未スキャンの項目）。そのため常に確認されます。";
 "reason.targetsChanged" = "項目がその間に変更されました（再スキャンなど）。何も実行されていません。もう一度やり直してください。";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "レベル %@";
+"outline.value.expanded" = "展開、レベル %@";
+"outline.value.collapsed" = "折りたたみ、レベル %@";
+"accessibility.expand" = "展開";
+"accessibility.collapse" = "折りたたむ";
+"format.labelValue" = "%1$@：%2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

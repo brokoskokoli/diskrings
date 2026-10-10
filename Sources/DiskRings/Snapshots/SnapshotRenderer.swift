@@ -152,6 +152,11 @@ enum SnapshotRenderer {
                                                          after: 6_300_000_000, removed: false))
             failures += renderWindow(BrowserView(state: s12, frozenTime: .distantPast).frame(width: 1180, height: 760),
                                      scheme: scheme, to: dir, name: "main-rescan-\(suffix)")
+            // 12b. Dasselbe mit „Bewegung reduzieren“: unbestimmter Ring ruhend, gestrichelt.
+            failures += renderWindow(BrowserView(state: s12, frozenTime: .distantPast)
+                                        .environment(\.forcedAccessibility, ForcedAccessibility(reduceMotion: true))
+                                        .frame(width: 1180, height: 760),
+                                     scheme: scheme, to: dir, name: "main-rescan-reducemotion-\(suffix)")
 
             // 13. Suche mit Trefferliste.
             let s13 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)

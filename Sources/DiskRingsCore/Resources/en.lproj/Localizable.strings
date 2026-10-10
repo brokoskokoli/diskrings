@@ -378,7 +378,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, delta %4$@";
 "compare.listPicker" = "List";
 "compare.viewPicker" = "View";
-"compare.viewPicker.help" = "Growth: segment size = growth. Delta Colors: normal sizes, red grown, green shrunk.";
+"compare.viewPicker.help" = "Growth: segment size = growth. Delta Colors: normal sizes, orange grown, blue shrunk.";
 "compare.end" = "End Comparison";
 "compare.end.help" = "Back to the normal view (Esc)";
 "compare.breadcrumb" = "Path in Comparison";
@@ -408,3 +408,13 @@
 "trash.error.containsMountPoint" = "Contains another volume (mount point “%@”) and can’t be moved to the Trash";
 "trash.confirm.sizeUncertain" = "The size isn’t fully known (cloud-only, unreadable or not yet scanned items), so this is always confirmed.";
 "reason.targetsChanged" = "The items changed in the meantime (for example by a rescan). Nothing was done – please try again.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "level %@";
+"outline.value.expanded" = "expanded, level %@";
+"outline.value.collapsed" = "collapsed, level %@";
+"accessibility.expand" = "Expand";
+"accessibility.collapse" = "Collapse";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

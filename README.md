@@ -56,9 +56,9 @@ Pick an earlier snapshot and DiskRings shows only what changed. In the growth vi
 
 ### Compare scans: delta coloring
 
-The delta coloring keeps the normal layout and paints growth red and shrinkage green. New items get a dot, removed items appear as dashed outlines.
+The delta coloring keeps the normal layout and paints growth orange and shrinkage blue (distinguishable with red-green color blindness; with “Differentiate without color” shrunk segments are also hatched and marked ±). New items get a dot, removed items appear as dashed outlines.
 
-<img src="docs/images/compare-delta.png" alt="Delta coloring: grown folders in red, shrunk folders in green, removed items dashed (dark mode)" width="900">
+<img src="docs/images/compare-delta.png" alt="Delta coloring: grown folders in orange, shrunk folders in blue, removed items dashed (dark mode)" width="900">
 
 ### Context menu
 

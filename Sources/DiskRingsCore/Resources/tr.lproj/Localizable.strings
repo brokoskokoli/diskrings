@@ -378,7 +378,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, fark %4$@";
 "compare.listPicker" = "Liste";
 "compare.viewPicker" = "Görünüm";
-"compare.viewPicker.help" = "Büyüme: dilim boyutu = büyüme. Fark Renkleri: normal boyutlar, kırmızı büyüdü, yeşil küçüldü.";
+"compare.viewPicker.help" = "Büyüme: dilim boyutu = büyüme. Fark Renkleri: normal boyutlar, turuncu büyüdü, mavi küçüldü.";
 "compare.end" = "Karşılaştırmayı Bitir";
 "compare.end.help" = "Normal görünüme dön (Esc)";
 "compare.breadcrumb" = "Karşılaştırmadaki Yol";
@@ -408,3 +408,13 @@
 "trash.error.containsMountPoint" = "Başka bir birim içeriyor (bağlama noktası “%@”), Çöp Sepeti’ne taşınamaz";
 "trash.confirm.sizeUncertain" = "Boyut tam olarak bilinmiyor (yalnızca bulutta olan, okunamayan veya henüz taranmamış öğeler), bu nedenle her zaman onay istenir.";
 "reason.targetsChanged" = "Öğeler bu arada değişti (örneğin yeniden tarama nedeniyle). Hiçbir işlem yapılmadı, lütfen yeniden deneyin.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "düzey %@";
+"outline.value.expanded" = "genişletilmiş, düzey %@";
+"outline.value.collapsed" = "daraltılmış, düzey %@";
+"accessibility.expand" = "Genişlet";
+"accessibility.collapse" = "Daralt";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

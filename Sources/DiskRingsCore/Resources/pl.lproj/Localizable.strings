@@ -378,7 +378,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, zmiana %4$@";
 "compare.listPicker" = "Lista";
 "compare.viewPicker" = "Widok";
-"compare.viewPicker.help" = "Przyrost: rozmiar segmentu = przyrost. Kolory zmian: normalne rozmiary, czerwony – większe, zielony – mniejsze.";
+"compare.viewPicker.help" = "Przyrost: rozmiar segmentu = przyrost. Kolory zmian: normalne rozmiary, pomarańczowy – większe, niebieski – mniejsze.";
 "compare.end" = "Zakończ porównanie";
 "compare.end.help" = "Wróć do normalnego widoku (Esc)";
 "compare.breadcrumb" = "Ścieżka w porównaniu";
@@ -408,3 +408,13 @@
 "trash.error.containsMountPoint" = "Zawiera inny wolumin (punkt montowania „%@”) i nie można go przenieść do kosza";
 "trash.confirm.sizeUncertain" = "Rozmiar nie jest w pełni znany (elementy tylko w chmurze, nieczytelne lub jeszcze niezeskanowane), dlatego zawsze wymagane jest potwierdzenie.";
 "reason.targetsChanged" = "Elementy zmieniły się w międzyczasie (np. po ponownym skanowaniu). Nic nie zostało wykonane – spróbuj ponownie.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "poziom %@";
+"outline.value.expanded" = "rozwinięty, poziom %@";
+"outline.value.collapsed" = "zwinięty, poziom %@";
+"accessibility.expand" = "Rozwiń";
+"accessibility.collapse" = "Zwiń";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

@@ -378,7 +378,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, differens %4$@";
 "compare.listPicker" = "Lista";
 "compare.viewPicker" = "Vy";
-"compare.viewPicker.help" = "Tillväxt: segmentstorlek = tillväxt. Differensfärger: normala storlekar, rött växt, grönt krympt.";
+"compare.viewPicker.help" = "Tillväxt: segmentstorlek = tillväxt. Differensfärger: normala storlekar, orange växt, blått krympt.";
 "compare.end" = "Avsluta jämförelse";
 "compare.end.help" = "Tillbaka till normal vy (Esc)";
 "compare.breadcrumb" = "Sökväg i jämförelsen";
@@ -408,3 +408,13 @@
 "trash.error.containsMountPoint" = "Innehåller en annan volym (monteringspunkt ”%@”) och kan inte flyttas till papperskorgen";
 "trash.confirm.sizeUncertain" = "Storleken är inte helt känd (objekt som bara finns i molnet, är oläsbara eller inte skannats ännu), därför bekräftas detta alltid.";
 "reason.targetsChanged" = "Objekten har ändrats under tiden (till exempel av en ny skanning). Ingenting utfördes – försök igen.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "nivå %@";
+"outline.value.expanded" = "utfälld, nivå %@";
+"outline.value.collapsed" = "ihopfälld, nivå %@";
+"accessibility.expand" = "Fäll ut";
+"accessibility.collapse" = "Fäll ihop";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
