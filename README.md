@@ -34,7 +34,7 @@ DiskRings scans a volume or folder and draws its disk usage as a sunburst: every
 - **Fast, accurate scanning** of whole volumes or single folders, in parallel via `getattrlistbulk`. DiskRings counts the space actually allocated on disk: hard links only once, sparse and compressed files with their real size, the APFS Data volume firmlinks without double counting, and iCloud files without downloading them.
 - **Interactive sunburst chart** with click-to-zoom, animated transitions, back/forward (also with a trackpad swipe) and a breadcrumb bar. Small items are grouped so the chart stays readable.
 - **Synchronized detail list** next to the chart, with percentage bars, multi-selection and search.
-- **Unassigned space made visible:** at the volume root, a hatched segment shows what no folder accounts for: local APFS/Time Machine snapshots, purgeable space, system data and unreadable folders.
+- **The whole disk at a glance:** at the volume root, the ring also shows **System Data** (other APFS volumes in the container such as Preboot, VM and Recovery, each named, plus unreadable system areas), **Purgeable** space and **Free** space (can be hidden via View → Show Free Space in Ring). The start screen and status bar show the same split as a stacked bar.
 - **Snapshots and compare: "Where did my disk space go?"** Save a scan, scan again later and see exactly what grew, what shrank, what is new and what was removed.
 - **Safe cleanup:** context menu with Show in Finder, Open, Quick Look, Copy Path, Rescan This Folder and Move to Trash. Deleting only ever moves items to the Trash, asks first, and can be undone with ⌘Z. System locations are protected.
 - **Color by branch or by file type**, light and dark mode.
@@ -56,9 +56,9 @@ Pick an earlier snapshot and DiskRings shows only what changed. In the growth vi
 
 ### Compare scans: delta coloring
 
-The delta coloring keeps the normal layout and paints growth red and shrinkage green. New items get a dot, removed items appear as dashed outlines.
+The delta coloring keeps the normal layout and paints growth orange and shrinkage blue (distinguishable with red-green color blindness; with “Differentiate without color” shrunk segments are also hatched and marked ±). New items get a dot, removed items appear as dashed outlines.
 
-<img src="docs/images/compare-delta.png" alt="Delta coloring: grown folders in red, shrunk folders in green, removed items dashed (dark mode)" width="900">
+<img src="docs/images/compare-delta.png" alt="Delta coloring: grown folders in orange, shrunk folders in blue, removed items dashed (dark mode)" width="900">
 
 ### Context menu
 
@@ -80,14 +80,14 @@ There are good disk usage tools for the Mac already. Each has its own focus:
 |---|---|---|---|---|
 | Visualization | Sunburst + list | Sunburst | Treemap | Sorted list |
 | Compare scans over time | Yes (snapshots) | No | No | No |
-| Shows unassigned space (snapshots, purgeable) | Yes | Yes (as hidden space) | No | No |
+| Shows space outside folders (system data, purgeable, free) | Yes | Yes (as hidden space) | No | No |
 | Delete | Trash only, with undo | Yes | Yes | Yes |
 | Price | Free, open source (MIT) | Paid | Free, open source | Free |
 
 What makes DiskRings different:
 
 - **Snapshot compare.** Answer "where did my disk space go since last week?" instead of hunting through the whole disk again.
-- **Honest totals.** The scan sum plus "unassigned" equals the used space reported by the volume, so APFS snapshots and purgeable space don't silently disappear.
+- **Honest totals.** The scan sum plus System Data plus Purgeable equals the used space reported by the volume, so other volumes, APFS snapshots and purgeable space don't silently disappear.
 - **Safe by default.** There is no permanent delete. Everything goes to the Trash, with a confirmation and ⌘Z undo, and system paths are protected.
 - **Fast.** On an M3 Pro, a home folder with 2.9 million files and folders is scanned in about 10 seconds (`du -sk` needs 65 s for the same folder). Comparing two snapshots with 2 million entries each takes about 0.3 s. Details are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 - **Free and open source**, with no in-app purchases, no ads and no data collection.
@@ -108,7 +108,7 @@ Planned.
 
 ### Full Disk Access (recommended)
 
-Without Full Disk Access, DiskRings still works, but macOS hides folders like `~/Library/Mail`, `~/Library/Messages`, Safari data and other apps' containers. They show up as unreadable, and their space is counted as "unassigned". To grant access:
+Without Full Disk Access, DiskRings still works, but macOS hides folders like `~/Library/Mail`, `~/Library/Messages`, Safari data and other apps' containers. They show up as unreadable, and their space is counted as "Unreadable System Data". To grant access:
 
 1. Open **System Settings → Privacy & Security → Full Disk Access** (or click the button on the DiskRings start screen).
 2. Click **+**, add **DiskRings** from Applications, and turn the switch on.
@@ -162,9 +162,15 @@ Before a release you can do a dry run that builds, signs and notarizes without p
 
 The Finder usually shows the logical file size (the number of bytes in the file). DiskRings shows the space allocated on disk, like `du`. They differ for compressed and sparse files, many small files (block size), and hard links, which DiskRings counts only once. APFS clones share blocks, but macOS has no public API to detect that, so cloned files can make a folder total look larger than the space it really uses.
 
-### What does "Unassigned" mean?
+### What are "System Data", "Purgeable" and "Free"?
 
-It is the difference between the space the volume reports as used and the sum of everything the scan found. Typical causes are local Time Machine and APFS snapshots, purgeable space (caches macOS can free on demand), system data outside the readable file tree, and folders DiskRings was not allowed to read (see Full Disk Access). It only appears when you scan a whole volume.
+When you scan a whole volume, DiskRings splits the space that appears in no folder (used space minus the scan sum):
+
+- **System Data:** the other APFS volumes in the same container (Preboot, VM for swap and sleep image, Recovery, Update, or your own volumes such as a Nix store), each with its name and size, plus **Unreadable System Data**: the rest, e.g. the Spotlight index, document versions, `/private/var/db`, APFS metadata and – without Full Disk Access – the folders DiskRings wasn't allowed to read.
+- **Purgeable:** space macOS frees on demand (caches, iCloud files, local snapshots).
+- **Free:** really unused space, drawn light grey.
+
+Local APFS and Time Machine snapshots can't be measured separately without administrator rights; depending on their state they count as Purgeable or Unreadable System Data. Older versions showed all of this as one grey "Unassigned" segment.
 
 ### Is deleting safe?
 

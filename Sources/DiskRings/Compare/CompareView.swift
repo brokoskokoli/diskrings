@@ -160,14 +160,14 @@ struct CompareHeadlineBar: View {
         let h = session.headline
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Image(systemName: "chart.bar.xaxis").foregroundStyle(.secondary).accessibilityHidden(true)
-            (Text(h.prefix + ": ").fontWeight(.semibold) + partsText(h))
-                .font(.system(size: 13))
+            labeledText(h)
+                .font(.body)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .textSelection(.enabled)
             Spacer(minLength: 12)
             Text(session.oldTitle + "  →  " + session.newTitle)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -178,13 +178,21 @@ struct CompareHeadlineBar: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func partsText(_ h: CompareHeadline) -> Text {
-        var t = Text("")
+    /// „Seit …: belegt +38 GB · frei −38 GB“ mit lokalisiertem Doppelpunkt
+    /// und Trennzeichen (`TextFormat`); Präfix und Werte fett.
+    private func labeledText(_ h: CompareHeadline) -> Text {
+        // Die Vorlage „%1$@: %2$@“ an den Platzhaltern zerlegen, damit die Teile
+        // unterschiedlich formatiert werden können.
+        let marker = "\u{1}"
+        let template = TextFormat.labeled(marker, marker).components(separatedBy: marker)
+        let between = template.count == 3 ? template[1] : ": "
+        var t = Text(template.first ?? "") + Text(h.prefix + between).fontWeight(.semibold)
+        let separator = L("format.inlineSeparator")
         for (i, p) in h.parts.enumerated() {
-            if i > 0 { t = t + Text("  ·  ").foregroundColor(.secondary) }
+            if i > 0 { t = t + Text(" " + separator + " ").foregroundColor(.secondary) }
             t = t + Text(p.label + " ") + Text(p.text).fontWeight(.semibold).monospacedDigit()
         }
-        return t
+        return t + Text(template.count == 3 ? template[2] : "")
     }
 }
 
@@ -201,7 +209,7 @@ struct CompareWarningBar: View {
             }
             Spacer()
         }
-        .font(.system(size: 12))
+        .font(.callout)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.orange.opacity(0.12))
@@ -215,6 +223,9 @@ struct CompareWarningBar: View {
 struct CompareLegend: View {
     let session: CompareSession
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var systemDifferentiateWithoutColor
+    @Environment(\.forcedAccessibility) private var forced
+    private var differentiateWithoutColor: Bool { systemDifferentiateWithoutColor || forced.differentiateWithoutColor }
 
     var body: some View {
         let palette = Palette(appearance: PaletteAppearance(colorScheme))
@@ -222,19 +233,20 @@ struct CompareLegend: View {
             switch session.view {
             case .growth:
                 Text(L("compare.legend.growth", CompareHeadline.shortDate(session.diff.summary.oldDate)))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                 HStack(spacing: 5) {
                     RoundedRectangle(cornerRadius: 2).fill(Color(palette.unchangedFill)).frame(width: 14, height: 10)
                         .overlay(Circle().fill(Color(palette.label(on: palette.unchangedFill))).frame(width: 5, height: 5))
-                    Text(L("diff.added")).font(.system(size: 11))
+                    Text(L("diff.added")).font(.subheadline)
                 }
             case .delta:
                 HStack(spacing: 6) {
                     gradient(palette, .grown)
-                    Text(L("diff.grown")).font(.system(size: 11))
+                    Text(L("diff.grown"))
                     gradient(palette, .shrunk)
-                    Text(L("diff.shrunk")).font(.system(size: 11))
+                    Text(L("diff.shrunk"))
                 }
+                .font(.subheadline)
                 HStack(spacing: 10) {
                     HStack(spacing: 5) {
                         marker(palette)
@@ -253,8 +265,8 @@ struct CompareLegend: View {
                         Text(L("diff.unchanged"))
                     }
                 }
-                .font(.system(size: 11))
-                Text(L("compare.legend.intensity")).font(.system(size: 10)).foregroundStyle(.secondary)
+                .font(.subheadline)
+                Text(L("compare.legend.intensity")).font(.caption).foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 10)
@@ -266,7 +278,15 @@ struct CompareLegend: View {
     private func gradient(_ p: Palette, _ s: DiffStatus) -> some View {
         LinearGradient(colors: p.deltaLegendStops(status: s, count: 5).map { Color($0) }, startPoint: .leading,
                        endPoint: .trailing)
-            .frame(width: 44, height: 10)
+            .frame(width: 44, height: differentiateWithoutColor ? 14 : 10)
+            .overlay {
+                if differentiateWithoutColor, let mark = Palette.deltaMark(for: s) {
+                    Text(mark).font(.caption.weight(.bold))
+                        .foregroundStyle(Color(p.label(on: p.deltaColor(status: s, intensity: 1))))
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.trailing, 4)
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 
@@ -279,9 +299,16 @@ struct CompareLegend: View {
 
 // MARK: Hilfen
 
-/// Farbe für Δ-Werte in Liste und Tooltip.
+/// Farbe für Δ-Werte in Liste und Tooltip: Orange gewachsen, Blau
+/// geschrumpft (`Palette.deltaTextColor`, lesbar und farbenblind-tauglich),
+/// passend zum Hell- oder Dunkelmodus.
 func deltaTextColor(_ d: Int64) -> Color {
-    d > 0 ? Color(nsColor: .systemRed) : (d < 0 ? Color(nsColor: .systemGreen) : .secondary)
+    if d == 0 { return .secondary }
+    return Color(nsColor: NSColor(name: nil) { appearance in
+        let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let c = Palette(appearance: dark ? .dark : .light).deltaTextColor(d)
+        return NSColor(srgbRed: c.red, green: c.green, blue: c.blue, alpha: c.alpha)
+    })
 }
 
 /// SF-Symbol je Status.
@@ -297,8 +324,8 @@ func statusSymbol(_ s: DiffStatus) -> String {
 
 func statusColor(_ s: DiffStatus) -> Color {
     switch s {
-    case .added, .grown: Color(nsColor: .systemRed)
-    case .shrunk: Color(nsColor: .systemGreen)
+    case .added, .grown: deltaTextColor(1)
+    case .shrunk: deltaTextColor(-1)
     case .removed, .unchanged: .secondary
     }
 }

@@ -26,7 +26,7 @@ DiskRings scannt ein Volume oder einen Ordner und zeigt die Belegung als Sunburs
 - **Schneller, genauer Scan** ganzer Volumes oder einzelner Ordner, parallel über `getattrlistbulk`. Gezählt wird der tatsächlich belegte Platz: Hardlinks nur einmal, Sparse- und komprimierte Dateien mit ihrer echten Belegung, Firmlinks des Data-Volumes ohne Doppelzählung, iCloud-Dateien ohne Download.
 - **Interaktives Sunburst-Diagramm** mit Drill-down per Klick, animiertem Zoom, Zurück/Vor (auch per Wischgeste) und Breadcrumb. Kleine Elemente landen in einem Sammelsegment.
 - **Detailliste** neben dem Diagramm mit Prozentbalken, Mehrfachauswahl und Suche, synchron mit dem Diagramm.
-- **„Nicht zugeordnet“ sichtbar:** An der Volume-Wurzel zeigt ein schraffiertes Segment, was kein Ordner erklärt: lokale APFS- und Time-Machine-Snapshots, bereinigbarer Speicher, Systemdaten und nicht lesbare Ordner.
+- **Die ganze Festplatte im Blick:** An der Volume-Wurzel zeigt der Ring zusätzlich **Systemdaten** (andere APFS-Volumes im Container wie Preboot, VM und Recovery, jeweils mit Namen, dazu nicht lesbare Systembereiche), **Löschbar** und **Frei** (abschaltbar unter Darstellung → Freien Speicher im Ring zeigen). Startbildschirm und Statusleiste zeigen dieselbe Aufteilung als Balken.
 - **Snapshots und Vergleich („Wo ist mein Speicher hin?“):** einen Scan sichern, später neu scannen und genau sehen, was gewachsen, geschrumpft, neu oder entfernt ist.
 - **Sicher aufräumen:** Kontextmenü mit Im Finder zeigen, Öffnen, Übersicht (Quick Look), Pfad kopieren, Ordner neu scannen und In den Papierkorb legen. Gelöscht wird nur über den Papierkorb, mit Rückfrage und Widerrufen per ⌘Z. Systembereiche sind geschützt.
 - **Färbung** nach Ast oder nach Dateityp, hell und dunkel.
@@ -46,7 +46,7 @@ Im Wachstumsmodus ist die Segmentgröße der Zuwachs seit dem Snapshot; die List
 
 ### Vergleich: Delta-Färbung
 
-Die Delta-Färbung behält das normale Layout und färbt Wachstum rot, Rückgang grün. Neue Elemente tragen einen Punkt, entfernte erscheinen gestrichelt.
+Die Delta-Färbung behält das normale Layout und färbt Wachstum orange, Rückgang blau (auch bei Rot-Grün-Schwäche unterscheidbar; mit „Ohne Farbe unterscheiden“ ist Geschrumpftes zusätzlich schraffiert und mit ± markiert). Neue Elemente tragen einen Punkt, entfernte erscheinen gestrichelt.
 
 <img src="images/compare-delta.png" alt="Delta-Färbung im Dunkelmodus" width="900">
 
@@ -64,12 +64,12 @@ Die Delta-Färbung behält das normale Layout und färbt Wachstum rot, Rückgang
 |---|---|---|---|---|
 | Darstellung | Sunburst + Liste | Sunburst | Treemap | Sortierte Liste |
 | Scans über die Zeit vergleichen | Ja (Snapshots) | Nein | Nein | Nein |
-| Nicht zugeordneter Platz (Snapshots, bereinigbar) | Ja | Ja (als „hidden space“) | Nein | Nein |
+| Platz außerhalb von Ordnern (Systemdaten, löschbar, frei) | Ja | Ja (als „hidden space“) | Nein | Nein |
 | Löschen | Nur Papierkorb, mit Undo | Ja | Ja | Ja |
 | Preis | Kostenlos, Open Source (MIT) | Kostenpflichtig | Kostenlos, Open Source | Kostenlos |
 
 - **Snapshot-Vergleich:** „Wo ist seit letzter Woche mein Speicher hin?“ beantworten, statt die ganze Platte neu zu durchsuchen.
-- **Ehrliche Summen:** Scan-Summe plus „Nicht zugeordnet“ ergibt die Belegung laut Volume.
+- **Ehrliche Summen:** Scan-Summe plus Systemdaten plus Löschbar ergibt die Belegung laut Volume.
 - **Sicher:** Kein endgültiges Löschen, alles geht in den Papierkorb, mit Bestätigung und ⌘Z.
 - **Schnell:** Auf einem M3 Pro dauert der Scan eines Home-Ordners mit 2,9 Mio. Dateien und Ordnern rund 10 s (`du -sk`: 65 s). Der Vergleich zweier Snapshots mit je 2 Mio. Einträgen dauert etwa 0,3 s. Details in [PERFORMANCE.md](PERFORMANCE.md).
 - **Kostenlos und Open Source**, ohne In-App-Käufe, Werbung oder Datensammlung.
@@ -84,7 +84,7 @@ Voraussetzung: macOS 14 (Sonoma) oder neuer, Apple Silicon oder Intel. Homebrew 
 
 ### Festplattenvollzugriff einrichten
 
-Ohne Festplattenvollzugriff funktioniert DiskRings, kann aber Ordner wie `~/Library/Mail`, `~/Library/Messages`, Safari-Daten und die Container anderer Apps nicht lesen. Sie erscheinen als „nicht lesbar“, ihr Platz landet unter „Nicht zugeordnet“.
+Ohne Festplattenvollzugriff funktioniert DiskRings, kann aber Ordner wie `~/Library/Mail`, `~/Library/Messages`, Safari-Daten und die Container anderer Apps nicht lesen. Sie erscheinen als „nicht lesbar“, ihr Platz landet unter „Nicht lesbare Systemdaten“.
 
 1. **Systemeinstellungen → Datenschutz & Sicherheit → Festplattenvollzugriff** öffnen (oder in DiskRings auf „Systemeinstellungen öffnen …“ klicken).
 2. Mit **+** die App `DiskRings` aus dem Ordner Programme hinzufügen und den Schalter einschalten.
@@ -141,7 +141,7 @@ xcrun notarytool store-credentials diskrings --apple-id <apple-id> --team-id AGR
 
 **Warum zeigt DiskRings eine andere Größe als der Finder?** Der Finder zeigt meist die logische Dateigröße, DiskRings den tatsächlich belegten Platz wie `du`. Unterschiede entstehen bei komprimierten und Sparse-Dateien, vielen kleinen Dateien (Blockgröße) und Hardlinks, die DiskRings nur einmal zählt. APFS-Klone teilen sich Blöcke; das ist über keine öffentliche API erkennbar, daher kann die Summe dort über der echten Belegung liegen.
 
-**Was bedeutet „Nicht zugeordnet“?** Die Differenz zwischen der Belegung laut Volume und der Summe aller gefundenen Dateien: lokale Time-Machine- und APFS-Snapshots, bereinigbarer Speicher, Systemdaten und nicht lesbare Ordner. Das Segment erscheint nur beim Scan eines ganzen Volumes.
+**Was bedeuten „Systemdaten“, „Löschbar“ und „Frei“?** Beim Scan eines ganzen Volumes teilt DiskRings den Platz auf, der in keinem Ordner auftaucht (Belegung minus Scan-Summe): **Systemdaten** sind die anderen APFS-Volumes im selben Container (Preboot, VM für Auslagerung und Ruhezustand, Recovery, Update oder eigene Volumes wie ein Nix-Store) mit Namen und Größe sowie die **nicht lesbaren Systemdaten** (z. B. Spotlight-Index, Dokumentversionen, `/private/var/db`, APFS-Metadaten und ohne Festplattenvollzugriff die nicht lesbaren Ordner). **Löschbar** ist Speicher, den macOS bei Bedarf freigibt (Caches, iCloud-Dateien, lokale Snapshots), **Frei** der wirklich ungenutzte Platz. Lokale APFS- und Time-Machine-Snapshots lassen sich ohne Administratorrechte nicht getrennt messen und zählen je nach Zustand zu „Löschbar“ oder zu den nicht lesbaren Systemdaten. Frühere Versionen zeigten all das als ein graues Segment „Nicht zugeordnet“.
 
 **Ist Löschen sicher?** Es gibt kein endgültiges Löschen. „In den Papierkorb legen“ fragt mit Name, Größe und Dateianzahl nach und lässt sich mit ⌘Z widerrufen. Volume-Wurzel, das Home-Verzeichnis und `~/Library` als Ganzes, Systembereiche wie `/System` und `/usr` sowie die App selbst sind geschützt.
 

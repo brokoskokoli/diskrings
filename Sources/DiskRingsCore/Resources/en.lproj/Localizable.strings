@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, delta %4$@";
 "compare.listPicker" = "List";
 "compare.viewPicker" = "View";
-"compare.viewPicker.help" = "Growth: segment size = growth. Delta Colors: normal sizes, red grown, green shrunk.";
+"compare.viewPicker.help" = "Growth: segment size = growth. Delta Colors: normal sizes, orange grown, blue shrunk.";
 "compare.end" = "End Comparison";
 "compare.end.help" = "Back to the normal view (Esc)";
 "compare.breadcrumb" = "Path in Comparison";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "Without Full Disk Access this also includes the folders DiskRings wasn’t allowed to read.";
 "arc.volume.detail" = "Separate APFS volume in the same container; shares the space with this volume";
 "arc.purgeable.title" = "Purgeable";
-"arc.purgeable.detail" = "Space macOS frees automatically when needed (caches, local snapshots, iCloud files)";
+"arc.purgeable.detail" = "Space macOS frees automatically when needed (caches, local snapshots, iCloud files).";
 "arc.free.title" = "Free";
 "arc.free.detail" = "Unused space on the volume";
 "volume.role.system" = "macOS System (%@)";
@@ -425,3 +425,15 @@
 "legend.systemData" = "System data %@";
 "status.systemData" = "system data %@";
 "status.systemData.help" = "Space used on the volume that doesn’t show up in any folder: other volumes in the same container (Preboot, VM, Recovery …) and system areas DiskRings can’t read. Clones and snapshots can cause differences.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "level %@";
+"outline.value.expanded" = "expanded, level %@";
+"outline.value.collapsed" = "collapsed, level %@";
+"accessibility.expand" = "Expand";
+"accessibility.collapse" = "Collapse";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@ %2$@";
+"arc.snapshots.note" = "Local APFS and Time Machine snapshots can’t be measured separately; depending on their state they count as Purgeable or Unreadable System Data.";

@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@，%2$@，%3$@，差值 %4$@";
 "compare.listPicker" = "列表";
 "compare.viewPicker" = "视图";
-"compare.viewPicker.help" = "增长：扇区大小 = 增长量。差异颜色：正常大小，红色为增长，绿色为缩小。";
+"compare.viewPicker.help" = "增长：扇区大小 = 增长量。差异颜色：正常大小，橙色为增长，蓝色为缩小。";
 "compare.end" = "结束比较";
 "compare.end.help" = "返回正常视图（Esc）";
 "compare.breadcrumb" = "比较中的路径";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "如果没有完全磁盘访问权限，这里还包括 DiskRings 无法读取的文件夹。";
 "arc.volume.detail" = "同一容器中的独立 APFS 宗卷；与此宗卷共享空间";
 "arc.purgeable.title" = "可清除";
-"arc.purgeable.detail" = "macOS 在需要时自动释放的空间（缓存、本地快照、iCloud 文件）";
+"arc.purgeable.detail" = "macOS 在需要时自动释放的空间（缓存、本地快照、iCloud 文件）。";
 "arc.free.title" = "可用";
 "arc.free.detail" = "宗卷上未使用的空间";
 "volume.role.system" = "macOS 系统（%@）";
@@ -425,3 +425,15 @@
 "legend.systemData" = "系统数据 %@";
 "status.systemData" = "系统数据 %@";
 "status.systemData.help" = "宗卷上已使用但未出现在任何文件夹中的空间：同一容器中的其他宗卷（Preboot、VM、Recovery 等）以及 DiskRings 无法读取的系统区域。克隆和快照可能导致偏差。";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "第 %@ 级";
+"outline.value.expanded" = "已展开，第 %@ 级";
+"outline.value.collapsed" = "已折叠，第 %@ 级";
+"accessibility.expand" = "展开";
+"accessibility.collapse" = "折叠";
+"format.labelValue" = "%1$@：%2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@%2$@";
+"arc.snapshots.note" = "本地 APFS 和时间机器快照无法单独测量；根据状态，它们计入“可清除”或“无法读取的系统数据”。";

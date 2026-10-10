@@ -187,7 +187,7 @@ struct VolumeSegmentMenu: View {
     let detail: String
 
     var body: some View {
-        Text(title + " – " + ByteFormat.string(size))
+        Text(TextFormat.labeled(title, ByteFormat.string(size)))
         Divider()
         Text(detail)
         if state.fullDiskAccess == .denied {

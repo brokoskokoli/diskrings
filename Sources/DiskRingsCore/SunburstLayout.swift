@@ -74,6 +74,16 @@ public struct SunburstArc: Sendable, Equatable {
             }
         }
 
+        /// Stärke der Schraffur (0 = keine): frei deutlich, löschbar leicht,
+        /// Systemdaten und Ordner nie.
+        public var hatchStrength: Double {
+            switch self {
+            case .free: 1
+            case .purgeable: 0.5
+            case .node, .aggregate, .remainder, .system, .systemPart: 0
+            }
+        }
+
         /// Wird von seinem Ring bis zum Außenrand gezeichnet (und ist dort treffbar).
         public var spansOuterRings: Bool {
             switch self {
@@ -241,7 +251,7 @@ public struct SunburstLayout: Sendable {
         switch arc.kind {
         case .system: L("arc.system.detail")
         case .systemPart: systemPart(of: arc)?.detail(fullDiskAccessDenied: fullDiskAccessDenied)
-        case .purgeable: L("arc.purgeable.detail")
+        case .purgeable: L("format.sentences", L("arc.purgeable.detail"), L("arc.snapshots.note"))
         case .free: L("arc.free.detail")
         case .node, .aggregate, .remainder: nil
         }

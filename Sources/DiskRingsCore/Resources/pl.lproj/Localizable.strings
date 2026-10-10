@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, zmiana %4$@";
 "compare.listPicker" = "Lista";
 "compare.viewPicker" = "Widok";
-"compare.viewPicker.help" = "Przyrost: rozmiar segmentu = przyrost. Kolory zmian: normalne rozmiary, czerwony – większe, zielony – mniejsze.";
+"compare.viewPicker.help" = "Przyrost: rozmiar segmentu = przyrost. Kolory zmian: normalne rozmiary, pomarańczowy – większe, niebieski – mniejsze.";
 "compare.end" = "Zakończ porównanie";
 "compare.end.help" = "Wróć do normalnego widoku (Esc)";
 "compare.breadcrumb" = "Ścieżka w porównaniu";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "Bez pełnego dostępu do dysku obejmuje to także foldery, których DiskRings nie mógł odczytać.";
 "arc.volume.detail" = "Osobny wolumin APFS w tym samym kontenerze; dzieli miejsce z tym woluminem";
 "arc.purgeable.title" = "Do zwolnienia";
-"arc.purgeable.detail" = "Miejsce, które macOS w razie potrzeby zwalnia sam (pamięci podręczne, lokalne migawki, pliki iCloud)";
+"arc.purgeable.detail" = "Miejsce, które macOS w razie potrzeby zwalnia sam (pamięci podręczne, lokalne migawki, pliki iCloud).";
 "arc.free.title" = "Wolne";
 "arc.free.detail" = "Niewykorzystane miejsce na woluminie";
 "volume.role.system" = "System macOS (%@)";
@@ -425,3 +425,15 @@
 "legend.systemData" = "Dane systemowe %@";
 "status.systemData" = "dane systemowe %@";
 "status.systemData.help" = "Zajęte miejsce na woluminie, które nie występuje w żadnym folderze: inne woluminy w tym samym kontenerze (Preboot, VM, Recovery…) i obszary systemowe, których DiskRings nie może odczytać. Klony i migawki mogą powodować rozbieżności.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "poziom %@";
+"outline.value.expanded" = "rozwinięty, poziom %@";
+"outline.value.collapsed" = "zwinięty, poziom %@";
+"accessibility.expand" = "Rozwiń";
+"accessibility.collapse" = "Zwiń";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@ %2$@";
+"arc.snapshots.note" = "Lokalnych migawek APFS i Time Machine nie da się zmierzyć osobno; zależnie od stanu liczą się do „Do zwolnienia” lub „Nieczytelne dane systemowe”.";

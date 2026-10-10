@@ -27,7 +27,7 @@ enum SunburstRenderer {
         var rescanning: [Int32: Double] = [:]
     }
 
-    static func draw(_ input: Input, transition: (any LayoutTransition)?, progress: Double?, time: TimeInterval = 0,
+    static func draw(_ input: Input, transition: (any LayoutTransition)?, progress: Double?,
                      in gc: inout GraphicsContext, size: CGSize) {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let g = input.geometry
@@ -69,7 +69,9 @@ enum SunburstRenderer {
                 color = color.mixed(with: palette.background, 0.25)
             }
             gc.fill(path, with: .color(Color(color)))
-            if arc.kind.isVolumeSegment { drawHatching(path, color: color, palette: palette, in: &gc, size: size) }
+            if arc.kind.hatchStrength > 0 {
+                drawHatching(path, strength: arc.kind.hatchStrength, palette: palette, in: &gc, size: size)
+            }
             if arc.span * outer > 1.2 { gc.stroke(path, with: .color(separator), lineWidth: 0.75) }
             if i == input.hoverArc || (arc.kind == .node && arc.nodeIndex == input.hoverNode) { hoverPath = path }
             if arc.kind == .node, input.selected.contains(arc.nodeIndex) { selectedPaths.append(path) }
@@ -82,7 +84,6 @@ enum SunburstRenderer {
         }
         if input.showLabels { drawLabels(input, center: center, in: &gc) }
         drawCenter(input, center: center, in: &gc, alpha: 1)
-        if !input.rescanning.isEmpty { drawRescanProgress(input, center: center, time: time, in: &gc) }
     }
 
     // MARK: Fortschrittsring beim Teil-Rescan (SPEC 3.8)
@@ -92,8 +93,14 @@ enum SunburstRenderer {
     /// unbestimmt als umlaufender Bogen). Ist der Ordner nicht sichtbar, trägt
     /// sein nächster sichtbarer Vorfahr den Ring; der Fokus oder ein Vorfahr
     /// des Fokus bekommt ihn um die Mitte.
-    private static func drawRescanProgress(_ input: Input, center c: CGPoint, time: TimeInterval,
-                                           in gc: inout GraphicsContext) {
+    ///
+    /// Eigene Ebene über dem Diagramm (`size` wie beim Diagramm), damit nur
+    /// sie für den umlaufenden Bogen neu gezeichnet wird. `animated: false`
+    /// („Bewegung reduzieren“): unbestimmter Fortschritt als ruhender,
+    /// gestrichelter Ring.
+    static func drawRescanProgress(_ input: Input, time: TimeInterval, animated: Bool = true,
+                                   in gc: inout GraphicsContext, size: CGSize) {
+        let c = CGPoint(x: size.width / 2, y: size.height / 2)
         let g = input.geometry
         let layout = input.layout
         let accent = Color.accentColor
@@ -133,6 +140,9 @@ enum SunburstRenderer {
             if fraction >= 0 {
                 let p = arcPath(center: c, radius: ringR, start: start, end: start + span * max(0.02, fraction))
                 gc.stroke(p, with: .color(accent), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            } else if !animated {
+                let p = arcPath(center: c, radius: ringR, start: start, end: end)
+                gc.stroke(p, with: .color(accent), style: StrokeStyle(lineWidth: 4, lineCap: .butt, dash: [6, 6]))
             } else {
                 // Unbestimmt: ein Viertel des Segments läuft um.
                 let len = span * 0.25
@@ -179,11 +189,11 @@ enum SunburstRenderer {
         return p
     }
 
-    private static func drawHatching(_ path: Path, color: DiskRingsCore.RGBColor, palette: Palette, in gc: inout GraphicsContext,
+    private static func drawHatching(_ path: Path, strength: Double, palette: Palette, in gc: inout GraphicsContext,
                                      size: CGSize) {
         var ctx = gc
         ctx.clip(to: path)
-        let stripe = Color(palette.background).opacity(palette.appearance == .dark ? 0.18 : 0.22)
+        let stripe = Color(palette.background).opacity((palette.appearance == .dark ? 0.18 : 0.22) * strength)
         var lines = Path()
         let extent = size.width + size.height
         var x = -size.height

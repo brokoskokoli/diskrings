@@ -210,7 +210,7 @@ struct ScanProgressHeader: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 if let p = state.progress {
-                    Text([filesText(p.filesScanned), L("count.folders", p.directoriesScanned, ByteFormat.count(p.directoriesScanned)), ByteFormat.string(p.allocatedBytes), ByteFormat.duration(p.elapsed)].joined(separator: " · "))
+                    Text(TextFormat.inline([filesText(p.filesScanned), L("count.folders", p.directoriesScanned, ByteFormat.count(p.directoriesScanned)), ByteFormat.string(p.allocatedBytes), ByteFormat.duration(p.elapsed)]))
                         .font(.system(size: 12).monospacedDigit())
                     Text(p.currentPath)
                         .font(.system(size: 11))

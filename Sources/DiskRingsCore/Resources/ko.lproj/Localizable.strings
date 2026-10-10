@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, 변화량 %4$@";
 "compare.listPicker" = "목록";
 "compare.viewPicker" = "보기";
-"compare.viewPicker.help" = "증가: 세그먼트 크기 = 증가량. 변화 색상: 일반 크기, 빨간색은 증가, 초록색은 감소.";
+"compare.viewPicker.help" = "증가: 세그먼트 크기 = 증가량. 변화 색상: 일반 크기, 주황색은 증가, 파란색은 감소.";
 "compare.end" = "비교 종료";
 "compare.end.help" = "일반 보기로 돌아가기(Esc)";
 "compare.breadcrumb" = "비교 내 경로";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "전체 디스크 접근 권한이 없으면 DiskRings가 읽지 못한 폴더도 여기에 포함됩니다.";
 "arc.volume.detail" = "같은 컨테이너의 별도 APFS 볼륨. 이 볼륨과 공간을 공유합니다";
 "arc.purgeable.title" = "제거 가능";
-"arc.purgeable.detail" = "필요할 때 macOS가 자동으로 확보하는 공간(캐시, 로컬 스냅샷, iCloud 파일)";
+"arc.purgeable.detail" = "필요할 때 macOS가 자동으로 확보하는 공간(캐시, 로컬 스냅샷, iCloud 파일).";
 "arc.free.title" = "사용 가능";
 "arc.free.detail" = "볼륨의 사용되지 않은 공간";
 "volume.role.system" = "macOS 시스템(%@)";
@@ -425,3 +425,15 @@
 "legend.systemData" = "시스템 데이터 %@";
 "status.systemData" = "시스템 데이터 %@";
 "status.systemData.help" = "볼륨에서 사용 중이지만 어떤 폴더에도 나타나지 않는 공간: 같은 컨테이너의 다른 볼륨(Preboot, VM, Recovery 등)과 DiskRings가 읽을 수 없는 시스템 영역. 복제본과 스냅샷으로 인해 차이가 생길 수 있습니다.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "수준 %@";
+"outline.value.expanded" = "펼쳐짐, 수준 %@";
+"outline.value.collapsed" = "접힘, 수준 %@";
+"accessibility.expand" = "펼치기";
+"accessibility.collapse" = "접기";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@ %2$@";
+"arc.snapshots.note" = "로컬 APFS 및 Time Machine 스냅샷은 따로 측정할 수 없습니다. 상태에 따라 ‘제거 가능’ 또는 ‘읽을 수 없는 시스템 데이터’에 포함됩니다.";

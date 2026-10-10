@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, Delta %4$@";
 "compare.listPicker" = "Liste";
 "compare.viewPicker" = "Darstellung";
-"compare.viewPicker.help" = "Wachstum: Segmentgröße = Zuwachs. Delta-Färbung: normale Größen, rot gewachsen, grün geschrumpft.";
+"compare.viewPicker.help" = "Wachstum: Segmentgröße = Zuwachs. Delta-Färbung: normale Größen, orange gewachsen, blau geschrumpft.";
 "compare.end" = "Vergleich beenden";
 "compare.end.help" = "Zurück zur normalen Ansicht (Esc)";
 "compare.breadcrumb" = "Pfad im Vergleich";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "Ohne Festplattenvollzugriff gehören dazu auch die Ordner, die DiskRings nicht lesen durfte.";
 "arc.volume.detail" = "Eigenes APFS-Volume im selben Container; teilt sich den Platz mit diesem Volume";
 "arc.purgeable.title" = "Löschbar";
-"arc.purgeable.detail" = "Speicher, den macOS bei Bedarf selbst freigibt (Caches, lokale Snapshots, iCloud-Dateien)";
+"arc.purgeable.detail" = "Speicher, den macOS bei Bedarf selbst freigibt (Caches, lokale Snapshots, iCloud-Dateien).";
 "arc.free.title" = "Frei";
 "arc.free.detail" = "Ungenutzter Speicher des Volumes";
 "volume.role.system" = "macOS-System (%@)";
@@ -425,3 +425,15 @@
 "legend.systemData" = "Systemdaten %@";
 "status.systemData" = "Systemdaten %@";
 "status.systemData.help" = "Belegung des Volumes, die in keinem Ordner auftaucht: andere Volumes im selben Container (Preboot, VM, Recovery …) und Systembereiche, die DiskRings nicht lesen kann. Klone und Snapshots können Abweichungen verursachen.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "Ebene %@";
+"outline.value.expanded" = "aufgeklappt, Ebene %@";
+"outline.value.collapsed" = "zugeklappt, Ebene %@";
+"accessibility.expand" = "Aufklappen";
+"accessibility.collapse" = "Zuklappen";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@ %2$@";
+"arc.snapshots.note" = "Lokale APFS- und Time-Machine-Snapshots lassen sich nicht getrennt messen; je nach Zustand zählen sie zu „Löschbar“ oder zu „Nicht lesbare Systemdaten“.";

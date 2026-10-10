@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, fark %4$@";
 "compare.listPicker" = "Liste";
 "compare.viewPicker" = "Görünüm";
-"compare.viewPicker.help" = "Büyüme: dilim boyutu = büyüme. Fark Renkleri: normal boyutlar, kırmızı büyüdü, yeşil küçüldü.";
+"compare.viewPicker.help" = "Büyüme: dilim boyutu = büyüme. Fark Renkleri: normal boyutlar, turuncu büyüdü, mavi küçüldü.";
 "compare.end" = "Karşılaştırmayı Bitir";
 "compare.end.help" = "Normal görünüme dön (Esc)";
 "compare.breadcrumb" = "Karşılaştırmadaki Yol";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "Tam Disk Erişimi olmadan buna DiskRings’in okuyamadığı klasörler de dahildir.";
 "arc.volume.detail" = "Aynı kapsayıcıdaki ayrı APFS birimi; alanı bu birimle paylaşır";
 "arc.purgeable.title" = "Temizlenebilir";
-"arc.purgeable.detail" = "macOS’in gerektiğinde kendiliğinden boşalttığı alan (önbellekler, yerel anlık görüntüler, iCloud dosyaları)";
+"arc.purgeable.detail" = "macOS’in gerektiğinde kendiliğinden boşalttığı alan (önbellekler, yerel anlık görüntüler, iCloud dosyaları).";
 "arc.free.title" = "Boş";
 "arc.free.detail" = "Birimdeki kullanılmayan alan";
 "volume.role.system" = "macOS Sistemi (%@)";
@@ -425,3 +425,15 @@
 "legend.systemData" = "Sistem verileri %@";
 "status.systemData" = "sistem verileri %@";
 "status.systemData.help" = "Birimde kullanılan ama hiçbir klasörde görünmeyen alan: aynı kapsayıcıdaki diğer birimler (Preboot, VM, Recovery…) ve DiskRings’in okuyamadığı sistem alanları. Klonlar ve anlık görüntüler farklılıklara neden olabilir.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "düzey %@";
+"outline.value.expanded" = "genişletilmiş, düzey %@";
+"outline.value.collapsed" = "daraltılmış, düzey %@";
+"accessibility.expand" = "Genişlet";
+"accessibility.collapse" = "Daralt";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@ %2$@";
+"arc.snapshots.note" = "Yerel APFS ve Time Machine anlık görüntüleri ayrı ölçülemez; durumlarına göre “Temizlenebilir” veya “Okunamayan Sistem Verileri” olarak sayılır.";

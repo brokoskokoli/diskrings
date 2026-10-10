@@ -212,6 +212,8 @@ struct SunburstLayoutTests {
         let ring1 = Array(l.arcs(inRing: 1))
         #expect(ring1.suffix(3).map(\.kind) == [.system, .purgeable, .free])
         #expect(ring1.suffix(3).map(\.size) == [500, 100, 400])
+        #expect(ring1.suffix(3).map(\.kind.hatchStrength) == [0, 0.5, 1])
+        #expect(SunburstArc.Kind.systemPart.hatchStrength == 0)
         let free = ring1.last!
         #expect(abs(free.span - twoPi * 0.2) < eps)
         #expect(abs(free.endAngle - twoPi) < eps)

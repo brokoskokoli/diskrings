@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@、%2$@、%3$@、差分%4$@";
 "compare.listPicker" = "リスト";
 "compare.viewPicker" = "表示";
-"compare.viewPicker.help" = "増加：セグメントのサイズ＝増加量。差分カラー：通常のサイズで、増加は赤、減少は緑。";
+"compare.viewPicker.help" = "増加：セグメントのサイズ＝増加量。差分カラー：通常のサイズで、増加はオレンジ、減少は青。";
 "compare.end" = "比較を終了";
 "compare.end.help" = "通常の表示に戻る（Esc）";
 "compare.breadcrumb" = "比較内のパス";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "フルディスクアクセスがない場合、DiskRingsが読み取れなかったフォルダもここに含まれます。";
 "arc.volume.detail" = "同じコンテナ内の別のAPFSボリューム。このボリュームと領域を共有します";
 "arc.purgeable.title" = "パージ可能";
-"arc.purgeable.detail" = "必要に応じてmacOSが自動的に解放する領域（キャッシュ、ローカルスナップショット、iCloudファイル）";
+"arc.purgeable.detail" = "必要に応じてmacOSが自動的に解放する領域（キャッシュ、ローカルスナップショット、iCloudファイル）。";
 "arc.free.title" = "空き";
 "arc.free.detail" = "ボリュームの未使用領域";
 "volume.role.system" = "macOSシステム（%@）";
@@ -425,3 +425,15 @@
 "legend.systemData" = "システムデータ %@";
 "status.systemData" = "システムデータ %@";
 "status.systemData.help" = "ボリューム上で使用されているものの、どのフォルダにも表示されない領域：同じコンテナ内のほかのボリューム（Preboot、VM、Recoveryなど）と、DiskRingsが読み取れないシステム領域。クローンやスナップショットによって差異が生じることがあります。";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "レベル %@";
+"outline.value.expanded" = "展開、レベル %@";
+"outline.value.collapsed" = "折りたたみ、レベル %@";
+"accessibility.expand" = "展開";
+"accessibility.collapse" = "折りたたむ";
+"format.labelValue" = "%1$@：%2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@%2$@";
+"arc.snapshots.note" = "ローカルのAPFSおよびTime Machineスナップショットは個別に測定できません。状態に応じて「パージ可能」または「読み取れないシステムデータ」に含まれます。";

@@ -39,8 +39,8 @@ public struct VolumeBreakdown: Sendable, Hashable {
             switch kind {
             case .volume: return L("arc.volume.detail")
             case .unreadable:
-                let base = L("arc.unreadableSystem.detail")
-                return fullDiskAccessDenied ? base + " " + L("arc.unreadableSystem.fdaHint") : base
+                let base = L("format.sentences", L("arc.unreadableSystem.detail"), L("arc.snapshots.note"))
+                return fullDiskAccessDenied ? L("format.sentences", base, L("arc.unreadableSystem.fdaHint")) : base
             }
         }
     }

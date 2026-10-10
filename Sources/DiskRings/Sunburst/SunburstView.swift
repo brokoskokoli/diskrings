@@ -12,6 +12,8 @@ struct SunburstView: View {
     var frozenTime: Date?
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.forcedAccessibility) private var forced
 
     var body: some View {
         GeometryReader { proxy in
@@ -30,13 +32,21 @@ struct SunburstView: View {
                     hoverCenter: state.hoverCenter, selected: Set(state.selection.nodes), primarySelected: state.selected,
                     focusIsRoot: state.focus == 0, showLabels: state.prefs.showLabels, centerTitle: centerTitle(tree),
                     sizeMode: state.prefs.sizeMode, rescanning: rescanning)
-                let paused = frozenTime != nil || (state.transition == nil && rescanning.isEmpty)
-                TimelineView(.animation(paused: paused)) { timeline in
+                // Das Diagramm läuft nur während einer Zoom-/Änderungsanimation
+                // jedes Bild; der Fortschrittsring eines Teil-Rescans liegt in
+                // einer eigenen kleinen Ebene mit niedriger Bildrate.
+                TimelineView(.animation(paused: frozenTime != nil || state.transition == nil)) { timeline in
                     let now = frozenTime ?? timeline.date
                     let t = state.transition.map { ZoomEasing.easeInOut($0.progress(at: now)) }
                     Canvas(opaque: false, rendersAsynchronously: false) { gc, canvasSize in
                         SunburstRenderer.draw(input, transition: state.transition?.animation, progress: t,
-                                              time: now.timeIntervalSinceReferenceDate, in: &gc, size: canvasSize)
+                                              in: &gc, size: canvasSize)
+                    }
+                }
+                .overlay {
+                    if !rescanning.isEmpty, state.transition == nil {
+                        RescanProgressLayer(input: input, frozenTime: frozenTime,
+                                            reduceMotion: systemReduceMotion || forced.reduceMotion)
                     }
                 }
                 .contentShape(Rectangle())
@@ -115,7 +125,30 @@ private struct SunburstInteraction: ViewModifier {
     }
 }
 
+/// Fortschrittsring laufender Teil-Rescans als eigene Ebene: Nur sie wird
+/// bei unbestimmtem Fortschritt animiert (15 Bilder/s), das Diagramm
+/// darunter nicht. Bei „Bewegung reduzieren“ steht der Ring still.
+private struct RescanProgressLayer: View {
+    let input: SunburstRenderer.Input
+    let frozenTime: Date?
+    let reduceMotion: Bool
+
+    var body: some View {
+        let animates = !reduceMotion && frozenTime == nil && input.rescanning.values.contains { $0 < 0 }
+        TimelineView(.animation(minimumInterval: 1.0 / 15, paused: !animates)) { timeline in
+            let now = frozenTime ?? timeline.date
+            Canvas(opaque: false, rendersAsynchronously: false) { gc, size in
+                SunburstRenderer.drawRescanProgress(input, time: now.timeIntervalSinceReferenceDate,
+                                                    animated: !reduceMotion, in: &gc, size: size)
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 /// Ein unsichtbares Element je Segment im ersten Ring für VoiceOver (SPEC 5).
+/// Ordner sind Buttons: Die Standardaktion zoomt hinein (wie ein Klick).
 private struct SunburstAccessibilityChildren: View {
     let state: AppState
     let tree: ScanTree
@@ -124,12 +157,21 @@ private struct SunburstAccessibilityChildren: View {
     var body: some View {
         ForEach(Array(layout.arcs(inRing: 1).enumerated()), id: \.offset) { _, arc in
             let d = describe(arc, tree: tree, layout: layout)
-            Rectangle()
-                .accessibilityLabel(L("list.row.accessibility", d.title, ByteFormat.string(d.size), ByteFormat.percent(d.share)))
-                .accessibilityAddTraits(arc.kind == .node && arc.isDirectory ? .isButton : [])
-                .accessibilityAction(named: L("accessibility.zoomIn")) {
-                    if arc.kind == .node { state.navigate(to: arc.nodeIndex) }
-                }
+            let label = L("list.row.accessibility", d.title, ByteFormat.string(d.size), ByteFormat.percent(d.share))
+            if arc.kind == .node && arc.isDirectory {
+                Rectangle()
+                    .accessibilityLabel(label)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { state.navigate(to: arc.nodeIndex) }
+                    .accessibilityAction(named: L("accessibility.zoomIn")) { state.navigate(to: arc.nodeIndex) }
+            } else if arc.kind == .node {
+                // Datei: Standardaktion wählt sie aus (Liste klappt bis dorthin auf).
+                Rectangle()
+                    .accessibilityLabel(label)
+                    .accessibilityAction { state.select(arc.nodeIndex) }
+            } else {
+                Rectangle().accessibilityLabel(label)
+            }
         }
     }
 }
@@ -140,24 +182,28 @@ private struct SunburstTooltip: View {
     let tree: ScanTree
     let layout: SunburstLayout
     let size: CGSize
+    /// Breite wächst mit der Textgröße.
+    @ScaledMetric(relativeTo: .callout) private var width: CGFloat = 260
 
     var body: some View {
         if let loc = state.hoverLocation, let content = content {
-            let width: CGFloat = 260
             let x = min(max(8, loc.x + 16), max(8, size.width - width - 8))
-            let y = loc.y + 18 + 90 > size.height ? loc.y - 100 : loc.y + 18
+            // Geschätzte Höhe (lange Erklärungen der Volume-Segmente brauchen mehrere Zeilen).
+            let detailLines = CGFloat(min(10, content.detail.count / 38 + 1))
+            let height = 74 + (detailLines - 1) * 14
+            let y = loc.y + 18 + height > size.height ? loc.y - height - 10 : loc.y + 18
             VStack(alignment: .leading, spacing: 3) {
-                Text(content.title).font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                Text(content.title).font(.callout.weight(.semibold)).lineLimit(1)
                 if let p = content.path {
-                    Text(p).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2).truncationMode(.middle)
+                    Text(p).font(.caption).foregroundStyle(.secondary).lineLimit(2).truncationMode(.middle)
                 }
                 HStack(spacing: 6) {
-                    Text(ByteFormat.string(content.size)).font(.system(size: 11, weight: .medium).monospacedDigit())
-                    Text(L("sunburst.shareOf", ByteFormat.percent(content.share), focusName)).font(.system(size: 11).monospacedDigit())
+                    Text(ByteFormat.string(content.size)).font(.subheadline.weight(.medium).monospacedDigit())
+                    Text(L("sunburst.shareOf", ByteFormat.percent(content.share), focusName)).font(.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                Text(content.detail).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(7)
+                Text(content.detail).font(.caption).foregroundStyle(.secondary).lineLimit(10)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 10)
@@ -182,9 +228,9 @@ private struct SunburstTooltip: View {
     private var content: ArcDescription? {
         if state.hoverCenter {
             let n = tree[state.focus]
-            let parentHint = n.parent == nil ? "" : " · " + L("sunburst.center.hint")
+            let parts = n.parent == nil ? [filesText(n.fileCount)] : [filesText(n.fileCount), L("sunburst.center.hint")]
             return ArcDescription(title: n.name, path: n.path, size: n.size(state.prefs.sizeMode), share: 1,
-                                  detail: filesText(n.fileCount) + parentHint)
+                                  detail: TextFormat.inline(parts))
         }
         guard let i = state.hoverArc, i < layout.arcs.count else { return nil }
         return describe(layout.arcs[i], tree: tree, layout: layout)

@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, differens %4$@";
 "compare.listPicker" = "Lista";
 "compare.viewPicker" = "Vy";
-"compare.viewPicker.help" = "Tillväxt: segmentstorlek = tillväxt. Differensfärger: normala storlekar, rött växt, grönt krympt.";
+"compare.viewPicker.help" = "Tillväxt: segmentstorlek = tillväxt. Differensfärger: normala storlekar, orange växt, blått krympt.";
 "compare.end" = "Avsluta jämförelse";
 "compare.end.help" = "Tillbaka till normal vy (Esc)";
 "compare.breadcrumb" = "Sökväg i jämförelsen";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "Utan fullständig skivåtkomst ingår även mapparna som DiskRings inte fick läsa.";
 "arc.volume.detail" = "Separat APFS-volym i samma behållare; delar utrymmet med den här volymen";
 "arc.purgeable.title" = "Rensningsbart";
-"arc.purgeable.detail" = "Utrymme som macOS frigör automatiskt vid behov (cachar, lokala ögonblicksbilder, iCloud-filer)";
+"arc.purgeable.detail" = "Utrymme som macOS frigör automatiskt vid behov (cachar, lokala ögonblicksbilder, iCloud-filer).";
 "arc.free.title" = "Ledigt";
 "arc.free.detail" = "Oanvänt utrymme på volymen";
 "volume.role.system" = "macOS-system (%@)";
@@ -425,3 +425,15 @@
 "legend.systemData" = "Systemdata %@";
 "status.systemData" = "systemdata %@";
 "status.systemData.help" = "Använt utrymme på volymen som inte finns i någon mapp: andra volymer i samma behållare (Preboot, VM, Recovery …) och systemområden som DiskRings inte kan läsa. Kloner och ögonblicksbilder kan orsaka avvikelser.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "nivå %@";
+"outline.value.expanded" = "utfälld, nivå %@";
+"outline.value.collapsed" = "ihopfälld, nivå %@";
+"accessibility.expand" = "Fäll ut";
+"accessibility.collapse" = "Fäll ihop";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@ %2$@";
+"arc.snapshots.note" = "Lokala APFS- och Time Machine-ögonblicksbilder kan inte mätas separat; beroende på tillstånd räknas de som ”Rensningsbart” eller ”Oläsbar systemdata”.";

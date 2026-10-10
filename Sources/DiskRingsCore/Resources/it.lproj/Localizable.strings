@@ -372,7 +372,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, delta %4$@";
 "compare.listPicker" = "Elenco";
 "compare.viewPicker" = "Vista";
-"compare.viewPicker.help" = "Crescita: dimensione del segmento = crescita. Colori delta: dimensioni normali, rosso cresciuto, verde ridotto.";
+"compare.viewPicker.help" = "Crescita: dimensione del segmento = crescita. Colori delta: dimensioni normali, arancione cresciuto, blu ridotto.";
 "compare.end" = "Termina confronto";
 "compare.end.help" = "Torna alla vista normale (Esc)";
 "compare.breadcrumb" = "Percorso nel confronto";
@@ -409,7 +409,7 @@
 "arc.unreadableSystem.fdaHint" = "Senza accesso completo al disco include anche le cartelle che DiskRings non ha potuto leggere.";
 "arc.volume.detail" = "Volume APFS separato nello stesso contenitore; condivide lo spazio con questo volume";
 "arc.purgeable.title" = "Eliminabile";
-"arc.purgeable.detail" = "Spazio che macOS libera automaticamente quando serve (cache, istantanee locali, file di iCloud)";
+"arc.purgeable.detail" = "Spazio che macOS libera automaticamente quando serve (cache, istantanee locali, file di iCloud).";
 "arc.free.title" = "Libero";
 "arc.free.detail" = "Spazio inutilizzato del volume";
 "volume.role.system" = "Sistema macOS (%@)";
@@ -425,3 +425,15 @@
 "legend.systemData" = "Dati di sistema %@";
 "status.systemData" = "dati di sistema %@";
 "status.systemData.help" = "Spazio utilizzato sul volume che non compare in nessuna cartella: altri volumi nello stesso contenitore (Preboot, VM, Recovery…) e aree di sistema che DiskRings non può leggere. Cloni e istantanee possono causare differenze.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "livello %@";
+"outline.value.expanded" = "espanso, livello %@";
+"outline.value.collapsed" = "compresso, livello %@";
+"accessibility.expand" = "Espandi";
+"accessibility.collapse" = "Comprimi";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
+"format.sentences" = "%1$@ %2$@";
+"arc.snapshots.note" = "Le istantanee locali APFS e Time Machine non si possono misurare separatamente; a seconda dello stato contano come «Eliminabile» o «Dati di sistema non leggibili».";

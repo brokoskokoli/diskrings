@@ -28,13 +28,16 @@ public struct DeltaScale: Sendable, Equatable {
     }
 }
 
-/// Farben des Vergleichsmodus (SPEC 3.9): Rot = gewachsen, Grün =
+/// Farben des Vergleichsmodus (SPEC 3.9): Orange = gewachsen, Blau =
 /// geschrumpft, Intensität nach Delta; neue Elemente wie gewachsene (dazu
 /// eine Markierung), entfernte hellgrau und gestrichelt, unveränderte grau.
+///
+/// Abweichung von der Spec (dort Rot/Grün): Orange/Blau bleibt auch bei
+/// Rot-Grün-Schwäche unterscheidbar (siehe docs/DECISIONS.md).
 extension Palette {
-    /// Farbton für Zuwachs (Rot) und Rückgang (Grün), in Grad.
-    public static let growthHue = 4.0
-    public static let shrinkHue = 142.0
+    /// Farbton für Zuwachs (Orange) und Rückgang (Blau), in Grad.
+    public static let growthHue = 28.0
+    public static let shrinkHue = 214.0
 
     /// Unveränderte Elemente: neutrales Grau.
     public var unchangedFill: RGBColor { isDark ? RGBColor(white: 0.33) : RGBColor(white: 0.86) }
@@ -60,6 +63,27 @@ extension Palette {
             return isDark
                 ? RGBColor(hue: Self.shrinkHue, saturation: 0.35 + 0.40 * t, brightness: 0.34 + 0.46 * t)
                 : RGBColor(hue: Self.shrinkHue, saturation: 0.10 + 0.62 * t, brightness: 0.97 - 0.22 * t)
+        }
+    }
+
+    /// Textfarbe für Δ-Werte (Liste, Tooltip, Mitte): kräftiges Orange bzw.
+    /// Blau mit mindestens 4,5 : 1 Kontrast zum Hintergrund; 0 neutral.
+    public func deltaTextColor(_ delta: Int64) -> RGBColor {
+        if delta == 0 { return secondaryText }
+        if delta > 0 {
+            return isDark ? RGBColor(red: 1.0, green: 0.62, blue: 0.30) : RGBColor(red: 0.64, green: 0.30, blue: 0.0)
+        }
+        return isDark ? RGBColor(red: 0.45, green: 0.68, blue: 1.0) : RGBColor(red: 0.0, green: 0.36, blue: 0.75)
+    }
+
+    /// Zeichen im Segment, wenn Farben nicht unterscheiden sollen
+    /// („Ohne Farbe unterscheiden“): „+“ gewachsen, „−“ geschrumpft. Neue
+    /// (Punkt) und entfernte Elemente (gestrichelt) sind schon ohne Farbe erkennbar.
+    public static func deltaMark(for status: DiffStatus) -> String? {
+        switch status {
+        case .grown: "+"
+        case .shrunk: "\u{2212}"
+        case .added, .removed, .unchanged: nil
         }
     }
 

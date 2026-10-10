@@ -190,7 +190,7 @@ struct CompareModelTests {
 
     // MARK: Farben
 
-    @Test("Delta-Färbung: rot gewachsen, grün geschrumpft, grau entfernt/unverändert")
+    @Test("Delta-Färbung: orange gewachsen, blau geschrumpft, grau entfernt/unverändert")
     func deltaColors() throws {
         let m = CompareFixture.model()
         for appearance in PaletteAppearance.allCases {
@@ -202,9 +202,9 @@ struct CompareModelTests {
                 let c = colors[i]
                 switch m.status(of: arc, view: .delta) {
                 case .grown, .added:
-                    #expect(DeltaPaletteTests.isRed(c), "\(c) sollte rot sein")
+                    #expect(DeltaPaletteTests.isOrange(c), "\(c) sollte orange sein")
                 case .shrunk:
-                    #expect(DeltaPaletteTests.isGreen(c), "\(c) sollte grün sein")
+                    #expect(DeltaPaletteTests.isBlue(c), "\(c) sollte blau sein")
                 case .removed:
                     #expect(c == palette.removedFill)
                 case .unchanged:

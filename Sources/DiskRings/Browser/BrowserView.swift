@@ -40,6 +40,7 @@ struct BrowserBody: View {
     let state: AppState
     var frozenTime: Date?
     @ViewState private var dragStart: Double?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { proxy in
@@ -74,7 +75,8 @@ struct BrowserBody: View {
                     ToastView(state: state, toast: t)
                         .padding(.horizontal, 16)
                         .padding(.bottom, state.prefs.paletteScheme == .fileType ? 96 : 14)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        // „Bewegung reduzieren“: nur einblenden, nicht hereinschieben.
+                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .animation(.easeOut(duration: 0.2), value: state.toast?.id)
@@ -249,13 +251,13 @@ struct StatusBar: View {
                 Text(volumeText(v))
                 if let b = state.breakdown {
                     if b.systemData > 0 {
-                        Text("· " + L("status.systemData", ByteFormat.string(b.systemData)))
+                        Text(TextFormat.inlineSeparatorGlyph + " " + L("status.systemData", ByteFormat.string(b.systemData)))
                             .help(L("status.systemData.help"))
                     }
                     VolumeUsageBar(breakdown: b).frame(width: 90, height: 6)
                 }
             } else if let p = state.progress {
-                Text(filesText(p.filesScanned) + " · " + ByteFormat.string(p.allocatedBytes))
+                Text(TextFormat.inline([filesText(p.filesScanned), ByteFormat.string(p.allocatedBytes)]))
             }
             if state.volume != nil {
                 Image(systemName: "info.circle")

@@ -72,7 +72,7 @@ public struct DiffSummary: Sendable, Equatable {
         } else if let n = unassignedDelta {
             parts.append(L("compare.part.unassigned", ByteFormat.signed(n)))
         }
-        return L("compare.since", CompareHeadline.shortDate(oldDate)) + ": " + parts.joined(separator: " · ")
+        return TextFormat.labeled(L("compare.since", CompareHeadline.shortDate(oldDate)), TextFormat.inline(parts))
     }
 }
 
