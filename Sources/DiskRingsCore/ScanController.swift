@@ -24,6 +24,9 @@ public final class ScanController {
     /// Generation des aktuellen Scans (steigt bei jedem `start` und `cancel`).
     public private(set) var generation: UInt64 = 0
     private var task: Task<Void, Never>?
+    /// Alle Lese-Tasks nach Generation, auch abgebrochene, bis sie
+    /// zurückgekehrt sind (für `drain()`).
+    private var readers: [UInt64: Task<Void, Never>] = [:]
 
     public init(
         handler: @escaping @MainActor (Event) -> Void = { _ in },
@@ -40,7 +43,10 @@ public final class ScanController {
         let id = generation
         isRunning = true
         let stream = makeStream(path, options, includeSnapshots)
-        task = Task { [weak self] in
+        let reader = Task { [weak self] in
+            // Der Task läuft auf dem Main Actor und kann erst beginnen, wenn
+            // `start` ihn eingetragen hat.
+            defer { self?.readers[id] = nil }
             do {
                 for try await event in stream {
                     guard !Task.isCancelled, let self, self.generation == id else { return }
@@ -60,6 +66,16 @@ public final class ScanController {
                 self.handler(.failed(error))
             }
         }
+        task = reader
+        readers[id] = reader
+    }
+
+    /// Wartet, bis alle bisher gestarteten Lese-Tasks zurückgekehrt sind,
+    /// auch abgebrochene. Nur diese Tasks rufen `handler` auf; danach kommt
+    /// also kein Ereignis eines bisherigen Scans mehr an. Für Tests, die
+    /// sonst eine feste Zeit warten müssten; die App ruft es nicht auf.
+    public func drain() async {
+        for reader in Array(readers.values) { await reader.value }
     }
 
     /// Bricht den laufenden Scan ab; danach kommen keine Ereignisse mehr von ihm.

@@ -226,7 +226,7 @@ struct HardcodedGermanTests {
 
     /// Zeilen mit diesen Aufrufen sind interne Diagnosen (Invarianten-Prüfung,
     /// Absturzmeldung, `ScanTree.validate`) und erscheinen nie in der Oberfläche.
-    static let diagnosticCalls = ["precondition(", "fatalError(", "report(", "assert("]
+    static let diagnosticCalls = ["precondition(", "preconditionFailure(", "fatalError(", "report(", "assert("]
 
     static var germanWords: Regex<(Substring, Substring)> { /\b(und|nicht|der|die|das|ist|wird|werden|wurde|ein|eine|einen|mit|für|von|oder|auf|nur|noch|bereits|kein|keine|Ordner|Datei|Dateien|Objekt|Objekte|Abbrechen|Löschen|Fehler|Zurück|Fertig|Schließen|Einstellungen|Größe|belegt|frei|Knoten|Wurzel|Papierkorb|Vergleich|gespeichert|fehlgeschlagen|Sichern|wählen|anzeigen|zeigen|öffnen|Speicher|Volumes? belegt)\b/ }
 

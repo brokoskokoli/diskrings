@@ -33,7 +33,7 @@ Stand M1. Die Speicherspitze ist inzwischen deutlich niedriger (bei `~` 239 stat
 | `~` | 158 MB | 160 MB | 183 MB | 311 MB |
 | `/` | 226 MB | 228 MB | 262 MB | 448 MB |
 
-Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortierte Rohbaum (36 Byte pro Knoten plus Namen), 16 Byte Hilfsdaten pro Knoten und das fertige Knoten-Array (40 Byte). Danach wird alles außer dem Baum sofort an das System zurückgegeben (siehe „mmap-Puffer“ in docs/DECISIONS.md). Mit normalen Swift-Arrays lag die Spitze beim Scan von `~` bei 567 MB, und nach dem Scan eines Projektordners (1,5 Mio. Knoten) blieb der Prozess bei 314 MB statt 93 MB.
+Stand M1 (inzwischen überholt, siehe „Speicherspitze: Baumaufbau an Ort und Stelle“): Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortierte Rohbaum (36 Byte pro Knoten plus Namen), 16 Byte Hilfsdaten pro Knoten und das fertige Knoten-Array (40 Byte). Danach wird alles außer dem Baum sofort an das System zurückgegeben (siehe „mmap-Puffer“ in docs/DECISIONS.md). Mit normalen Swift-Arrays lag die Spitze beim Scan von `~` bei 567 MB, und nach dem Scan eines Projektordners (1,5 Mio. Knoten) blieb der Prozess bei 314 MB statt 93 MB.
 
 ### Abgleich mit `du`
 
@@ -109,8 +109,7 @@ Gemessen mit `DISKRINGS_DEBUG_SNAPSHOT=1 diskrings-cli scan ~ --top 0 --live --l
 
 ## Offene Punkte
 - Kalter Cache (nach Neustart) ist nicht gemessen; die Zahlen oben sind Bestwerte.
-
-- Die Spitze beim Baum-Aufbau (etwa 106 Byte pro Knoten) ließe sich durch eine Permutation an Ort und Stelle statt eines zweiten Knoten-Arrays noch um etwa ein Drittel senken.
+- Erledigt: Die Spitze beim Baum-Aufbau ist mit der Permutation an Ort und Stelle von rund 108 auf etwa 83 Byte pro Knoten gesunken (siehe „Speicherspitze: Baumaufbau an Ort und Stelle“).
 
 ## Sunburst-Layout und Hit-Test (M3)
 

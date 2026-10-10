@@ -214,27 +214,14 @@ Alternative für maximale Geschwindigkeit (Phase 2): `getattrlistbulk` liefert N
 
 ## 6. Architektur
 
-```
-DiskRings/
-├─ Package.swift
-├─ Sources/DiskRings/
-│  ├─ App/            DiskRingsApp.swift, AppState (@Observable), Commands (Menüs, Shortcuts)
-│  ├─ Scanner/        ScanEngine (fts/getattrlistbulk), WorkQueue, ScanTree, HardlinkSet, VolumeInfo
-│  ├─ Model/          NodeRef (leichter Zugriff: name, path, size, children), Snapshot
-│  ├─ History/        SnapshotStore (Speichern/Laden, LZFSE), SnapshotDiff, DiffView-Modelle
-│  ├─ Sunburst/       SunburstLayout (Arc-Berechnung), SunburstView (Canvas), HitTester, Palette
-│  ├─ Browser/        DetailListView (Outline), BreadcrumbView, LargestFilesView
-│  ├─ Actions/        FileActions (Finder, Trash, QuickLook, Undo), ProtectedPaths
-│  └─ Settings/       SettingsView, Preferences
-├─ Tests/DiskRingsTests/   ScanEngine gegen Fixture-Bäume (Hardlinks, Sparse, Symlink-Zyklen,
-│                          unlesbare Ordner), Layout-Mathematik, Hit-Test, ProtectedPaths,
-│                          Teil-Rescan, Snapshot-Roundtrip, Diff
-├─ scripts/make-app.sh     Bundle bauen, Info.plist, Icon (iconutil), codesign (Developer ID, Hardened Runtime)
-├─ scripts/release.sh      notarytool submit --wait, stapler staple, DMG/ZIP für GitHub Releases
-└─ .github/workflows/      CI: swift build + swift test auf macos-latest
-```
+Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbindliche, aktuelle Beschreibung (jede Datei, Datenfluss, Invarianten) steht in **`docs/ARCHITECTURE.md`**; die ursprünglich hier skizzierte Ordnerstruktur wurde nicht so umgesetzt (siehe docs/DECISIONS.md, „Architektur: Aufteilung in Core und App“).
 
-- **Zustandsfluss:** `ScanEngine` (Actor) → Snapshots → `AppState` (MainActor, `@Observable`) → Views. Aktionen wie Trash gehen über `FileActions` und verändern danach `ScanTree` über den Actor.
+- `Sources/DiskRingsCore`: die gesamte Logik ohne UI (Scan-Engine, `ScanTree`, Baum-Änderungen, Sunburst-Layout und Hit-Test, Snapshots und Vergleich, Teil-Rescan, Papierkorb und Schutzliste, Formatierung, Lokalisierung). Kein SwiftUI.
+- `Sources/DiskRings`: dünne SwiftUI/AppKit-App (`AppState` als zentraler Zustand, Views, Menüs, Vorschaubilder mit `--render-snapshots`).
+- `Sources/diskrings-cli`: Kommandozeilen-Werkzeug (Scan, Volumes, Snapshots, Vergleich).
+- `Tests/DiskRingsCoreTests`: alle Tests, nur gegen Core. Die App hat kein Testziel.
+- `scripts/`: `check.sh` (Build und Tests), `make-app.sh` (Bündel, Signatur), `release.sh` (Notarisierung, Release); `.github/workflows/`: CI und Release.
+- **Zustandsfluss:** `ScanEngine` → `ScanController` (MainActor) → `AppState` (MainActor, `@Observable`) → Views. Änderungen (Papierkorb, Teil-Rescan, Undo) erzeugen neue, unveränderliche `ScanTree`-Versionen, die `AppState.applyEdit` übernimmt.
 
 ---
 
