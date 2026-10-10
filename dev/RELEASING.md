@@ -16,6 +16,7 @@ Beteiligte Skripte:
 - `scripts/release.sh`: Tests, `make-app.sh`, Notarisierung von App und DMG, `stapler`, `spctl`, `SHA256SUMS`.
 - `scripts/ci-release.sh`: Schritte nur für den Workflow (Vorprüfung, temporäre Keychain).
 - `scripts/ci-appstore.sh`: Schritte des Workflows „App Store Upload“ (`.github/workflows/appstore.yml`): Vorprüfung, Keychain mit beiden Store-Identitäten, `make-app.sh --appstore`, Prüfung, `altool` Validierung und Upload. Nutzt die Keychain-Funktionen aus `ci-release.sh`.
+- `scripts/asc-submit.sh` (mit `scripts/asc-jwt.swift`): Einreichung zur Prüfung über die App Store Connect API für `submit_for_review`; Tests gegen einen Mock-Server: `scripts/test-asc-submit.sh`.
 - `scripts/setup-release-secrets.sh`: richtet die Secrets einmalig ein (`--appstore`: für den Store-Workflow im Environment `appstore`).
 
 ## Einmalige Einrichtung (GitHub Actions)
@@ -177,7 +178,7 @@ Nicht beide Wege für dieselbe Version mischen: Wenn der Tag-Workflow schon ein 
 
 Die Store-Variante (App Sandbox, SPEC 11) entsteht aus demselben Code, wird aber nicht notarisiert, sondern als `.pkg` bei App Store Connect hochgeladen. Einmalige Einrichtung (Zertifikate „Apple Distribution“ und „Mac Installer Distribution“, App-ID, Provisioning Profile, App in App Store Connect): [APPSTORE.md](APPSTORE.md).
 
-**Per Workflow (empfohlen):** Nach dem Release-Tag `v<version>` unter Actions → **App Store Upload** → Run workflow auf dem Tag starten, `dry_run` abhaken, freigeben (Environment `appstore`). Der Workflow baut, signiert, validiert und lädt hoch; den Build in App Store Connect auswählen und zur Prüfung einreichen bleibt Handarbeit. Einrichtung (Environment, sechs Secrets per `scripts/setup-release-secrets.sh --appstore`, API Key mit Rolle App Manager) und Build-Nummern: [APPSTORE.md](APPSTORE.md), Schritt 6 und „Je Version“.
+**Per Workflow (empfohlen):** Nach dem Release-Tag `v<version>` unter Actions → **App Store Upload** → Run workflow auf dem Tag starten, `dry_run` abhaken, freigeben (Environment `appstore`). Der Workflow baut, signiert, validiert und lädt hoch; den Build in App Store Connect auswählen und zur Prüfung einreichen bleibt Handarbeit, außer mit `submit_for_review` (Einreichung per API, braucht `dev/release-notes/<version>.{en,de}.txt`; [APPSTORE.md](APPSTORE.md), „Einreichen per Workflow“). Einrichtung (Environment, sechs Secrets per `scripts/setup-release-secrets.sh --appstore`, API Key mit Rolle App Manager) und Build-Nummern: [APPSTORE.md](APPSTORE.md), Schritt 6 und „Je Version“.
 
 **Von Hand:**
 
