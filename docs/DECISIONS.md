@@ -442,3 +442,6 @@ Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4).
 
 ### Papierkorb: gewachsene Dateien
 - `checkingCurrentKinds` vergleicht bei Dateien zusätzlich die aktuelle logische Größe (`lstat`, `st_size`) mit der Scan-Größe (`limitSize`, das Größere aus belegter und logischer Größe). Unsicher wird die Größe, wenn die Datei um mehr als 10 % und mehr als 1 MB gewachsen ist oder wenn das Wachstum die Summe des Plans über die 1-GB-Grenze hebt. Geschrumpfte Dateien bleiben sicher (die Scan-Größe ist dann zu groß, die Rückfrage also strenger). Ordner werden aus Zeitgründen nicht neu summiert (siehe oben).
+
+### ⌘Z: derselbe Elternordner, nicht nur derselbe Pfad
+- `TrashRecord.parentIdentity` hält Gerät und Inode des aufgelösten Elternordners beim Verschieben fest. Vor dem Zurücklegen muss unter dem (weiterhin per `realpath` geprüften) Elternpfad noch derselbe Ordner liegen; wurde er weggeschoben und ein neuer gleichen Namens angelegt, verweigert ⌘Z mit derselben Meldung („ersetzt oder verschoben“). Einträge ohne festgehaltene Identität werden wie bisher nur über den Pfad geprüft. Geänderter Inhalt des Ordners stört nicht (Ordner-Identität ohne Größe und Änderungsdatum).

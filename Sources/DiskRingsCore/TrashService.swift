@@ -324,15 +324,20 @@ public struct TrashRecord: Sendable, Equatable {
     /// ⌘Z legt nur zurück, wenn der Elternordner noch genau dorthin
     /// aufgelöst wird; `nil` → Vergleich mit dem Elternpfad selbst.
     public var resolvedParent: String?
+    /// Identität (Gerät und Inode) des aufgelösten Elternordners beim
+    /// Verschieben. ⌘Z legt nur zurück, wenn dort noch derselbe Ordner liegt
+    /// (nicht ein neuer gleichen Namens); `nil` → keine Prüfung (alte Einträge).
+    public var parentIdentity: FileIdentity?
 
     public init(originalPath: String, trashURL: URL?, name: String, allocatedSize: UInt64,
-                identity: FileIdentity? = nil, resolvedParent: String? = nil) {
+                identity: FileIdentity? = nil, resolvedParent: String? = nil, parentIdentity: FileIdentity? = nil) {
         self.originalPath = originalPath
         self.trashURL = trashURL
         self.name = name
         self.allocatedSize = allocatedSize
         self.identity = identity
         self.resolvedParent = resolvedParent
+        self.parentIdentity = parentIdentity
     }
 }
 
@@ -394,11 +399,12 @@ public struct TrashService {
             }
             let identity = fileManager.identity(atPath: item.path)
             let resolvedParent = fileManager.resolvedPath((item.path as NSString).deletingLastPathComponent)
+            let parentIdentity = resolvedParent.flatMap { fileManager.identity(atPath: $0) }
             do {
                 let url = try fileManager.trashItem(at: URL(fileURLWithPath: item.path))
                 out.trashed.append(TrashRecord(originalPath: item.path, trashURL: url, name: item.name,
                                                allocatedSize: item.allocatedSize, identity: identity,
-                                               resolvedParent: resolvedParent))
+                                               resolvedParent: resolvedParent, parentIdentity: parentIdentity))
             } catch {
                 out.failures.append(TrashFailure(path: item.path, message: Self.describe(error)))
             }
@@ -499,6 +505,14 @@ public struct TrashService {
         guard let resolved = fileManager.resolvedPath(parent),
               ProtectedPaths.normalize(resolved) == ProtectedPaths.normalize(r.resolvedParent ?? parent) else {
             return L("trash.undo.parentChanged")
+        }
+        // Gleicher Pfad, aber ein anderer Ordner (verschoben und neu angelegt)?
+        if let expected = r.parentIdentity {
+            guard let current = fileManager.identity(atPath: resolved),
+                  current.device == expected.device, current.inode == expected.inode,
+                  current.isDirectory == expected.isDirectory else {
+                return L("trash.undo.parentChanged")
+            }
         }
         let name = (r.originalPath as NSString).lastPathComponent
         let target = resolved == "/" ? "/" + name : resolved + "/" + name
