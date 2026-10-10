@@ -406,3 +406,4 @@
 "trash.error.mountPoint" = "”%@” är en annan volym (monteringspunkt) och kan inte flyttas till papperskorgen";
 "trash.error.containsMountPoint" = "Innehåller en annan volym (monteringspunkt ”%@”) och kan inte flyttas till papperskorgen";
 "trash.confirm.sizeUncertain" = "Storleken är inte helt känd (objekt som bara finns i molnet, är oläsbara eller inte skannats ännu), därför bekräftas detta alltid.";
+"reason.targetsChanged" = "Objekten har ändrats under tiden (till exempel av en ny skanning). Ingenting utfördes – försök igen.";

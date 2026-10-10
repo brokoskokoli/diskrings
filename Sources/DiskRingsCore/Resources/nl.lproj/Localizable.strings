@@ -406,3 +406,4 @@
 "trash.error.mountPoint" = "‘%@’ is een ander volume (koppelpunt) en kan niet naar de prullenmand worden verplaatst";
 "trash.error.containsMountPoint" = "Bevat een ander volume (koppelpunt ‘%@’) en kan niet naar de prullenmand worden verplaatst";
 "trash.confirm.sizeUncertain" = "De grootte is niet volledig bekend (onderdelen alleen in de cloud, onleesbaar of nog niet gescand), daarom wordt altijd om bevestiging gevraagd.";
+"reason.targetsChanged" = "De onderdelen zijn inmiddels gewijzigd (bijvoorbeeld door een nieuwe scan). Er is niets uitgevoerd – probeer het opnieuw.";

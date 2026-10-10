@@ -406,3 +406,4 @@
 "trash.error.mountPoint" = "« %@ » est un autre volume (point de montage) et ne peut pas être placé dans la corbeille";
 "trash.error.containsMountPoint" = "Contient un autre volume (point de montage « %@ ») et ne peut pas être placé dans la corbeille";
 "trash.confirm.sizeUncertain" = "La taille n’est pas entièrement connue (éléments uniquement dans le cloud, illisibles ou pas encore analysés) ; une confirmation est donc toujours demandée.";
+"reason.targetsChanged" = "Les éléments ont changé entre-temps (par exemple après une nouvelle analyse). Rien n’a été fait – veuillez réessayer.";

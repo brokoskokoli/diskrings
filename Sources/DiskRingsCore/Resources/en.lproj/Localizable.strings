@@ -406,3 +406,4 @@
 "trash.error.mountPoint" = "“%@” is another volume (mount point) and can’t be moved to the Trash";
 "trash.error.containsMountPoint" = "Contains another volume (mount point “%@”) and can’t be moved to the Trash";
 "trash.confirm.sizeUncertain" = "The size isn’t fully known (cloud-only, unreadable or not yet scanned items), so this is always confirmed.";
+"reason.targetsChanged" = "The items changed in the meantime (for example by a rescan). Nothing was done – please try again.";

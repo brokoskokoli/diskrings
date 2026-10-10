@@ -37,7 +37,9 @@ enum CompareContextMenuSections {
             systemImage: action.symbolName,
             shortcut: action.shortcut,
             availability: { t, state in state.compareAvailability(action, entries: t.compareEntries ?? []) },
-            perform: { t, state in state.performCompare(action, entries: t.compareEntries ?? []) },
+            perform: { t, state in
+                if let entries = state.currentCompareEntries(for: t) { state.performCompare(action, entries: entries) }
+            },
             showsReasonInline: action == .moveToTrash)
     }
 
@@ -51,7 +53,7 @@ enum CompareContextMenuSections {
             return .enabled
         },
         perform: { t, state in
-            guard let e = t.compareEntries?.first else { return }
+            guard let e = state.currentCompareEntries(for: t)?.first else { return }
             state.compare?.reveal(e)
         })
 }
@@ -61,7 +63,8 @@ extension AppState {
     func compareContextTarget(for entry: Int32) -> ContextMenuTarget? {
         guard compare != nil else { return nil }
         let nodes = compareActionContext.flatMap { CompareActions.nodes(forEntries: [entry], context: $0) } ?? []
-        return ContextMenuTarget(nodes: nodes, clicked: nodes.first ?? -1, compareEntries: [entry])
+        return ContextMenuTarget(nodes: nodes, clicked: nodes.first ?? -1, tree: tree, compareEntries: [entry],
+                                 diff: compare?.diff)
     }
 
     func compareMenuHeader(_ entry: Int32) -> String {

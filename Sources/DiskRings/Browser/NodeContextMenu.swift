@@ -29,8 +29,44 @@ struct ContextMenuTarget: Equatable {
     /// Elemente fehlen dort). Die eingebauten Abschnitte erscheinen nur ohne
     /// Vergleich; der Vergleich registriert eigene (Compare/CompareContextMenu.swift).
     var compareEntries: [Int32]?
+    /// `nodes` über Pfad und Art festgehalten: Wird der Baum ersetzt, während
+    /// das Menü offen ist (Teil-Rescan, Kompaktierung), zeigen die Indizes
+    /// womöglich auf andere Elemente. Ausgeführt wird deshalb nur auf den
+    /// neu aufgelösten Knoten (docs/DECISIONS.md).
+    let snapshot: NodeTargetSnapshot?
+    /// Dasselbe für `compareEntries` (der Vergleich wird nach Änderungen neu berechnet).
+    let compareSnapshot: CompareTargetSnapshot?
+
+    init(nodes: [Int32], clicked: Int32, tree: ScanTree?, compareEntries: [Int32]? = nil, diff: SnapshotDiff? = nil) {
+        self.nodes = nodes
+        self.clicked = clicked
+        self.compareEntries = compareEntries
+        snapshot = tree.map { NodeTargetSnapshot(nodes: nodes, in: $0) }
+        compareSnapshot = compareEntries.flatMap { entries in diff.map { CompareTargetSnapshot(entries: entries, in: $0) } }
+    }
 
     var isCompare: Bool { compareEntries != nil }
+}
+
+extension AppState {
+    /// Knoten eines Kontextmenü-Ziels im **aktuellen** Baum; meldet und
+    /// liefert `nil`, wenn sich die Ziele inzwischen geändert haben.
+    func currentNodes(for target: ContextMenuTarget) -> [Int32]? {
+        guard let nodes = target.snapshot?.resolve(in: tree) else {
+            showToast(.error, L("reason.targetsChanged"))
+            return nil
+        }
+        return nodes
+    }
+
+    /// Einträge eines Kontextmenü-Ziels im **aktuellen** Vergleich.
+    func currentCompareEntries(for target: ContextMenuTarget) -> [Int32]? {
+        guard let entries = target.compareSnapshot?.resolve(in: compare?.diff) else {
+            showToast(.error, L("reason.targetsChanged"))
+            return nil
+        }
+        return entries
+    }
 }
 
 /// Ein Eintrag des Kontextmenüs.
@@ -67,7 +103,9 @@ struct ContextMenuItem: Identifiable {
             systemImage: action.symbolName,
             shortcut: action.shortcut,
             availability: { target, state in state.availability(action, targets: target.nodes) },
-            perform: { target, state in state.perform(action, targets: target.nodes) },
+            perform: { target, state in
+                if let nodes = state.currentNodes(for: target) { state.perform(action, targets: nodes) }
+            },
             showsReasonInline: action == .moveToTrash)
     }
 }
@@ -132,7 +170,7 @@ struct NodeContextMenu: View {
 
     var body: some View {
         if let tree = state.tree {
-            let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node)
+            let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node, tree: tree)
             ContextMenuItems(state: state, target: target,
                              header: target.nodes.count == 1 ? tree.name(of: node) : L("count.items", target.nodes.count, ByteFormat.count(target.nodes.count)))
         }
@@ -196,7 +234,7 @@ struct ContextMenuPreview: View {
 
     var body: some View {
         if let tree = state.tree {
-            let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node)
+            let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node, tree: tree)
             ContextMenuPreviewBody(state: state, target: target,
                                    header: target.nodes.count == 1 ? tree.name(of: node) : L("count.items", target.nodes.count, ByteFormat.count(target.nodes.count)))
         }
