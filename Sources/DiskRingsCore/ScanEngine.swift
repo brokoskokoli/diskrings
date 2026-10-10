@@ -87,8 +87,15 @@ public struct ScanEngine: Sendable {
 
     /// Synchroner Scan auf dem aufrufenden Thread (plus Worker-Threads).
     /// Der aufrufende Thread liefert die Fortschrittsmeldungen.
+    ///
+    /// `followRootSymlink`: Ist `path` selbst ein Symlink, wird ihm gefolgt
+    /// (Standard, wie bei der Wahl eines Scan-Ordners). Teil-Rescans setzen
+    /// `false`: Ein inzwischen durch einen Symlink ersetzter Ordner wird dann
+    /// wie im vollständigen Scan zu einem Symlink-Blatt (der Pfad muss
+    /// absolut und schon aufgelöst sein, wie die Pfade im Baum).
     public func scanBlocking(
         _ path: String,
+        followRootSymlink: Bool = true,
         cancellation: ScanCancellation = ScanCancellation(),
         onProgress: ((ScanProgress) -> Void)? = nil,
         onSnapshot: ((ScanTree) -> Void)? = nil
@@ -97,7 +104,9 @@ public struct ScanEngine: Sendable {
         func elapsed() -> Double { Double(DispatchTime.now().uptimeNanoseconds - startTime.uptimeNanoseconds) / 1e9 }
 
         if cancellation.isCancelled { throw CancellationError() }
-        guard let rootPath = Self.resolve(path) else { throw ScanError.notFound(path) }
+        guard let rootPath = followRootSymlink || !path.hasPrefix("/") ? Self.resolve(path) : path else {
+            throw ScanError.notFound(path)
+        }
         var st = stat()
         guard lstat(rootPath, &st) == 0 else { throw ScanError.notFound(path) }
 

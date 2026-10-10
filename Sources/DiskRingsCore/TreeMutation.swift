@@ -288,6 +288,13 @@ struct TreeMutator {
     mutating func replaceSubtree(at index: Int32, with sub: ScanTree) -> Int32 {
         let old = nodes[Int(index)]
         killDescendants(of: index, includeSelf: false)
+        // Der Knoten bleibt, sein alter Hardlink-Eintrag (war er eine Datei)
+        // nicht: Sonst stünde er neben dem neuen Eintrag doppelt in der
+        // Tabelle, und die Gruppe zählte gar nicht mehr.
+        if let p = linkPos[index] {
+            touchedGroups.insert(HardlinkKey(dev: links[p].dev, ino: links[p].ino))
+            removeLinks(at: [p])
+        }
 
         // Neue Nachfahren hinten anhängen: Unterbaum-Index j ≥ 1 → base + j.
         let base = Int32(nodes.count) - 1

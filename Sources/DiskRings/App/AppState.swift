@@ -580,6 +580,7 @@ final class AppState {
         guard let tree else { return }
         let out = TrashService(fileManager: fileTrasher, protection: protection).trash(plan)
         if !out.removedPaths.isEmpty {
+            for p in out.removedPaths { rescanQueue.noteEdit(at: p) }
             let chain = tree.removingNodes(atPaths: out.removedPaths)
             applyEdit(chain.tree, translate: chain.translate)
         }
@@ -611,6 +612,7 @@ final class AppState {
         guard let tree, let records = undoStack.popLast() else { return }
         let out = TrashService(fileManager: fileTrasher, protection: protection).restore(records)
         for p in out.restored {
+            rescanQueue.noteEdit(at: p)
             let parent = ScanEngine.nearestExistingIndex(of: p, in: tree)
             startPartialRescan(path: tree.path(of: parent), silentIfCovered: true)
         }
@@ -659,31 +661,39 @@ final class AppState {
                 rescanTokens.removeValue(forKey: c)?.cancel()
             }
             rescanProgress = rescanProgress.filter { rescanQueue.paths.contains($0.key) }
-            let previous = tree.index(ofPath: path).map { tree.node($0).allocatedSize } ?? 0
-            rescanProgress[path] = PartialRescan.estimatedProgress(scannedBytes: 0, previousSize: previous) ?? -1
-            let token = ScanCancellation()
-            rescanTokens[id] = token
-            let options = scanOptionsUsed
-            let thread = Thread { [weak self] in
-                let result = Result {
-                    try PartialRescan.scan(path, options: options, cancellation: token, onProgress: { p in
-                        let fraction = PartialRescan.estimatedProgress(scannedBytes: p.allocatedBytes,
-                                                                        previousSize: previous) ?? -1
-                        DispatchQueue.main.async {
-                            MainActor.assumeIsolated { self?.updateRescanProgress(id: id, path: path, fraction) }
-                        }
-                    })
-                }
-                DispatchQueue.main.async {
-                    MainActor.assumeIsolated {
-                        self?.finishPartialRescan(id: id, path: path, result: result, announce: announce)
+            launchPartialRescan(id: id, path: path, in: tree, announce: announce)
+        }
+    }
+
+    /// Startet den Lesevorgang für einen eingetragenen Job (auch erneut,
+    /// wenn er nach `RescanQueue.finish` veraltet war).
+    private func launchPartialRescan(id: UInt64, path: String, in tree: ScanTree, announce: Bool) {
+        let previous = tree.index(ofPath: path).map { tree.node($0).allocatedSize } ?? 0
+        rescanProgress[path] = PartialRescan.estimatedProgress(scannedBytes: 0, previousSize: previous) ?? -1
+        let token = ScanCancellation()
+        rescanTokens[id] = token
+        let options = scanOptionsUsed
+        let followSymlink = path == tree.rootPath
+        let thread = Thread { [weak self] in
+            let result = Result {
+                try PartialRescan.scan(path, options: options, followSymlink: followSymlink, cancellation: token,
+                                       onProgress: { p in
+                    let fraction = PartialRescan.estimatedProgress(scannedBytes: p.allocatedBytes,
+                                                                    previousSize: previous) ?? -1
+                    DispatchQueue.main.async {
+                        MainActor.assumeIsolated { self?.updateRescanProgress(id: id, path: path, fraction) }
                     }
+                })
+            }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    self?.finishPartialRescan(id: id, path: path, result: result, announce: announce)
                 }
             }
-            thread.qualityOfService = .userInitiated
-            thread.name = "DiskRings.PartialRescan"
-            thread.start()
         }
+        thread.qualityOfService = .userInitiated
+        thread.name = "DiskRings.PartialRescan"
+        thread.start()
     }
 
     private func updateRescanProgress(id: UInt64, path: String, _ fraction: Double) {
@@ -693,8 +703,19 @@ final class AppState {
 
     private func finishPartialRescan(id: UInt64, path: String, result: Result<ScanResult?, Error>, announce: Bool) {
         rescanTokens.removeValue(forKey: id)
-        // Abgebrochen oder durch einen Vorfahren ersetzt: Ergebnis verwerfen.
-        guard rescanQueue.finish(id) else { return }
+        switch rescanQueue.finish(id) {
+        case .apply: break
+        case .discard: return // abgebrochen oder durch einen Vorfahren ersetzt
+        case .rerun:
+            // Während des Lesens kam eine Änderung darunter (Papierkorb,
+            // Zurücklegen) oder eine weitere Anfrage: Ergebnis verwerfen und
+            // gegen den aktuellen Stand neu lesen.
+            if phase == .browsing, let tree, case .success = result {
+                launchPartialRescan(id: id, path: path, in: tree, announce: announce)
+                return
+            }
+            _ = rescanQueue.finish(id) // austragen; ein Fehler wird unten gemeldet
+        }
         rescanProgress[path] = nil
         guard phase == .browsing, let tree else { return }
         let name = (path as NSString).lastPathComponent
@@ -834,7 +855,17 @@ final class AppState {
         let appearance: PaletteAppearance
     }
 
-    @ObservationIgnored private var colorCache: [ColorKey: [DiskRingsCore.RGBColor]] = [:]
+    /// Eintrag mit schwacher Referenz auf den Baum: Die `ObjectIdentifier`
+    /// im Schlüssel allein könnte nach dem Freigeben des Baums an einen neuen
+    /// Baum an derselben Adresse vergeben werden (dann kämen veraltete
+    /// Farben). Ein Treffer zählt nur, wenn der Eintrag noch auf genau diesen
+    /// Baum zeigt (`===`); die Bäume selbst hält der Cache nicht fest.
+    private struct ColorEntry {
+        weak var tree: ScanTree?
+        let colors: [DiskRingsCore.RGBColor]
+    }
+
+    @ObservationIgnored private var colorCache: [ColorKey: ColorEntry] = [:]
 
     /// Farben aller Arcs eines Layouts (das Layout ist durch Baum, Fokus und
     /// Optionen eindeutig bestimmt). `tree` ist der Baum des Layouts (nach
@@ -843,10 +874,10 @@ final class AppState {
         guard let tree = layoutTree ?? tree else { return [] }
         let key = ColorKey(tree: ObjectIdentifier(tree), focus: layout.focus, options: layout.options,
                            arcCount: layout.arcs.count, scheme: palette.scheme, appearance: palette.appearance)
-        if let c = colorCache[key] { return c }
+        if let e = colorCache[key], e.tree === tree { return e.colors }
         if colorCache.count > 8 { colorCache.removeAll() }
         let c = palette.colors(for: layout, tree: tree)
-        colorCache[key] = c
+        colorCache[key] = ColorEntry(tree: tree, colors: c)
         return c
     }
 

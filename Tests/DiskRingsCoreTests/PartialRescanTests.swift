@@ -28,11 +28,9 @@ struct PartialRescanTests {
         #expect(Set(c3) == [id1, id2])
         #expect(q.paths == ["/a"])
         // Ergebnisse ersetzter Jobs werden verworfen.
-        let staleAccepted = q.finish(id1)
-        #expect(!staleAccepted)
+        #expect(q.finish(id1) == .discard)
         #expect(q.job(covering: "/a/x/y")?.id == id3)
-        let accepted = q.finish(id3)
-        #expect(accepted)
+        #expect(q.finish(id3) == .apply)
         #expect(q.isEmpty)
         _ = q.request("/x", fullScanRunning: false)
         #expect(q.cancelAll().count == 1 && q.isEmpty)
