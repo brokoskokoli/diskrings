@@ -116,12 +116,16 @@ P12_AWK='
         }
         next
     }
+    # Mehrere Zertifikate können denselben Schlüssel (dieselbe localKeyID) haben,
+    # z. B. Apple Distribution und Installer aus derselben CSR; deshalb immer
+    # zusätzlich über den Namen auswählen.
+    function named(i) { return id == "" || F[i] == id || index(S[i], "CN=" id "/") || S[i] ~ ("CN=" id "$") }
     END {
         for (i = 1; i <= n; i++) if (T[i] == "key" && L[i] != "") K[L[i]] = i
         for (i = 1; i <= n; i++) {
-            if (T[i] != "cert" || L[i] == "" || !(L[i] in K)) continue
+            if (T[i] != "cert" || L[i] == "" || !(L[i] in K) || !named(i)) continue
             if (mode == "list") {
-                if (F[i] == id || index(S[i], "CN=" id "/") || S[i] ~ ("CN=" id "$")) print L[i]
+                print L[i]
             } else if (L[i] == want) {
                 if (mode == "pair") printf "%s", P[K[L[i]]]
                 printf "%s", P[i]
@@ -157,13 +161,13 @@ extract_identity() {
     lkids=$(p12_dump "$in" "$in_pass" | awk -v mode=list -v id="$identity" "$P12_AWK")
     [ -n "$lkids" ] || return 3
     while IFS= read -r lkid; do
-        pem=$(p12_dump "$in" "$in_pass" | awk -v mode=cert -v want="$lkid" "$P12_AWK")
+        pem=$(p12_dump "$in" "$in_pass" | awk -v mode=cert -v want="$lkid" -v id="$identity" "$P12_AWK")
         "$OPENSSL" x509 -noout -checkend 0 <<<"$pem" >/dev/null 2>&1 || continue
         end=$(not_after_epoch <<<"$pem") || continue
         if [ "$end" -gt "$best_end" ]; then best=$lkid; best_end=$end; fi
     done <<<"$lkids"
     [ -n "$best" ] || return 5
-    p12_dump "$in" "$in_pass" | awk -v mode=pair -v want="$best" "$P12_AWK" \
+    p12_dump "$in" "$in_pass" | awk -v mode=pair -v want="$best" -v id="$identity" "$P12_AWK" \
         | OUT_PASS=$out_pass "$OPENSSL" pkcs12 -export -name "$identity" \
             ${certfile[@]+"${certfile[@]}"} \
             -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 \
