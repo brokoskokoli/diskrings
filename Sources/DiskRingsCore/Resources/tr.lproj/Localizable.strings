@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Yerel APFS ve Time Machine anlık görüntüleri ayrı ölçülemez; durumlarına göre “Temizlenebilir” veya “Okunamayan Sistem Verileri” olarak sayılır.";
+"center.usedOfTotal" = "%1$@ kullanılıyor\n(toplam %2$@)";

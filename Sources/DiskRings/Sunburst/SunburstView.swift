@@ -31,7 +31,7 @@ struct SunburstView: View {
                     palette: palette, hoverArc: state.hoverArc, hoverNode: state.hoverNode,
                     hoverCenter: state.hoverCenter, selected: Set(state.selection.nodes), primarySelected: state.selected,
                     focusIsRoot: state.focus == 0, showLabels: state.prefs.showLabels, centerTitle: centerTitle(tree),
-                    sizeMode: state.prefs.sizeMode, rescanning: rescanning)
+                    centerDetail: state.centerDetail, sizeMode: state.prefs.sizeMode, rescanning: rescanning)
                 // Das Diagramm läuft nur während einer Zoom-/Änderungsanimation
                 // jedes Bild; der Fortschrittsring eines Teil-Rescans liegt in
                 // einer eigenen kleinen Ebene mit niedriger Bildrate.

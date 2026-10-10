@@ -22,6 +22,8 @@ enum SunburstRenderer {
         let focusIsRoot: Bool
         let showLabels: Bool
         let centerTitle: String
+        /// Text unter dem Titel; ohne Angabe die Größe des Fokus.
+        var centerDetail: String?
         let sizeMode: SizeMode
         /// Laufende Teil-Rescans: Knoten → geschätzter Fortschritt (-1 = unbestimmt).
         var rescanning: [Int32: Double] = [:]
@@ -37,12 +39,10 @@ enum SunburstRenderer {
         if let transition, let t = progress, t < 1 {
             // Animationsbild: beide Layouts mit derselben „Kamera“.
             for d in transition.frame(at: t, rings: g.rings) {
-                let arc = d.isFromTarget ? transition.to.arcs[d.arcIndex] : transition.from.arcs[d.arcIndex]
                 let colors = d.isFromTarget ? input.colors : (input.fromColors ?? input.colors)
                 guard d.arcIndex < colors.count else { continue }
                 var inner = g.radius(atBoundary: d.innerBoundary)
-                let outer = arc.kind.spansOuterRings && d.outerBoundary >= 1
-                    ? g.radius(atBoundary: Double(g.rings)) : g.radius(atBoundary: d.outerBoundary)
+                let outer = g.radius(atBoundary: d.outerBoundary)
                 if d.innerBoundary <= 0 { inner = g.centerRadius * max(0, d.outerBoundary) }
                 let path = segment(center: center, inner: inner, outer: outer, start: d.startAngle, end: d.endAngle)
                 gc.fill(path, with: .color(Color(colors[d.arcIndex]).opacity(d.opacity)))
@@ -60,7 +60,7 @@ enum SunburstRenderer {
         var hoverPath: Path?
         for (i, arc) in arcs.enumerated() {
             let inner = g.innerRadius(ofRing: Int(arc.depth))
-            let outer = arc.kind.spansOuterRings ? g.outerRadius : g.outerRadius(ofRing: Int(arc.depth))
+            let outer = g.outerRadius(ofRing: Int(arc.depth))
             let path = segment(center: center, inner: inner, outer: outer, start: arc.startAngle, end: arc.endAngle)
             var color = input.colors[i]
             if highlighted.contains(i) {
@@ -216,13 +216,17 @@ enum SunburstRenderer {
         let maxWidth = r * 1.6
         let titleFont = Font.system(size: max(10, min(15, r / 6)), weight: .semibold)
         let title = fitted(input.centerTitle, font: titleFont, maxWidth: maxWidth, in: gc)
-        let sizeText = gc.resolve(Text(ByteFormat.string(size))
-            .font(.system(size: max(10, min(13, r / 7))).monospacedDigit())
-            .foregroundStyle(Color(palette.secondaryText)))
+        // Unter dem Titel eine oder mehrere Zeilen (z. B. „312 GB belegt“ / „von 494 GB“).
+        let detailLines = (input.centerDetail ?? ByteFormat.string(size)).split(separator: "\n").map(String.init)
+        let detailFont = Font.system(size: max(10, min(13, r / 7))).monospacedDigit()
+        let lineHeight = max(12, min(16, r / 5.5))
         let hasUp = !input.focusIsRoot
-        let titleY = c.y - (hasUp ? 4 : 0) - 8
+        let titleY = c.y - (hasUp ? 4 : 0) - 8 - Double(detailLines.count - 1) * lineHeight / 2
         gc.draw(title, at: CGPoint(x: c.x, y: titleY), anchor: .center)
-        gc.draw(sizeText, at: CGPoint(x: c.x, y: titleY + 18), anchor: .center)
+        for (i, line) in detailLines.enumerated() {
+            let text = fitted(line, font: detailFont, maxWidth: maxWidth, in: gc, color: Color(palette.secondaryText))
+            gc.draw(text, at: CGPoint(x: c.x, y: titleY + 18 + Double(i) * lineHeight), anchor: .center)
+        }
         if hasUp, r > 40 {
             let up = gc.resolve(Text(Image(systemName: "arrow.up.circle"))
                 .font(.system(size: 13))

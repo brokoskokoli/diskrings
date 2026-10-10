@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Lokalnych migawek APFS i Time Machine nie da się zmierzyć osobno; zależnie od stanu liczą się do „Do zwolnienia” lub „Nieczytelne dane systemowe”.";
+"center.usedOfTotal" = "%1$@ zajęte\nz %2$@";

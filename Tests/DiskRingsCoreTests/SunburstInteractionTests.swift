@@ -114,35 +114,32 @@ struct SunburstHitTesterTests {
         }
     }
 
-    @Test("Frei, löschbar und Teile der Systemdaten sind bis zum Außenrand treffbar")
-    func volumeSegmentsOuterRings() throws {
+    @Test("Volume-Segmente sind genau einen Ring dick: Frei/Löschbar/Systemdaten in Ring 1, Teile in Ring 2")
+    func volumeSegmentsOneRing() throws {
         let t = sampleTree()
         let l = SunburstLayout(tree: t, options: SunburstOptions(rootSegments: .full))
         let g = SunburstGeometry(rings: 6, outerRadius: 300)
         let h = SunburstHitTester(layout: l, geometry: g)
         for kind: SunburstArc.Kind in [.free, .purgeable] {
             let u = try #require(l.arcs.firstIndex { $0.kind == kind })
-            for ring in 1 ... 6 {
+            let (x1, y1) = point(g, ring: 1, angle: l.arcs[u].midAngle)
+            #expect(h.hit(dx: x1, dy: y1) == .arc(u))
+            for ring in 2 ... 6 {
                 let (x, y) = point(g, ring: ring, angle: l.arcs[u].midAngle)
-                #expect(h.hit(dx: x, dy: y) == .arc(u))
+                #expect(h.hit(dx: x, dy: y) == .none)
             }
         }
-        // Systemdaten: Ring 1 der Sammel-Arc, ab Ring 2 der jeweilige Teil.
         let sys = try #require(l.arcs.firstIndex { $0.kind == .system })
         let part = try #require(l.arcs.firstIndex { $0.kind == .systemPart })
         let a = l.arcs[part].midAngle
         let (x1, y1) = point(g, ring: 1, angle: a)
         #expect(h.hit(dx: x1, dy: y1) == .arc(sys))
-        for ring in 2 ... 6 {
+        let (x2, y2) = point(g, ring: 2, angle: a)
+        #expect(h.hit(dx: x2, dy: y2) == .arc(part))
+        for ring in 3 ... 6 {
             let (x, y) = point(g, ring: ring, angle: a)
-            #expect(h.hit(dx: x, dy: y) == .arc(part))
+            #expect(h.hit(dx: x, dy: y) == .none)
         }
-        // Ordner reichen nicht nach außen: über einer Datei im ersten Ring nichts.
-        let b = try #require(l.arcIndex(ofNode: idx(t, "b")))
-        let (bx, by) = point(g, ring: 4, angle: l.arcs[b].midAngle)
-        #expect(h.hit(dx: bx, dy: by) == .none)
-        let (x, y) = point(g, ring: 5, angle: a)
-        #expect(SunburstHitTester(layout: l, geometry: g, segmentsSpanOuterRings: false).hit(dx: x, dy: y) == .none)
     }
 
     @Test("Ringgrenzen: Radius genau auf der Grenze gehört zum äußeren Ring")

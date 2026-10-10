@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Les instantanés APFS et Time Machine locaux ne peuvent pas être mesurés séparément ; selon leur état, ils comptent comme « Purgeable » ou « Données système illisibles ».";
+"center.usedOfTotal" = "%1$@ utilisés\nsur %2$@";

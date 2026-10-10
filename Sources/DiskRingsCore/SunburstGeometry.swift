@@ -77,15 +77,9 @@ public enum SunburstHit: Sendable, Equatable {
 public struct SunburstHitTester: Sendable {
     public let layout: SunburstLayout
     public let geometry: SunburstGeometry
-    /// Segmente der Volume-Wurzel ohne Kinder (Teile der Systemdaten,
-    /// löschbar, frei) werden bis zum Außenrand gezeichnet und sind daher
-    /// auch in den äußeren Ringen treffbar (`SunburstArc.Kind.spansOuterRings`).
-    public var segmentsSpanOuterRings: Bool
-
-    public init(layout: SunburstLayout, geometry: SunburstGeometry, segmentsSpanOuterRings: Bool = true) {
+    public init(layout: SunburstLayout, geometry: SunburstGeometry) {
         self.layout = layout
         self.geometry = geometry
-        self.segmentsSpanOuterRings = segmentsSpanOuterRings
     }
 
     /// Winkel eines Punkts relativ zur Mitte in Bildschirmkoordinaten
@@ -103,17 +97,7 @@ public struct SunburstHitTester: Sendable {
         let r = (dx * dx + dy * dy).squareRoot()
         guard let ring = geometry.ring(atRadius: r) else { return .none }
         if ring == 0 { return .center }
-        let a = Self.angle(dx: dx, dy: dy)
-        let h = hit(ring: ring, angle: a)
-        guard h == .none, ring > 1, segmentsSpanOuterRings else { return h }
-        // Nach innen das erste Segment an diesem Winkel suchen; es zählt nur,
-        // wenn es bis zum Außenrand reicht.
-        for inner in stride(from: ring - 1, through: 1, by: -1) {
-            if case .arc(let i) = hit(ring: inner, angle: a) {
-                return layout.arcs[i].kind.spansOuterRings ? .arc(i) : .none
-            }
-        }
-        return h
+        return hit(ring: ring, angle: Self.angle(dx: dx, dy: dy))
     }
 
     /// Arc in `ring` beim Winkel `angle` (Bogenmaß, 0 = oben, im Uhrzeigersinn).

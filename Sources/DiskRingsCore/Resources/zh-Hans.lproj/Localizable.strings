@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@%2$@";
 "arc.snapshots.note" = "本地 APFS 和时间机器快照无法单独测量；根据状态，它们计入“可清除”或“无法读取的系统数据”。";
+"center.usedOfTotal" = "已用 %1$@\n共 %2$@";

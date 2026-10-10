@@ -24,8 +24,9 @@ extension Palette {
             : RGBColor(hue: 178, saturation: 0.42, brightness: 0.78)
     }
 
-    /// Frei: sehr helles bzw. dunkles Grau nahe am Hintergrund, damit es leer wirkt.
-    public var freeFill: RGBColor { isDark ? RGBColor(white: 0.20) : RGBColor(white: 0.93) }
+    /// Frei: neutrales Grau nahe am Hintergrund (im Dunkelmodus etwas heller als
+    /// das Fenster), damit es als leeres Segment erkennbar ist.
+    public var freeFill: RGBColor { isDark ? RGBColor(white: 0.25) : RGBColor(white: 0.93) }
 
     /// Farbe eines Segments der Volume-Wurzel; andere Arcs: Sammelsegment-Grau.
     public func volumeSegmentFill(_ arc: SunburstArc) -> RGBColor {

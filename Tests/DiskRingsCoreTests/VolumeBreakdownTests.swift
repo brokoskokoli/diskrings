@@ -149,6 +149,13 @@ struct VolumeBreakdownTests {
         #expect(!s.isEmpty)
     }
 
+    @Test("Mitte der Volume-Wurzel: belegt von gesamt")
+    func centerText() {
+        let b = VolumeBreakdown(total: 494_000_000_000, available: 182_000_000_000,
+                                availableForImportantUsage: 196_000_000_000, scanned: 248_800_000_000, otherVolumes: [])
+        #expect(b.centerText == "312,0\u{00A0}GB belegt\nvon 494,0\u{00A0}GB")
+    }
+
     @Test("Bekannte Rollen bekommen verständliche Namen, andere ihren Volume-Namen")
     func friendlyNames() {
         #expect(Self.vol("Preboot", 1, roles: ["Preboot"]).displayName == "Startdaten (Preboot)")

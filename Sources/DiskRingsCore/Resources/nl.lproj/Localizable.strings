@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Lokale APFS- en Time Machine-snapshots zijn niet apart te meten; afhankelijk van hun toestand tellen ze als ‘Opschoonbaar’ of ‘Onleesbare systeemgegevens’.";
+"center.usedOfTotal" = "%1$@ gebruikt\nvan %2$@";

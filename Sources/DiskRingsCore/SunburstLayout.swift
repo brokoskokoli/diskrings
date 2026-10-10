@@ -83,14 +83,6 @@ public struct SunburstArc: Sendable, Equatable {
             case .node, .aggregate, .remainder, .system, .systemPart: 0
             }
         }
-
-        /// Wird von seinem Ring bis zum Außenrand gezeichnet (und ist dort treffbar).
-        public var spansOuterRings: Bool {
-            switch self {
-            case .systemPart, .purgeable, .free: true
-            case .node, .aggregate, .remainder, .system: false
-            }
-        }
     }
 
     public var kind: Kind

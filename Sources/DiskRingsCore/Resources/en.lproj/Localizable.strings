@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Local APFS and Time Machine snapshots can’t be measured separately; depending on their state they count as Purgeable or Unreadable System Data.";
+"center.usedOfTotal" = "%1$@ used\nof %2$@";

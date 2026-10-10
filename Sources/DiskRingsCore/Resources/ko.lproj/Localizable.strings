@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "로컬 APFS 및 Time Machine 스냅샷은 따로 측정할 수 없습니다. 상태에 따라 ‘제거 가능’ 또는 ‘읽을 수 없는 시스템 데이터’에 포함됩니다.";
+"center.usedOfTotal" = "%1$@ 사용됨\n(전체 %2$@)";

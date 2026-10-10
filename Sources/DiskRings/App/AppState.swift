@@ -353,6 +353,13 @@ final class AppState {
         breakdown = VolumeBreakdown(volume: v, scanned: tree.root.allocatedSize, otherVolumes: otherVolumes)
     }
 
+    /// Text unter dem Titel in der Mitte: an der Volume-Wurzel mit freiem
+    /// Speicher im Ring „belegt von gesamt“, sonst `nil` (Größe des Fokus).
+    var centerDetail: String? {
+        guard focus == ScanTree.rootIndex, let b = breakdown, rootSegments.free > 0 else { return nil }
+        return b.centerText
+    }
+
     /// Zusätzliche Segmente der Volume-Wurzel im Diagramm (nur im Modus „belegt“).
     var rootSegments: RootSegments {
         guard prefs.sizeMode == .allocated, let b = breakdown else { return .none }

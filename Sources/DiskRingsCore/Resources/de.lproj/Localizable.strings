@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Lokale APFS- und Time-Machine-Snapshots lassen sich nicht getrennt messen; je nach Zustand zählen sie zu „Löschbar“ oder zu „Nicht lesbare Systemdaten“.";
+"center.usedOfTotal" = "%1$@ belegt\nvon %2$@";

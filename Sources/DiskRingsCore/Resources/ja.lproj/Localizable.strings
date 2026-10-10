@@ -437,3 +437,4 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@%2$@";
 "arc.snapshots.note" = "ローカルのAPFSおよびTime Machineスナップショットは個別に測定できません。状態に応じて「パージ可能」または「読み取れないシステムデータ」に含まれます。";
+"center.usedOfTotal" = "%1$@使用\n（全%2$@）";

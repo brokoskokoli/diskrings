@@ -115,6 +115,12 @@ public struct VolumeBreakdown: Sendable, Hashable {
     /// Eigene Daten im Balken: belegt ohne Systemdaten und löschbar.
     public var yourData: UInt64 { used - unassigned }
 
+    /// Text unter dem Volume-Namen in der Mitte des Diagramms, wenn der freie
+    /// Speicher im Ring gezeigt wird („312 GB belegt von 494 GB“).
+    public var centerText: String {
+        L("center.usedOfTotal", ByteFormat.string(used), ByteFormat.string(total))
+    }
+
     /// Zusätzliche Segmente im ersten Ring des Diagramms.
     public func rootSegments(showFree: Bool) -> RootSegments {
         RootSegments(systemParts: systemParts, purgeable: purgeable, free: showFree ? free : 0)
