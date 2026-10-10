@@ -171,7 +171,8 @@ extension AppState {
             let model = await Task.detached(priority: .userInitiated) {
                 CompareModel(diff: SnapshotDiff(old: old, new: current), mode: mode)
             }.value
-            snapshots.busy = nil
+            // Nur die aktuelle Aktualisierung räumt ihren Hinweis ab (nicht den einer neueren).
+            if generation == compareRefreshGeneration { snapshots.busy = nil }
             // Inzwischen beendet, ersetzt oder erneut geändert: verwerfen.
             guard generation == compareRefreshGeneration, compare === session else { return }
             let fresh = CompareSession(model: model, oldTitle: session.oldTitle, newTitle: session.newTitle,

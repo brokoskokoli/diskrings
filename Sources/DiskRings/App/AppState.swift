@@ -855,7 +855,17 @@ final class AppState {
         let appearance: PaletteAppearance
     }
 
-    @ObservationIgnored private var colorCache: [ColorKey: [DiskRingsCore.RGBColor]] = [:]
+    /// Eintrag mit schwacher Referenz auf den Baum: Die `ObjectIdentifier`
+    /// im Schlüssel allein könnte nach dem Freigeben des Baums an einen neuen
+    /// Baum an derselben Adresse vergeben werden (dann kämen veraltete
+    /// Farben). Ein Treffer zählt nur, wenn der Eintrag noch auf genau diesen
+    /// Baum zeigt (`===`); die Bäume selbst hält der Cache nicht fest.
+    private struct ColorEntry {
+        weak var tree: ScanTree?
+        let colors: [DiskRingsCore.RGBColor]
+    }
+
+    @ObservationIgnored private var colorCache: [ColorKey: ColorEntry] = [:]
 
     /// Farben aller Arcs eines Layouts (das Layout ist durch Baum, Fokus und
     /// Optionen eindeutig bestimmt). `tree` ist der Baum des Layouts (nach
@@ -864,10 +874,10 @@ final class AppState {
         guard let tree = layoutTree ?? tree else { return [] }
         let key = ColorKey(tree: ObjectIdentifier(tree), focus: layout.focus, options: layout.options,
                            arcCount: layout.arcs.count, scheme: palette.scheme, appearance: palette.appearance)
-        if let c = colorCache[key] { return c }
+        if let e = colorCache[key], e.tree === tree { return e.colors }
         if colorCache.count > 8 { colorCache.removeAll() }
         let c = palette.colors(for: layout, tree: tree)
-        colorCache[key] = c
+        colorCache[key] = ColorEntry(tree: tree, colors: c)
         return c
     }
 
