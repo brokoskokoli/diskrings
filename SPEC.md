@@ -141,7 +141,7 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 **Darstellung im Vergleichsmodus**
 - Kopfzeile: „Seit 02.10., 09:14: belegt +38,2 GB · frei −38,2 GB · davon nicht zugeordnet +4,1 GB“.
 - **Sunburst-Variante „Wachstum“:** Die Segmentgröße entspricht dem *Zuwachs* (nur positive Deltas), sodass das Diagramm direkt zeigt, wohin der neue Speicher gegangen ist. Drill-down funktioniert wie gewohnt.
-- Umschaltbar auf die normale Ansicht mit **Delta-Färbung**: Rot bedeutet gewachsen, Grün geschrumpft, die Intensität richtet sich nach der Größe des Deltas, neue Elemente erhalten eine Markierung und entfernte Elemente erscheinen grau gestrichelt.
+- Umschaltbar auf die normale Ansicht mit **Delta-Färbung**: Orange bedeutet gewachsen, Blau geschrumpft (farbenblind-tauglich; mit „Ohne Farbe unterscheiden“ zusätzlich Schraffur und ±), die Intensität richtet sich nach der Größe des Deltas, neue Elemente erhalten eine Markierung und entfernte Elemente erscheinen grau gestrichelt.
 - Die Detailliste bekommt zusätzliche Spalten (*Vorher*, *Jetzt*, *Δ*) und lässt sich nach Δ sortieren.
 - Tab „Größte Veränderungen“: eine flache Top-50-Liste der Ordner und Dateien mit dem größten absoluten Zuwachs, wobei nur der tiefste aussagekräftige Ordner auftaucht. Wenn `~/Library/Caches/foo` um 20 GB wächst, steht dort `foo` und nicht zusätzlich `Library` und `Caches`.
 - Das Kontextmenü funktioniert auch im Vergleichsmodus, sodass man gewachsene Dateien direkt in den Papierkorb legen kann.

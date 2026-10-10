@@ -69,6 +69,8 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `CompareActions.swift`: Aktionen im Vergleich (Abbildung auf den aktuellen Baum über Pfade), `CompareEntryMapping` (Zustand auf neu berechneten Vergleich übertragen).
 - `CompareDemo.swift`: Beispielbaum für den Vergleich in einem übergebenen temporären Ordner.
 - `GenerationGate.swift`: Generationszähler für Hintergrundergebnisse.
+- `OutlineNavigation.swift`: Tastaturregeln für die Listen (↑/↓, →/←, Home/End, Bild auf/ab) auf dem Modell der sichtbaren Zeilen.
+- `TextFormat.swift`: lokalisierte Trennzeichen und Formate (Doppelpunkt, „ · “, Grad).
 
 ### Core: Formatierung und Lokalisierung
 - `ByteFormat.swift`: Größen, Anzahlen, Prozent, Dauern nach Locale.
@@ -85,6 +87,7 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `App/SwipeNavigation.swift`: Wischgesten für Zurück/Vor.
 - `Browser/BrowserView.swift`: Hauptansicht, Toolbar, Breadcrumb, Statusleiste.
 - `Browser/DetailListView.swift`: Detailliste (Outline) neben dem Diagramm.
+- `Browser/OutlineKeyboard.swift`: Fokus und Tastenbehandlung der Listen (nutzt `OutlineNavigation`).
 - `Browser/NodeContextMenu.swift`: `ContextMenuTarget`, `ContextMenuRegistry` (erweiterbare Abschnitte), Menü-Views.
 - `Browser/ActionViews.swift`: Papierkorb-Dialog, Info-Fenster, Toast, Suchfeld und Trefferliste.
 - `Sunburst/SunburstView.swift`: Diagramm-View (Canvas, Hover, Klick, Tooltip, VoiceOver-Elemente).
