@@ -402,3 +402,4 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@秒";
 "format.duration.minutes" = "%1$@分%2$@秒";
+"trash.undo.parentChanged" = "元のフォルダが置き換えられたか移動されました（シンボリックリンクなど）";

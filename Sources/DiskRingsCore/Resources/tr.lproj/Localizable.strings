@@ -402,3 +402,4 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@ sn";
 "format.duration.minutes" = "%1$@ dk %2$@ sn";
+"trash.undo.parentChanged" = "Özgün klasör değiştirildi veya taşındı (örneğin sembolik bir bağlantıyla)";

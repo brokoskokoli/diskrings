@@ -402,3 +402,4 @@
 "unit.eb" = "Eo";
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
+"trash.undo.parentChanged" = "Le dossier d’origine a été remplacé ou déplacé (par exemple par un lien symbolique)";

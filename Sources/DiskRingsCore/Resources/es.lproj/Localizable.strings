@@ -402,3 +402,4 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
+"trash.undo.parentChanged" = "La carpeta original se ha reemplazado o movido (por ejemplo, por un enlace simbólico)";

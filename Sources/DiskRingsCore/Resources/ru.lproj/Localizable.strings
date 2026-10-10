@@ -402,3 +402,4 @@
 "unit.eb" = "ЭБ";
 "format.duration.seconds" = "%@ с";
 "format.duration.minutes" = "%1$@ мин %2$@ с";
+"trash.undo.parentChanged" = "Исходная папка была заменена или перемещена (например, символической ссылкой)";

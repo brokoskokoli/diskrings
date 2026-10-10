@@ -214,14 +214,19 @@ public struct TrashRecord: Sendable, Equatable {
     /// Identität beim Verschieben; ⌘Z legt nur ein Element mit derselben
     /// Identität zurück (`nil` → kein Undo).
     public var identity: FileIdentity?
+    /// Elternordner mit aufgelösten Symlinks (`realpath`) beim Verschieben.
+    /// ⌘Z legt nur zurück, wenn der Elternordner noch genau dorthin
+    /// aufgelöst wird; `nil` → Vergleich mit dem Elternpfad selbst.
+    public var resolvedParent: String?
 
     public init(originalPath: String, trashURL: URL?, name: String, allocatedSize: UInt64,
-                identity: FileIdentity? = nil) {
+                identity: FileIdentity? = nil, resolvedParent: String? = nil) {
         self.originalPath = originalPath
         self.trashURL = trashURL
         self.name = name
         self.allocatedSize = allocatedSize
         self.identity = identity
+        self.resolvedParent = resolvedParent
     }
 }
 
@@ -278,10 +283,12 @@ public struct TrashService {
                 continue
             }
             let identity = fileManager.identity(atPath: item.path)
+            let resolvedParent = fileManager.resolvedPath((item.path as NSString).deletingLastPathComponent)
             do {
                 let url = try fileManager.trashItem(at: URL(fileURLWithPath: item.path))
                 out.trashed.append(TrashRecord(originalPath: item.path, trashURL: url, name: item.name,
-                                               allocatedSize: item.allocatedSize, identity: identity))
+                                               allocatedSize: item.allocatedSize, identity: identity,
+                                               resolvedParent: resolvedParent))
             } catch {
                 out.failures.append(TrashFailure(path: item.path, message: Self.describe(error)))
             }
@@ -359,6 +366,10 @@ public struct TrashService {
                 out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.parentMissing")))
                 continue
             }
+            if let problem = checkRestoreTarget(r) {
+                out.failures.append(TrashFailure(path: r.originalPath, message: problem))
+                continue
+            }
             do {
                 try fileManager.moveItem(at: src, to: URL(fileURLWithPath: r.originalPath))
                 out.restored.append(r.originalPath)
@@ -367,6 +378,24 @@ public struct TrashService {
             }
         }
         return out
+    }
+
+    /// Prüft vor ⌘Z die Elternkette erneut: Wurde ein Elternordner
+    /// inzwischen durch einen Symlink ersetzt (oder verschoben), würde
+    /// `moveItem` das Element an einen ganz anderen Ort legen. Außerdem darf
+    /// der aufgelöste Zielort nicht geschützt sein. Fehlermeldung oder `nil`.
+    func checkRestoreTarget(_ r: TrashRecord) -> String? {
+        let parent = (r.originalPath as NSString).deletingLastPathComponent
+        guard let resolved = fileManager.resolvedPath(parent),
+              ProtectedPaths.normalize(resolved) == ProtectedPaths.normalize(r.resolvedParent ?? parent) else {
+            return L("trash.undo.parentChanged")
+        }
+        let name = (r.originalPath as NSString).lastPathComponent
+        let target = resolved == "/" ? "/" + name : resolved + "/" + name
+        if let reason = protection.reason(for: target) ?? protection.reason(for: r.originalPath) {
+            return L("trash.error.protected", reason.message)
+        }
+        return nil
     }
 
     static func describe(_ error: Error) -> String {

@@ -402,3 +402,4 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@秒";
 "format.duration.minutes" = "%1$@分%2$@秒";
+"trash.undo.parentChanged" = "原始文件夹已被替换或移动（例如替换为符号链接）";

@@ -402,3 +402,4 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
+"trash.undo.parentChanged" = "Oryginalny folder został zastąpiony lub przeniesiony (np. przez dowiązanie symboliczne)";

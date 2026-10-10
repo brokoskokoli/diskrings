@@ -143,4 +143,55 @@ struct TrashSafetyTests {
         #expect(out.trashed.count == 1)
         #expect(!fm.fileExists(atPath: fx.path("real/scan/d.bin")))
     }
+
+    @Test("Undo: Elternordner inzwischen durch Symlink ersetzt → nichts wird in das Symlink-Ziel gelegt")
+    func undoRefusesSymlinkedParent() throws {
+        let fx = try Fixture()
+        try fx.file("scan/sub/a.bin", size: 1000)
+        try fx.dir("draussen")
+        let trash = TempTrash(fx.path("trash"))
+        let service = TrashService(fileManager: trash, protection: noProtection)
+        let plan = TrashPlan(items: [item(fx, "scan/sub/a.bin")], rootPath: fx.path("scan"))
+        let record = try #require(service.trash(plan).trashed.first)
+        #expect(record.resolvedParent == fx.path("scan/sub"))
+        try fm.removeItem(atPath: fx.path("scan/sub"))
+        try fm.createSymbolicLink(atPath: fx.path("scan/sub"), withDestinationPath: fx.path("draussen"))
+
+        let r = service.restore([record])
+        #expect(r.restored.isEmpty)
+        #expect(r.failures.first?.message == L("trash.undo.parentChanged"))
+        #expect(!fm.fileExists(atPath: fx.path("draussen/a.bin")))
+        #expect(fm.fileExists(atPath: try #require(record.trashURL).path))
+    }
+
+    @Test("Undo: Ziel liegt (aufgelöst) in einem geschützten Bereich → verweigert")
+    func undoRefusesProtectedTarget() throws {
+        let fx = try Fixture()
+        try fx.file("x/a.bin", size: 1000)
+        let trash = TempTrash(fx.path("trash"))
+        let record = try #require(TrashService(fileManager: trash, protection: noProtection)
+            .trash(TrashPlan(items: [item(fx, "x/a.bin")])).trashed.first)
+        // Inzwischen gilt der Zielort als geschützt (hier: als Home-Verzeichnis).
+        let prot = ProtectedPaths(home: fx.path("x/a.bin"), appBundlePath: nil, volumeRoots: [])
+        let r = TrashService(fileManager: trash, protection: prot).restore([record])
+        #expect(r.restored.isEmpty)
+        #expect(r.failures.count == 1)
+        #expect(!fm.fileExists(atPath: fx.path("x/a.bin")))
+    }
+
+    @Test("Undo: alte Einträge ohne aufgelösten Elternpfad prüfen gegen den Pfad selbst")
+    func undoLegacyRecord() throws {
+        let fx = try Fixture()
+        try fx.file("x/a.bin", size: 1000)
+        try fx.dir("draussen")
+        let trash = TempTrash(fx.path("trash"))
+        let service = TrashService(fileManager: trash, protection: noProtection)
+        var record = try #require(service.trash(TrashPlan(items: [item(fx, "x/a.bin")])).trashed.first)
+        record.resolvedParent = nil
+        try fm.removeItem(atPath: fx.path("x"))
+        try fm.createSymbolicLink(atPath: fx.path("x"), withDestinationPath: fx.path("draussen"))
+        let r = service.restore([record])
+        #expect(r.restored.isEmpty)
+        #expect(!fm.fileExists(atPath: fx.path("draussen/a.bin")))
+    }
 }
