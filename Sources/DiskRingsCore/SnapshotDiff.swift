@@ -337,9 +337,7 @@ public final class SnapshotDiff: Sendable {
             rawEntry.append(Int32(e))
         }
         var map = [Int32](repeating: -1, count: rawEntry.count)
-        // Ohne Abbruch-Callback kann der Aufbau nicht fehlschlagen.
-        // swiftlint:disable:next force_try
-        let tree = try! TreeBuilder.build(raw, rootPath: new.tree.rootPath, indexMap: { newIndex in
+        let tree = TreeBuilder.buildUncancellable(raw, rootPath: new.tree.rootPath, indexMap: { newIndex in
             for (r, e) in rawEntry.enumerated() { map[Int(newIndex[r])] = e }
         })
         return (tree, map)

@@ -78,8 +78,6 @@ public struct ScanTreeBuilder: Sendable {
                            flags: flags[i], allocated: allocated[i], logical: logical[i], ownFiles: ownFiles[i])
             }
         }
-        // Ohne Abbruch-Callback kann der Aufbau nicht fehlschlagen.
-        // swiftlint:disable:next force_try
-        return try! TreeBuilder.build(raw, rootPath: rootPath)
+        return TreeBuilder.buildUncancellable(raw, rootPath: rootPath)
     }
 }

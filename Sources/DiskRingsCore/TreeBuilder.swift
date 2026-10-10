@@ -123,6 +123,21 @@ enum TreeBuilder {
         return tree
     }
 
+    /// Aufbau ohne Abbruch-Callback (Vergleichsbäume, `ScanTreeBuilder`).
+    /// `build` wirft nur `TreeBuildError.cancelled`, und das nur über
+    /// `isCancelled`; ohne Callback kann der Aufbau also nicht fehlschlagen.
+    static func buildUncancellable(
+        _ raw: consuming RawTree,
+        rootPath: String,
+        indexMap: ((UnsafeBufferPointer<Int32>) -> Void)? = nil
+    ) -> ScanTree {
+        do {
+            return try build(raw, rootPath: rootPath, indexMap: indexMap)
+        } catch {
+            preconditionFailure("TreeBuilder.build ohne Abbruch-Callback ist fehlgeschlagen: \(error)")
+        }
+    }
+
     /// Ordnet ein Knoten-Array an Ort und Stelle zum fertigen Baum.
     ///
     /// Eingabe: Knoten in beliebiger Reihenfolge mit Index 0 als Wurzel;

@@ -35,6 +35,20 @@ func fail(_ message: String) -> Never {
     exit(2)
 }
 
+/// Gibt `value` als formatiertes JSON aus. Exit-Code 0, bei einem
+/// Kodierungsfehler Meldung auf stderr und 1.
+func printJSON(_ value: some Encodable) -> Int32 {
+    let enc = JSONEncoder()
+    enc.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+    do {
+        print(String(decoding: try enc.encode(value), as: UTF8.self))
+        return 0
+    } catch {
+        FileHandle.standardError.write(Data("Error: could not encode JSON: \(error)\n".utf8))
+        return 1
+    }
+}
+
 struct ScanArgs {
     var path: String?
     var top = 10
@@ -210,11 +224,7 @@ func runScan(_ a: ScanArgs) -> Int32 {
             hardlinkDuplicates: result.hardlinkDuplicates, unreadablePaths: result.unreadablePaths,
             skippedMountPoints: result.skippedMountPoints, volume: volume.map(volumeJSON),
             unassigned: unassigned, top: top)
-        let enc = JSONEncoder()
-        enc.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        // swiftlint:disable:next force_try
-        print(String(decoding: try! enc.encode(out), as: UTF8.self))
-        return 0
+        return printJSON(out)
     }
 
     print("Scan of \(tree.rootPath)")
@@ -253,11 +263,7 @@ func runScan(_ a: ScanArgs) -> Int32 {
 func runVolumes(json: Bool) -> Int32 {
     let vols = VolumeInfo.mountedVolumes()
     if json {
-        let enc = JSONEncoder()
-        enc.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        // swiftlint:disable:next force_try
-        print(String(decoding: try! enc.encode(vols.map(volumeJSON)), as: UTF8.self))
-        return 0
+        return printJSON(vols.map(volumeJSON))
     }
     for v in vols {
         print("\(v.name) (\(v.path))")

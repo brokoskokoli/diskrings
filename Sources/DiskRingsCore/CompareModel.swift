@@ -286,9 +286,7 @@ public final class CompareModel: Sendable {
                        ownFiles: node.isDirectory ? 0 : 1)
         }
         var map = [Int32](repeating: -1, count: n)
-        // Ohne Abbruch-Callback kann der Aufbau nicht fehlschlagen.
-        // swiftlint:disable:next force_try
-        let tree = try! TreeBuilder.build(raw, rootPath: diff.new.tree.rootPath, indexMap: { newIndex in
+        let tree = TreeBuilder.buildUncancellable(raw, rootPath: diff.new.tree.rootPath, indexMap: { newIndex in
             for r in 0 ..< n { map[Int(newIndex[r])] = Int32(r) }
         })
         return CompareDisplayTree(tree: tree, entryForNode: map, entryCount: n)
