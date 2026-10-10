@@ -19,61 +19,102 @@ Beteiligte Skripte:
 
 ## Einmalige Einrichtung (GitHub Actions)
 
-### 1. API Key in App Store Connect anlegen
+**Wohin die Secrets gehören:** in das **Environment `release`**, nicht in die allgemeinen Repository-Secrets. Environment-Secrets bekommt nur ein Job, der dieses Environment nutzt (der Build-Job des Release-Workflows), und erst nach deiner Freigabe. Repository-Secrets würden auch funktionieren, umgehen aber die Freigabe.
 
-1. [App Store Connect](https://appstoreconnect.apple.com) → **Users and Access** → **Integrations** → **App Store Connect API** → **Team Keys**.
-   Beim ersten Mal muss der Account Holder den API-Zugang einmal anfordern.
-2. **+** (Generate API Key), Name z. B. „DiskRings Notarisierung (GitHub)“, Rolle **Developer**.
-   Das ist die kleinste Rolle, mit der `notarytool` nach unserem Kenntnisstand funktioniert
-   (Erfahrungsberichte, keine Zusage von Apple); der erste Trockenlauf beweist es. Scheitert er
-   mit „Apple lehnt den API-Key ab“, einen Key mit Rolle **App Manager** anlegen.
-   Achtung: Ein Team Key ist **nicht** auf die Notarisierung beschränkt. Er hat API-Zugriff auf
-   das ganze Team im Rahmen seiner Rolle (z. B. App-Metadaten, Builds, TestFlight) und ist deshalb
-   genauso sorgfältig zu behandeln wie das Zertifikat.
-3. **Download API Key**: Die Datei `AuthKey_<KeyID>.p8` lässt sich nur **einmal** herunterladen.
-4. Die **Key ID** (Spalte in der Liste) und die **Issuer ID** (UUID über der Liste) notieren.
+### Schon erledigt (Stand 10.10.2026)
 
-### 2. Hilfsskript ausführen
+Auf GitHub ist bereits eingerichtet:
 
-Voraussetzungen: [GitHub CLI](https://cli.github.com) angemeldet (`gh auth login`, mit Admin-Rechten am Repo) und das Zertifikat „Developer ID Application: Stefan Richter (AGRWTKQZ8C)“ mit privatem Schlüssel im Anmelde-Schlüsselbund.
+| Was | Wo | Wirkung |
+|---|---|---|
+| Environment `release` | Settings → Environments → `release` | Pflicht-Freigabe durch dich (Required reviewers: brokoskokoli, „Prevent self-review“ aus); nutzbar nur von Tags `v*` und Branch `main` |
+| Ruleset „Release-Tags schützen“ | Settings → Rules → Rulesets | Tags `v*` anlegen, verschieben, löschen nur durch Repository-Admins (du) |
+| Ruleset „main schützen“ | Settings → Rules → Rulesets | kein Force-Push und kein Löschen von `main` (Admins dürfen umgehen) |
+
+Noch von dir zu tun: **Zwei-Faktor-Anmeldung** bei GitHub (github.com → Settings → Password and authentication) und bei deiner Apple-ID prüfen bzw. einschalten. Ohne sie ist dein Konto die schwächste Stelle.
+
+### Schritt 1: API Key in App Store Connect anlegen (ca. 3 Minuten)
+
+1. [App Store Connect](https://appstoreconnect.apple.com) öffnen → **Users and Access** → Reiter **Integrations** → links **App Store Connect API** → **Team Keys**.
+   Beim allerersten Mal muss der Account Holder (du) den API-Zugang einmal per „Request Access“ anfordern.
+2. **+** (Generate API Key): Name „DiskRings Notarisierung (GitHub)“, Rolle **Developer** → **Generate**.
+   Developer ist die kleinste Rolle, mit der `notarytool` nach Erfahrungsberichten funktioniert (keine Zusage von Apple). Scheitert der Trockenlauf in Schritt 4 mit „Apple lehnt den API-Key ab“, einen zweiten Key mit Rolle **App Manager** anlegen und Schritt 2 wiederholen.
+   Achtung: Ein Team Key ist **nicht** auf die Notarisierung beschränkt, er hat im Rahmen seiner Rolle API-Zugriff auf das ganze Team. Wie das Zertifikat behandeln.
+3. **Download API Key** → Datei `AuthKey_XXXXXXXXXX.p8`. Sie lässt sich **nur einmal** herunterladen.
+4. Notieren:
+   - **Key ID**: 10 Zeichen, Spalte „Key ID“ in der Liste (steht auch im Dateinamen),
+   - **Issuer ID**: UUID oben über der Key-Liste (z. B. `69a6de7e-…`).
+
+### Schritt 2: Secrets setzen – mit dem Hilfsskript (empfohlen, ca. 3 Minuten)
+
+Das Skript ist interaktiv und braucht ein echtes Terminal (Terminal.app oder iTerm, nicht den `!`-Befehl in Claude Code). Im Projektordner:
 
 ```sh
 scripts/setup-release-secrets.sh
 ```
 
-Das Skript
+Was das Skript fragt und was du antwortest:
 
-1. legt bei Bedarf das Environment `release` an und richtet auf Wunsch eine **Pflicht-Freigabe** (du selbst als Reviewer) und die Regel „nur Tags `v*` und Branch `main`“ ein,
-2. exportiert die Developer ID samt privatem Schlüssel als `.p12` mit einem neuen Passwort: automatisch per `security export` (macOS fragt pro privatem Schlüssel im Schlüsselbund einmal nach dem Anmeldepasswort; „Erlauben“ genügt) oder aus einer selbst exportierten Datei (Schlüsselbundverwaltung → Anmeldung → Meine Zertifikate → Rechtsklick auf das Zertifikat → exportieren als `.p12`). In beiden Fällen bleibt nur diese eine Identität samt Zwischenzertifikat im `.p12`,
-3. fragt nach `.p8`, Key ID und Issuer ID und prüft den Key auf Wunsch bei Apple,
-4. setzt die Secrets per `gh secret set --env release`,
-5. löscht die temporären Dateien (auch bei Abbruch).
-
-Danach die `.p8` offline aufbewahren oder löschen; bei Verlust einfach einen neuen Key anlegen und das Skript erneut ausführen.
-
-Secrets (alle im Environment `release`; Repository-Secrets funktionieren auch, dann entfällt aber die Freigabe):
-
-| Secret | Inhalt |
+| Frage | Antwort |
 |---|---|
-| `MACOS_CERTIFICATE_P12_BASE64` | `.p12` mit Zertifikat und privatem Schlüssel, base64 |
-| `MACOS_CERTIFICATE_PASSWORD` | Passwort des `.p12` |
-| `NOTARY_API_KEY_P8_BASE64` | `AuthKey_<KeyID>.p8`, base64 |
-| `NOTARY_API_KEY_ID` | Key ID (10 Zeichen) |
+| Repository | Enter (`brokoskokoli/diskrings`) |
+| Secrets im Environment „release“ ablegen? | **j** |
+| Beides jetzt einrichten? (Freigabe, Tag-Regeln) | **j** |
+| Vorhandene Schutzregeln überschreiben? | **n** (sind schon korrekt eingerichtet) |
+| Passwort für das .p12 (zweimal) | ein **neues** zufälliges Passwort, mind. 12 Zeichen, z. B. aus dem Passwortmanager. Du brauchst es später nicht mehr, GitHub speichert es als `MACOS_CERTIFICATE_PASSWORD`. |
+| Weg (a/b) | **a** (automatischer Export). macOS fragt dann nach deinem **Anmeldepasswort** des Macs, um den privaten Schlüssel freizugeben → **Erlauben** (nicht „Immer erlauben“). |
+| Pfad zur .p8-Datei | z. B. `~/Downloads/AuthKey_XXXXXXXXXX.p8` |
+| Key-ID | Enter, wenn der Vorschlag aus dem Dateinamen stimmt |
+| Issuer-ID | die UUID aus Schritt 1 |
+| API-Key jetzt bei Apple prüfen? | **j** (muss „API-Key funktioniert“ melden) |
+| Jetzt setzen (vorhandene werden überschrieben)? | **j** |
+
+Am Ende meldet das Skript jedes gesetzte Secret („… gesetzt“) und löscht alle temporären Dateien (auch bei Abbruch mit Ctrl-C). Dein Schlüsselbund wird nicht verändert.
+
+Falls Weg **a** scheitert (z. B. weil macOS den Export verweigert), das Skript erneut starten und Weg **b** wählen: Schlüsselbundverwaltung → links „Anmeldung“ → oben „Meine Zertifikate“ → „Developer ID Application: Stefan Richter (AGRWTKQZ8C)“ (das Dreieck davor zeigt den privaten Schlüssel) → Rechtsklick → „… exportieren“ → Format „Persönlicher Informationsaustausch (.p12)“ → beliebiges Passwort → Pfad und Passwort im Skript angeben → die exportierte Datei danach löschen.
+
+### Schritt 2 (Alternative): Secrets von Hand im Browser setzen
+
+Nur nötig, wenn du das Skript nicht nutzen willst.
+
+1. `.p12` exportieren wie bei Weg **b** oben, mit einem neuen Passwort.
+2. Base64 erzeugen und in die Zwischenablage kopieren (ohne Zeilenumbrüche):
+   ```sh
+   base64 -i ~/Desktop/developer-id.p12 | tr -d '\n' | pbcopy   # für MACOS_CERTIFICATE_P12_BASE64
+   base64 -i ~/Downloads/AuthKey_XXXXXXXXXX.p8 | tr -d '\n' | pbcopy   # für NOTARY_API_KEY_P8_BASE64
+   ```
+3. GitHub → Repo **diskrings** → **Settings** → **Environments** → **release** → Abschnitt **Environment secrets** → **Add environment secret**, fünfmal:
+
+| Name (exakt so) | Wert |
+|---|---|
+| `MACOS_CERTIFICATE_P12_BASE64` | Base64 der `.p12` (Zwischenablage aus Schritt 2, erste Zeile) |
+| `MACOS_CERTIFICATE_PASSWORD` | das Passwort, mit dem du die `.p12` exportiert hast |
+| `NOTARY_API_KEY_P8_BASE64` | Base64 der `.p8` (zweite Zeile) |
+| `NOTARY_API_KEY_ID` | Key ID, 10 Zeichen, z. B. `ABC123DEF4` |
 | `NOTARY_API_ISSUER_ID` | Issuer ID (UUID) |
 
-### 3. Environment prüfen (oder von Hand anlegen)
+4. Die exportierte `.p12` löschen und den Papierkorb leeren. **Nicht** unter „Repository secrets“ (Settings → Secrets and variables → Actions) eintragen, sondern unter dem Environment.
 
-GitHub → **Settings** → **Environments** → `release`:
+### Schritt 3: Aufräumen
 
-- **Required reviewers**: dich selbst eintragen, „Prevent self-review“ **aus** (sonst kann ein Einzel-Maintainer nie freigeben). Jeder Lauf wartet dann auf deine Freigabe unter Actions, bevor er die Secrets sieht.
-- **Deployment branches and tags** → „Selected branches and tags“: Tag-Regel `v*` und Branch-Regel `main` (für Trockenläufe). Andere Branches kommen nicht an die Secrets.
-- **Environment secrets**: die fünf Secrets oben.
+- Die `.p8` sicher aufbewahren (Passwortmanager) oder löschen. Bei Verlust einfach einen neuen Key anlegen und Schritt 2 wiederholen.
+- Kontrolle: Settings → Environments → release zeigt **5 Environment secrets**; unter Settings → Secrets and variables → Actions sollten **keine** dieser fünf als Repository-Secret stehen.
 
-Existiert das Environment nicht, legt GitHub es beim ersten Lauf ohne Schutz an.
+### Schritt 4: Trockenlauf
 
-### 4. Tags schützen (empfohlen)
+```sh
+gh workflow run release.yml -f dry_run=true
+```
 
-**Settings** → **Rules** → **Rulesets** → **New tag ruleset**: Ziel `v*`, Regeln „Restrict creations“, „Restrict updates“, „Restrict deletions“, Bypass nur für dich (Repository admin). Damit kann niemand sonst einen Release-Tag setzen oder verschieben. Für `main` entsprechend ein Branch-Ruleset (kein Force-Push, keine Löschung).
+GitHub → **Actions** → Lauf „Release“ öffnen → gelbes Banner **Review deployments** → `release` anhaken → **Approve and deploy**. Nach 15–25 Minuten liegen ZIP und DMG als Artefakt am Lauf, notarisiert, aber nicht veröffentlicht. Schlägt etwas fehl, steht die Ursache samt Anleitung in der Zusammenfassung des Laufs (siehe auch „Fehlersuche“ unten).
+
+### Schritt 5: Erstes Release
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+Wieder unter Actions freigeben. Danach steht das Release mit DMG, ZIP und Prüfsummen unter github.com/brokoskokoli/diskrings/releases.
 
 ## Release erstellen
 
