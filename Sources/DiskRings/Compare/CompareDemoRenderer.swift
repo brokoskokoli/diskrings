@@ -112,6 +112,9 @@ enum CompareDemoRenderer {
                 c3.selected = dl
             }
             shot(BrowserView(state: s3, frozenTime: .distantPast), "compare-delta")
+            // 3b. Dasselbe mit „Ohne Farbe unterscheiden“ (Schraffur und ±).
+            shot(BrowserView(state: s3, frozenTime: .distantPast)
+                .environment(\.forcedAccessibility, ForcedAccessibility(differentiateWithoutColor: true)), "compare-delta-nocolor")
 
             // 4. Tab „Größte Veränderungen“ (Wachstum) und Rückgang (Delta).
             let (s4, c4) = try comparing(.growth)

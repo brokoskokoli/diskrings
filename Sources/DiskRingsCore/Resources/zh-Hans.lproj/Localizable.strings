@@ -377,7 +377,7 @@
 "compare.entry.accessibility" = "%1$@，%2$@，%3$@，差值 %4$@";
 "compare.listPicker" = "列表";
 "compare.viewPicker" = "视图";
-"compare.viewPicker.help" = "增长：扇区大小 = 增长量。差异颜色：正常大小，红色为增长，绿色为缩小。";
+"compare.viewPicker.help" = "增长：扇区大小 = 增长量。差异颜色：正常大小，橙色为增长，蓝色为缩小。";
 "compare.end" = "结束比较";
 "compare.end.help" = "返回正常视图（Esc）";
 "compare.breadcrumb" = "比较中的路径";
@@ -407,3 +407,13 @@
 "trash.error.containsMountPoint" = "包含另一个宗卷（挂载点“%@”），无法移到废纸篓";
 "trash.confirm.sizeUncertain" = "大小未完全确定（仅存储在云端、无法读取或尚未扫描的项目），因此始终需要确认。";
 "reason.targetsChanged" = "项目在此期间已更改（例如因重新扫描）。未执行任何操作，请重试。";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "第 %@ 级";
+"outline.value.expanded" = "已展开，第 %@ 级";
+"outline.value.collapsed" = "已折叠，第 %@ 级";
+"accessibility.expand" = "展开";
+"accessibility.collapse" = "折叠";
+"format.labelValue" = "%1$@：%2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

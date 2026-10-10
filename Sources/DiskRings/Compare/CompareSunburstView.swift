@@ -11,6 +11,9 @@ struct CompareSunburstView: View {
     var interactive = true
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var systemDifferentiateWithoutColor
+    @Environment(\.forcedAccessibility) private var forced
+    private var differentiateWithoutColor: Bool { systemDifferentiateWithoutColor || forced.differentiateWithoutColor }
 
     var body: some View {
         GeometryReader { proxy in
@@ -44,11 +47,13 @@ struct CompareSunburstView: View {
                     centerTitle: "", sizeMode: layout.options.sizeMode)
                 let marks = Self.marks(session: session, layout: layout)
                 let center = centerTexts(layout: layout, display: display)
+                // Ohne Farbe unterscheiden: nur in der Delta-Färbung (dort trägt die Farbe den Status).
+                let patterns = differentiateWithoutColor && session.view == .delta
                 Canvas(opaque: false, rendersAsynchronously: false) { gc, canvasSize in
                     SunburstRenderer.draw(input, transition: nil, progress: nil, in: &gc, size: canvasSize)
                     CompareOverlayRenderer.draw(marks: marks, layout: layout, colors: colors, geometry: geometry,
                                                 palette: palette, center: center, hoverCenter: session.hoverCenter,
-                                                in: &gc, size: canvasSize)
+                                                differentiateWithoutColor: patterns, in: &gc, size: canvasSize)
                 }
                 .contentShape(Rectangle())
                 .modifier(CompareSunburstInteraction(state: state, session: session, geometry: geometry, size: size,
@@ -101,15 +106,22 @@ enum CompareOverlayRenderer {
         let valueIsGrowth: Bool
     }
 
+    /// `differentiateWithoutColor`: Geschrumpftes zusätzlich schraffiert,
+    /// Gewachsenes und Geschrumpftes mit „+“ bzw. „−“, wo Platz ist
+    /// (Einstellung „Ohne Farbe unterscheiden“).
     static func draw(marks: [DiffStatus?], layout: SunburstLayout, colors: [DiskRingsCore.RGBColor],
                      geometry g: SunburstGeometry, palette: Palette, center info: Center, hoverCenter: Bool,
-                     in gc: inout GraphicsContext, size: CGSize) {
+                     differentiateWithoutColor: Bool = false, in gc: inout GraphicsContext, size: CGSize) {
         let c = CGPoint(x: size.width / 2, y: size.height / 2)
         let removedStroke = Color(palette.removedStroke)
         for (i, arc) in layout.arcs.enumerated() where i < marks.count {
             guard let status = marks[i] else { continue }
             let ring = Int(arc.depth)
             let inner = g.innerRadius(ofRing: ring), outer = g.outerRadius(ofRing: ring)
+            if differentiateWithoutColor, i < colors.count {
+                drawColorIndependentMark(status, arc: arc, inner: inner, outer: outer, fill: colors[i], palette: palette,
+                                         center: c, in: &gc, size: size)
+            }
             switch status {
             case .removed:
                 guard arc.span * outer > 3 else { continue }
@@ -134,6 +146,34 @@ enum CompareOverlayRenderer {
                    at: c, in: &gc)
     }
 
+    /// Schraffur für Geschrumpftes und „+“/„−“ nahe der Außenkante.
+    private static func drawColorIndependentMark(_ status: DiffStatus, arc: SunburstArc, inner: Double, outer: Double,
+                                                 fill: DiskRingsCore.RGBColor, palette: Palette, center c: CGPoint,
+                                                 in gc: inout GraphicsContext, size: CGSize) {
+        guard let mark = Palette.deltaMark(for: status) else { return }
+        let ink = Color(palette.label(on: fill))
+        if status == .shrunk, arc.span * outer > 3 {
+            let path = SunburstRenderer.segment(center: c, inner: inner, outer: outer, start: arc.startAngle,
+                                                end: arc.endAngle)
+            var ctx = gc
+            ctx.clip(to: path)
+            var lines = Path()
+            // Gegenläufig zur Schraffur von „Nicht zugeordnet“.
+            var x = -size.height
+            while x < size.width + size.height {
+                lines.move(to: CGPoint(x: x + size.height, y: 0))
+                lines.addLine(to: CGPoint(x: x, y: size.height))
+                x += 6
+            }
+            ctx.stroke(lines, with: .color(ink.opacity(0.35)), lineWidth: 1)
+        }
+        let r = outer - min(8, (outer - inner) / 3)
+        guard arc.span * r > 12, outer - inner > 12 else { return }
+        let p = CGPoint(x: c.x + r * sin(arc.midAngle), y: c.y - r * cos(arc.midAngle))
+        let text = gc.resolve(Text(mark).font(.system(size: 11, weight: .bold)).foregroundColor(ink))
+        gc.draw(text, at: p, anchor: .center)
+    }
+
     private static func drawCenter(_ info: Center, geometry g: SunburstGeometry, palette: Palette, hover: Bool,
                                    focusIsRoot: Bool, at c: CGPoint, in gc: inout GraphicsContext) {
         let r = g.centerRadius
@@ -148,7 +188,7 @@ enum CompareOverlayRenderer {
             title = gc.resolve(Text(LabelPlacement.truncate(info.title, maxCharacters: chars))
                 .font(.system(size: titleSize, weight: .semibold)).foregroundColor(Color(palette.primaryText)))
         }
-        let accent = info.valueIsGrowth ? Color(nsColor: .systemRed) : Color(palette.primaryText)
+        let accent = info.valueIsGrowth ? Color(palette.deltaTextColor(1)) : Color(palette.primaryText)
         let value = gc.resolve(Text(info.value).font(.system(size: max(11, min(16, r / 5.5)), weight: .bold)
             .monospacedDigit()).foregroundColor(accent))
         let caption = gc.resolve(Text(info.caption).font(.system(size: max(9, min(11, r / 8))))
@@ -207,11 +247,12 @@ private struct CompareSunburstInteraction: ViewModifier {
 private struct CompareTooltip: View {
     let session: CompareSession
     let size: CGSize
+    /// Breite wächst mit der Textgröße.
+    @ScaledMetric(relativeTo: .callout) private var width: CGFloat = 280
 
     var body: some View {
         if let loc = session.hoverLocation, let i = session.hoverArc, i < session.layout.arcs.count {
             let arc = session.layout.arcs[i]
-            let width: CGFloat = 280
             let x = min(max(8, loc.x + 16), max(8, size.width - width - 8))
             let y = loc.y + 18 + 100 > size.height ? loc.y - 110 : loc.y + 18
             VStack(alignment: .leading, spacing: 3) {
@@ -235,29 +276,29 @@ private struct CompareTooltip: View {
             let status = model.diff.status(e, model.mode)
             HStack(spacing: 5) {
                 Image(systemName: statusSymbol(status)).foregroundStyle(statusColor(status))
-                Text(model.diff.name(of: e)).font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                Text(model.diff.name(of: e)).font(.callout.weight(.semibold)).lineLimit(1)
             }
-            Text(model.diff.path(of: e)).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2)
+            Text(model.diff.path(of: e)).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 .truncationMode(.middle)
-            Text(CompareText.beforeNow(model, e)).font(.system(size: 11).monospacedDigit())
+            Text(CompareText.beforeNow(model, e)).font(.subheadline.monospacedDigit())
             HStack(spacing: 6) {
                 let d = model.diff.delta(e, model.mode)
-                Text("Δ " + ByteFormat.signed(d)).font(.system(size: 11, weight: .semibold).monospacedDigit())
+                Text("Δ " + ByteFormat.signed(d)).font(.subheadline.weight(.semibold).monospacedDigit())
                     .foregroundStyle(deltaTextColor(d))
-                Text(status.label).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(status.label).font(.subheadline).foregroundStyle(.secondary)
             }
             if session.view == .growth, arc.isDirectory {
-                Text(L("compare.tooltip.folderGrowth", ByteFormat.string(arc.size))).font(.system(size: 10))
+                Text(L("compare.tooltip.folderGrowth", ByteFormat.string(arc.size))).font(.caption)
                     .foregroundStyle(.secondary)
             }
         } else {
             let title = arc.kind == .aggregate ? itemsText(Int(arc.itemCount))
                 : (session.view == .growth ? L("compare.tooltip.growthWithoutEntries") : L("arc.remainder.title"))
-            Text(title).font(.system(size: 12, weight: .semibold))
-            Text(ByteFormat.string(arc.size)).font(.system(size: 11).monospacedDigit())
+            Text(title).font(.callout.weight(.semibold))
+            Text(ByteFormat.string(arc.size)).font(.subheadline.monospacedDigit())
             Text(arc.kind == .aggregate ? L("arc.aggregate.detail")
                 : L("compare.tooltip.smallFiles", ByteFormat.string(max(session.model.diff.minimumFileSize, 1))))
-                .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2)
+                .font(.caption).foregroundStyle(.secondary).lineLimit(2)
         }
     }
 }

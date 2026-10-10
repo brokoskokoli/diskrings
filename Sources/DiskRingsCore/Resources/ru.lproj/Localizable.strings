@@ -377,7 +377,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, изменение %4$@";
 "compare.listPicker" = "Список";
 "compare.viewPicker" = "Вид";
-"compare.viewPicker.help" = "Рост: размер сегмента = рост. Цвета изменений: обычные размеры, красный — выросло, зеленый — уменьшилось.";
+"compare.viewPicker.help" = "Рост: размер сегмента = рост. Цвета изменений: обычные размеры, оранжевый — выросло, синий — уменьшилось.";
 "compare.end" = "Завершить сравнение";
 "compare.end.help" = "Назад к обычному виду (Esc)";
 "compare.breadcrumb" = "Путь в сравнении";
@@ -407,3 +407,13 @@
 "trash.error.containsMountPoint" = "Содержит другой том (точка монтирования «%@»), его нельзя переместить в Корзину";
 "trash.confirm.sizeUncertain" = "Размер известен не полностью (объекты только в облаке, нечитаемые или ещё не просканированные), поэтому подтверждение запрашивается всегда.";
 "reason.targetsChanged" = "Объекты за это время изменились (например, после повторного сканирования). Ничего не выполнено — повторите попытку.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "уровень %@";
+"outline.value.expanded" = "развернуто, уровень %@";
+"outline.value.collapsed" = "свернуто, уровень %@";
+"accessibility.expand" = "Развернуть";
+"accessibility.collapse" = "Свернуть";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

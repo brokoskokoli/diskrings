@@ -26,7 +26,7 @@ struct SettingsView: View {
                         Slider(value: $prefs.minAngleDegrees, in: Preferences.minAngleRange, step: 0.1)
                             .frame(width: 160)
                             .accessibilityValue(L("settings.minAngle.accessibilityValue", angleText))
-                        Text(angleText + "°")
+                        Text(TextFormat.degrees(angleText))
                             .monospacedDigit()
                             .frame(width: 40, alignment: .trailing)
                     }

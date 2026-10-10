@@ -326,7 +326,7 @@ public struct CompareHeadline: Sendable, Equatable {
     public let prefix: String
     public let parts: [Part]
 
-    public var text: String { prefix + ": " + parts.map(\.labeledText).joined(separator: " · ") }
+    public var text: String { TextFormat.labeled(prefix, TextFormat.inline(parts.map(\.labeledText))) }
 
     public init(diff: SnapshotDiff, comparesSnapshots: Bool, timeZone: TimeZone = .current) {
         let s = diff.summary

@@ -430,3 +430,25 @@ Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4).
 
 ### Kontextmenü: Ziele über Pfade
 - `ContextMenuTarget` hält die Ziele zusätzlich als `NodeTargetSnapshot` (Core: absoluter Pfad und Art je Ziel, Scan-Wurzel) bzw. im Vergleich als `CompareTargetSnapshot` fest. Beim Ausführen eines Eintrags werden die Pfade im **aktuellen** Baum (bzw. Vergleich) neu aufgelöst; nur diese Indizes gehen an `perform`/`performCompare`. Fehlt ein Ziel, hat es eine andere Art (Datei/Ordner/Symlink), hat der Baum eine andere Wurzel oder passt der Pfad nur über eine andere Unicode-Normalform, wird **nichts** ausgeführt und ein kurzer Hinweis gezeigt („Die Elemente haben sich inzwischen geändert …“). Grund: Ein Teil-Rescan, der fertig wird, während das Menü offen ist, ersetzt den Baum und nummeriert beim Kompaktieren um; der alte Index konnte dann ein anderes, lebendes Element treffen und z. B. in den Papierkorb legen (mit „Nicht mehr fragen“ sogar ohne Dialog). Titel und Verfügbarkeit im offenen Menü bleiben die beim Öffnen berechneten.
+
+## Review-Befunde: Barrierefreiheit und Darstellung
+
+### Listen mit der Tastatur
+- Die Listen bleiben `ScrollView` + `LazyVStack` (keine `List`/`OutlineGroup`): Ein Wechsel hätte Prozentbalken, Farbfeld, Hover-Sync, die Zusammenfassung „N kleinere Elemente“ und das Aussehen neu aufgebaut, und `List` mit Hunderttausenden aufgeklappten Zeilen ist auf macOS spürbar langsamer als die faule Liste. Stattdessen sind die Listen `.focusable()` und reagieren per `onKeyPress` (macOS 14).
+- Regeln in `OutlineNavigation` (Core, getestet) auf den sichtbaren Zeilen: ↑/↓ (Sammelzeilen und „Nicht zugeordnet“ werden übersprungen, ohne sichtbare Auswahl erste/letzte Zeile), → klappt auf bzw. geht zum ersten Kind, ← klappt zu bzw. geht zum Elternordner, Pos1/Ende, Bild↑/↓ (10 Zeilen). ⇧↑/⇧↓ erweitert die Auswahl in der Detailliste. ⏎ zoomt in den ausgewählten Ordner (in „Größte Veränderungen“: Eintrag zeigen). Leertaste und die Menükürzel wirken unverändert über die Auswahl. Die ausgewählte Zeile wird mit `scrollTo` ohne Anker (minimal) sichtbar gehalten.
+- Kein Fokusring um die Liste; solange sie den Tastaturfokus hat, ist die Auswahl kräftiger hinterlegt (wie im Finder). Ein Klick in die Liste gibt ihr den Fokus.
+- VoiceOver: Zeilen haben als Wert Zustand und Ebene („aufgeklappt, Ebene 2“, `OutlineAccessibility`) und benannte Aktionen „Aufklappen“/„Zuklappen“; „Hineinzoomen“ nur für Ordner. Diagrammsegmente: Ordner haben als Standardaktion das Hineinzoomen, Dateien wählen aus, Sammelsegmente haben keine Aktion.
+
+### Vergleich: Orange/Blau statt Rot/Grün (Abweichung von SPEC 3.9)
+- Die Spec nennt Rot = gewachsen, Grün = geschrumpft. Bei Rot-Grün-Schwäche ist das kaum unterscheidbar. Jetzt Orange (28°) für Zuwachs und Blau (214°) für Rückgang; ein Test simuliert Deuteranopie und Protanopie (Machado 2009) und verlangt, dass der Abstand mindestens 70 % des normalen bleibt (das alte Rot/Grün fällt mit 36 % durch). Textfarben für Δ (`Palette.deltaTextColor`) haben mindestens 4,5 : 1 Kontrast auf Weiß/Fenstergrau bzw. Dunkelgrau.
+- „Ohne Farbe unterscheiden“: In der Delta-Färbung ist Geschrumpftes schraffiert, Gewachsenes und Geschrumpftes tragen „+“ bzw. „−“, wo Platz ist; die Legende zeigt die Zeichen ebenfalls. Neue (Punkt) und entfernte Elemente (gestrichelt) waren schon ohne Farbe erkennbar. Die Statussymbole der Liste bleiben.
+- Die README-Screenshots zeigen noch die alten Farben.
+
+### Bewegung reduzieren, Fortschrittsring
+- Zoom- und Änderungsanimationen entfallen schon bei „Bewegung reduzieren“ (Abfrage in `AppState`). Neu: Der Hinweis (Toast) blendet nur ein, die Listen scrollen ohne Animation, und der unbestimmte Fortschrittsring eines Teil-Rescans steht als gestrichelter Ring still.
+- Der Fortschrittsring liegt in einer eigenen `Canvas`-Ebene über dem Diagramm mit `TimelineView(.animation(minimumInterval: 1/15))`, die nur bei unbestimmtem Fortschritt läuft. Das Diagramm darunter (mit Beschriftung) wird während eines Teil-Rescans nicht mehr jedes Bild neu gezeichnet.
+- Für die Vorschaubilder lassen sich die Systemwerte im Environment nicht setzen; `ForcedAccessibility` (Environment) erzwingt sie (`main-rescan-reducemotion-*`, `compare-delta-nocolor-*`).
+
+### Trennzeichen und Schriften
+- „: “, „ · “ und „°“ kommen aus der Sprachtabelle (`format.labelValue`, `format.inlineSeparator`, `format.degrees`; `TextFormat` im Core). Französisch setzt ein geschütztes Leerzeichen vor den Doppelpunkt, Japanisch und Chinesisch einen vollbreiten Doppelpunkt.
+- Listenzeilen, Legende und Tooltips nutzen Textstile (`.callout`, `.subheadline`, `.caption`) statt fester Punktgrößen; Spaltenbreiten, Zeilenhöhe, Einrückung und Tooltip-Breite sind `@ScaledMetric`. Im Canvas gezeichnete Texte (Beschriftung, Mitte) richten sich weiter nach der Diagrammgröße.

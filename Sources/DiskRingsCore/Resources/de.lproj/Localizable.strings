@@ -377,7 +377,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, Delta %4$@";
 "compare.listPicker" = "Liste";
 "compare.viewPicker" = "Darstellung";
-"compare.viewPicker.help" = "Wachstum: Segmentgröße = Zuwachs. Delta-Färbung: normale Größen, rot gewachsen, grün geschrumpft.";
+"compare.viewPicker.help" = "Wachstum: Segmentgröße = Zuwachs. Delta-Färbung: normale Größen, orange gewachsen, blau geschrumpft.";
 "compare.end" = "Vergleich beenden";
 "compare.end.help" = "Zurück zur normalen Ansicht (Esc)";
 "compare.breadcrumb" = "Pfad im Vergleich";
@@ -407,3 +407,13 @@
 "trash.error.containsMountPoint" = "Enthält ein anderes Volume (Einhängepunkt „%@“) und kann nicht in den Papierkorb gelegt werden";
 "trash.confirm.sizeUncertain" = "Die Größe ist nicht vollständig bekannt (nur in der Cloud, nicht lesbar oder noch nicht eingelesen), deshalb wird immer nachgefragt.";
 "reason.targetsChanged" = "Die Elemente haben sich inzwischen geändert (z. B. durch einen Rescan). Es wurde nichts ausgeführt – bitte erneut versuchen.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "Ebene %@";
+"outline.value.expanded" = "aufgeklappt, Ebene %@";
+"outline.value.collapsed" = "zugeklappt, Ebene %@";
+"accessibility.expand" = "Aufklappen";
+"accessibility.collapse" = "Zuklappen";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";

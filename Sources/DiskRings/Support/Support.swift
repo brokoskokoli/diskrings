@@ -70,7 +70,7 @@ func describe(_ arc: SunburstArc, tree: ScanTree, layout: SunburstLayout) -> Arc
     case .node:
         let n = tree[arc.nodeIndex]
         var detail = n.isDirectory ? filesText(n.fileCount) : (n.badges.first ?? L("kind.file"))
-        if n.isDirectory, !n.badges.isEmpty { detail += " · " + n.badges.joined(separator: L("list.separator")) }
+        if n.isDirectory, !n.badges.isEmpty { detail = TextFormat.inline([detail, n.badges.joined(separator: L("list.separator"))]) }
         return ArcDescription(title: n.name, path: n.path, size: arc.size, share: share, detail: detail)
     case .aggregate:
         return ArcDescription(title: itemsText(Int(arc.itemCount)), path: tree.path(of: arc.nodeIndex),
@@ -95,3 +95,22 @@ enum Volumes {
 /// dessen Plugin nur mit Xcode ausgeliefert wird; mit den Command Line Tools
 /// schlägt `@State` deshalb fehl (siehe docs/DECISIONS.md).
 typealias ViewState<Value> = SwiftUI.State<Value>
+
+/// Erzwungene Bedienungshilfen für die Vorschaubilder: Die Systemwerte
+/// (`accessibilityDifferentiateWithoutColor`, `accessibilityReduceMotion`)
+/// lassen sich im Environment nicht setzen. Views werten beide aus.
+struct ForcedAccessibility: Equatable {
+    var differentiateWithoutColor = false
+    var reduceMotion = false
+}
+
+private struct ForcedAccessibilityKey: EnvironmentKey {
+    static let defaultValue = ForcedAccessibility()
+}
+
+extension EnvironmentValues {
+    var forcedAccessibility: ForcedAccessibility {
+        get { self[ForcedAccessibilityKey.self] }
+        set { self[ForcedAccessibilityKey.self] = newValue }
+    }
+}

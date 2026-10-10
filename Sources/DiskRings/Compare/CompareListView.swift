@@ -8,6 +8,8 @@ import SwiftUI
 struct CompareListView: View {
     let state: AppState
     let session: CompareSession
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @FocusState private var focused: Bool
 
     static let rowsPerLevel = 400
     static let sizeColumn: CGFloat = 70
@@ -21,23 +23,65 @@ struct CompareListView: View {
             columnHeader
             Divider()
             ScrollViewReader { proxy in
+                let rows = rows(model)
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(rows(model)) { row in
-                            CompareRowView(state: state, session: session, row: row).id(row.id)
+                        ForEach(rows) { row in
+                            CompareRowView(state: state, session: session, row: row, listFocused: focused,
+                                           focusList: { focused = true })
+                                .id(row.id)
                         }
                     }
                     .padding(.vertical, 4)
                 }
+                .focusable()
+                .focused($focused)
+                .focusEffectDisabled()
+                .onKeyPress(phases: [.down, .repeat]) { press in handleKey(press, rows: rows, proxy: proxy) }
                 .onChange(of: session.scrollRequest) { _, target in
                     guard let target else { return }
-                    withAnimation(.easeInOut(duration: 0.2)) { proxy.scrollTo(CompareRow.ID.entry(target), anchor: .center) }
+                    if reduceMotion {
+                        proxy.scrollTo(CompareRow.ID.entry(target), anchor: .center)
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.2)) { proxy.scrollTo(CompareRow.ID.entry(target), anchor: .center) }
+                    }
                     session.scrollRequest = nil
                 }
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L("compare.list.accessibility", model.diff.name(of: session.focus)))
+    }
+
+    /// Tastatur wie in der Detailliste (`OutlineNavigation`); ⏎ zoomt in den Ordner.
+    private func handleKey(_ press: KeyPress, rows: [CompareRow], proxy: ScrollViewProxy) -> KeyPress.Result {
+        let diff = session.model.diff
+        if OutlineKeyboard.isReturn(press) {
+            guard let e = session.selected, diff.isDirectory(e) else { return .ignored }
+            session.navigate(to: e)
+            return .handled
+        }
+        guard let key = OutlineKeyboard.key(press) else { return .ignored }
+        let outline = rows.map { r in
+            OutlineRow(id: r.id, level: r.level, isSelectable: r.kind == .entry,
+                       isExpandable: r.kind == .entry && CompareRowView.isExpandable(r.entry, diff: diff),
+                       isExpanded: r.kind == .entry && session.expanded.contains(r.entry))
+        }
+        let current = session.selected.map { CompareRow.ID.entry($0) }
+        switch OutlineNavigation.command(for: key, current: current, rows: outline) {
+        case .select(let id):
+            if case .entry(let e) = id {
+                session.selected = e
+                proxy.scrollTo(id)
+            }
+        case .expand(let id):
+            if case .entry(let e) = id { session.expanded.insert(e) }
+        case .collapse(let id):
+            if case .entry(let e) = id { session.expanded.remove(e) }
+        case .none:
+            break
+        }
+        return .handled
     }
 
     private func header(_ m: CompareModel) -> some View {
@@ -50,7 +94,7 @@ struct CompareListView: View {
             }
             HStack(spacing: 6) {
                 Text(CompareText.beforeNow(m, e)).monospacedDigit()
-                Text("·")
+                Text(TextFormat.inlineSeparatorGlyph)
                 Text("Δ " + ByteFormat.signed(d)).fontWeight(.semibold).monospacedDigit().foregroundStyle(deltaTextColor(d))
             }
             .font(.subheadline)
@@ -68,10 +112,10 @@ struct CompareListView: View {
             sortButton(L("compare.column.now"), .now).frame(width: Self.sizeColumn, alignment: .trailing)
             sortButton("Δ", .delta).frame(width: Self.deltaColumn, alignment: .trailing)
         }
-        .font(.system(size: 11, weight: .medium))
+        .font(.subheadline.weight(.medium))
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
-        .frame(height: 24)
+        .frame(minHeight: 24)
     }
 
     private func sortButton(_ title: String, _ key: CompareSort.Key) -> some View {
@@ -80,7 +124,7 @@ struct CompareListView: View {
                 Text(title)
                 if session.sort.key == key {
                     Image(systemName: session.sort.ascending ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.caption2.weight(.bold))
                 }
             }
             .fontWeight(session.sort.key == key ? .semibold : .medium)
@@ -128,6 +172,12 @@ private struct CompareRowView: View {
     let state: AppState
     let session: CompareSession
     let row: CompareRow
+    /// Die Liste hat den Tastaturfokus.
+    let listFocused: Bool
+    let focusList: () -> Void
+
+    @ScaledMetric(relativeTo: .callout) private var indent: CGFloat = 14
+    @ScaledMetric(relativeTo: .callout) private var rowHeight: CGFloat = 24
 
     var body: some View {
         let m = session.model
@@ -137,7 +187,7 @@ private struct CompareRowView: View {
         let isSelected = isEntry && session.selected == e
         let isHovered = isEntry && session.hoverEntry == e
         HStack(spacing: 6) {
-            Color.clear.frame(width: CGFloat(row.level) * 14, height: 1)
+            Color.clear.frame(width: CGFloat(row.level) * indent, height: 1)
             disclosure
             if isEntry {
                 Image(systemName: statusSymbol(status)).foregroundStyle(statusColor(status)).frame(width: 16)
@@ -164,12 +214,12 @@ private struct CompareRowView: View {
                 Spacer()
             }
         }
-        .font(.system(size: 12).monospacedDigit())
+        .font(.callout.monospacedDigit())
         .padding(.horizontal, 10)
-        .frame(height: 24)
+        .frame(height: rowHeight)
         .background {
             RoundedRectangle(cornerRadius: 5)
-                .fill(isSelected ? Color.accentColor.opacity(0.22) : (isHovered ? Color.primary.opacity(0.07) : .clear))
+                .fill(OutlineKeyboard.rowBackground(selected: isSelected, hovered: isHovered, listFocused: listFocused))
                 .padding(.horizontal, 4)
         }
         .contentShape(Rectangle())
@@ -177,6 +227,7 @@ private struct CompareRowView: View {
             if isEntry { session.hoverList(inside ? e : (session.hoverEntry == e ? nil : session.hoverEntry)) }
         }
         .onTapGesture {
+            focusList()
             guard isEntry else { return }
             if (NSApp.currentEvent?.clickCount ?? 1) >= 2 {
                 session.navigate(to: e)
@@ -188,18 +239,31 @@ private struct CompareRowView: View {
         .contextMenu { if isEntry { CompareContextMenu(state: state, entry: e) } }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(isEntry ? CompareText.accessibility(m, e) : L("compare.moreItems"))
+        .accessibilityValue(isEntry
+            ? OutlineAccessibility.value(level: row.level, isExpandable: isExpandable, isExpanded: isExpanded) : "")
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
-        .accessibilityAction(named: L("accessibility.zoomIn")) { if isEntry { session.navigate(to: e) } }
+        .accessibilityAction {
+            guard isEntry else { return }
+            session.selected = e
+            if isExpandable { toggle() }
+        }
+        .modifier(ExpandCollapseActions(isExpandable: isExpandable, isExpanded: isExpanded) { toggle() })
+        .accessibilityAction(named: L("accessibility.zoomIn")) {
+            if isEntry, m.diff.isDirectory(e) { session.navigate(to: e) }
+        }
     }
 
-    private var isExpandable: Bool {
-        row.kind == .entry && session.model.diff.isDirectory(row.entry) && !session.model.diff.childEntries(of: row.entry).isEmpty
+    static func isExpandable(_ e: Int32, diff: SnapshotDiff) -> Bool {
+        diff.isDirectory(e) && !diff.childEntries(of: e).isEmpty
     }
+
+    private var isExpandable: Bool { row.kind == .entry && Self.isExpandable(row.entry, diff: session.model.diff) }
+    private var isExpanded: Bool { row.kind == .entry && session.expanded.contains(row.entry) }
 
     @ViewBuilder private var disclosure: some View {
         if isExpandable {
             Image(systemName: "chevron.right")
-                .font(.system(size: 9, weight: .bold))
+                .font(.caption2.weight(.bold))
                 .foregroundStyle(.secondary)
                 .rotationEffect(.degrees(session.expanded.contains(row.entry) ? 90 : 0))
                 .frame(width: 12)
@@ -221,6 +285,7 @@ private struct CompareRowView: View {
 struct LargestChangesView: View {
     let state: AppState
     let session: CompareSession
+    @FocusState private var focused: Bool
 
     var body: some View {
         let m = session.model
@@ -242,19 +307,44 @@ struct LargestChangesView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(changes.enumerated()), id: \.element.entry) { i, c in
-                            LargestChangeRow(state: state, session: session, rank: i + 1, change: c,
-                                             relativePath: relative(c.path, root: m.diff.new.metadata.rootPath))
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(changes.enumerated()), id: \.element.entry) { i, c in
+                                LargestChangeRow(state: state, session: session, rank: i + 1, change: c,
+                                                 relativePath: relative(c.path, root: m.diff.new.metadata.rootPath),
+                                                 listFocused: focused, focusList: { focused = true })
+                                    .id(c.entry)
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
+                    .focusable()
+                    .focused($focused)
+                    .focusEffectDisabled()
+                    .onKeyPress(phases: [.down, .repeat]) { press in handleKey(press, changes: changes, proxy: proxy) }
                 }
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L("compare.tab.largest"))
+    }
+
+    /// ↑/↓, Pos1/Ende, Bild↑/↓ wählen aus; ⏎ zeigt den Eintrag im Diagramm und in „Inhalt“.
+    private func handleKey(_ press: KeyPress, changes: [DiffChange], proxy: ScrollViewProxy) -> KeyPress.Result {
+        if OutlineKeyboard.isReturn(press) {
+            guard let e = session.selected, changes.contains(where: { $0.entry == e }) else { return .ignored }
+            session.reveal(e)
+            return .handled
+        }
+        guard let key = OutlineKeyboard.key(press) else { return .ignored }
+        let rows = changes.map { OutlineRow(id: $0.entry, level: 0) }
+        if let e = OutlineNavigation.command(for: key, current: session.selected, rows: rows).target {
+            session.selected = e
+            session.hoverList(e)
+            proxy.scrollTo(e)
+        }
+        return .handled
     }
 
     private func relative(_ path: String, root: String) -> String {
@@ -271,48 +361,56 @@ private struct LargestChangeRow: View {
     let rank: Int
     let change: DiffChange
     let relativePath: String
+    let listFocused: Bool
+    let focusList: () -> Void
+
+    @ScaledMetric(relativeTo: .callout) private var rowHeight: CGFloat = 38
+    @ScaledMetric(relativeTo: .callout) private var rankWidth: CGFloat = 22
 
     var body: some View {
         let isSelected = session.selected == change.entry
         let isHovered = session.hoverEntry == change.entry
         HStack(spacing: 8) {
-            Text("\(rank)").font(.system(size: 11).monospacedDigit()).foregroundStyle(.secondary)
-                .frame(width: 22, alignment: .trailing)
+            Text(ByteFormat.count(rank)).font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
+                .frame(width: rankWidth, alignment: .trailing)
             Image(systemName: change.isDirectory ? "folder.fill" : "doc").foregroundStyle(.secondary).frame(width: 16)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 5) {
-                    Text(change.name).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
+                    Text(change.name).font(.callout.weight(.medium)).lineLimit(1).truncationMode(.middle)
                     if change.status == .added || change.status == .removed {
                         Text(change.status.label)
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(.caption2.weight(.semibold))
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
                             .background(statusColor(change.status).opacity(0.18), in: Capsule())
                             .foregroundStyle(statusColor(change.status))
                     }
                 }
-                Text(relativePath).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                Text(relativePath).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     .truncationMode(.head)
             }
             Spacer(minLength: 6)
             VStack(alignment: .trailing, spacing: 1) {
                 let signed = session.showShrink ? -Int64(clamping: change.amount) : Int64(clamping: change.amount)
-                Text(ByteFormat.signed(signed)).font(.system(size: 13, weight: .semibold).monospacedDigit())
+                Text(ByteFormat.signed(signed)).font(.body.weight(.semibold).monospacedDigit())
                     .foregroundStyle(deltaTextColor(signed))
                 Text((change.status == .added ? "–" : ByteFormat.string(change.oldSize)) + " → " + (change.status == .removed ? "–" : ByteFormat.string(change.newSize)))
-                    .font(.system(size: 10).monospacedDigit()).foregroundStyle(.secondary)
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 10)
-        .frame(height: 38)
+        .frame(height: rowHeight)
         .background {
             RoundedRectangle(cornerRadius: 5)
-                .fill(isSelected ? Color.accentColor.opacity(0.22) : (isHovered ? Color.primary.opacity(0.07) : .clear))
+                .fill(OutlineKeyboard.rowBackground(selected: isSelected, hovered: isHovered, listFocused: listFocused))
                 .padding(.horizontal, 4)
         }
         .contentShape(Rectangle())
         .onHover { inside in session.hoverList(inside ? change.entry : nil) }
-        .onTapGesture { session.reveal(change.entry) }
+        .onTapGesture {
+            focusList()
+            session.reveal(change.entry)
+        }
         .contextMenu { CompareContextMenu(state: state, entry: change.entry) }
         .help(change.path)
         .accessibilityElement(children: .ignore)

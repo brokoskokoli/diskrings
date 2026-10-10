@@ -8,6 +8,8 @@ import SwiftUI
 struct DetailListView: View {
     let state: AppState
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @FocusState private var focused: Bool
 
     /// Höchstzahl der Zeilen je Ebene; der Rest wird zusammengefasst.
     static let rowsPerLevel = 400
@@ -20,22 +22,33 @@ struct DetailListView: View {
                 header(tree)
                 Divider()
                 ScrollViewReader { proxy in
+                    let rows = rows(tree, base: layout.totalSize)
+                    let visible = rows.filter { $0.kind == .node }.map(\.node)
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            let rows = rows(tree, base: layout.totalSize)
-                            let visible = rows.filter { $0.kind == .node }.map(\.node)
                             let rescanning = state.rescanningNodes
                             ForEach(rows) { row in
                                 DetailRowView(state: state, tree: tree, row: row, swatch: colors[row.node],
-                                              visibleNodes: visible, rescanProgress: rescanning[row.node])
+                                              visibleNodes: visible, rescanProgress: rescanning[row.node],
+                                              listFocused: focused, focusList: { focused = true })
                                     .id(row.id)
                             }
                         }
                         .padding(.vertical, 4)
                     }
+                    .focusable()
+                    .focused($focused)
+                    .focusEffectDisabled()
+                    .onKeyPress(phases: [.down, .repeat]) { press in
+                        handleKey(press, rows: rows, tree: tree, visible: visible, proxy: proxy)
+                    }
                     .onChange(of: state.scrollRequest) { _, target in
                         guard let target else { return }
-                        withAnimation(.easeInOut(duration: 0.2)) { proxy.scrollTo(DetailRow.ID.node(target), anchor: .center) }
+                        if reduceMotion {
+                            proxy.scrollTo(DetailRow.ID.node(target), anchor: .center)
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.2)) { proxy.scrollTo(DetailRow.ID.node(target), anchor: .center) }
+                        }
                         state.scrollRequest = nil
                     }
                 }
@@ -45,6 +58,41 @@ struct DetailListView: View {
         } else {
             Color.clear
         }
+    }
+
+    /// Tastatur (SPEC 5): ↑/↓ (mit ⇧ erweitern), →/← auf-/zuklappen bzw.
+    /// Kind/Elternordner, Pos1/Ende, Bild↑/↓, ⏎ zoomt in den Ordner.
+    private func handleKey(_ press: KeyPress, rows: [DetailRow], tree: ScanTree, visible: [Int32],
+                           proxy: ScrollViewProxy) -> KeyPress.Result {
+        let current = state.selection.primary.map { DetailRow.ID.node($0) }
+        if OutlineKeyboard.isReturn(press) {
+            guard let n = state.selection.primary, tree.node(n).isDirectory else { return .ignored }
+            state.navigate(to: n)
+            return .handled
+        }
+        guard let key = OutlineKeyboard.key(press) else { return .ignored }
+        let outline = rows.map { r in
+            OutlineRow(id: r.id, level: r.level, isSelectable: r.kind == .node,
+                       isExpandable: r.kind == .node && tree.node(r.node).childCount > 0,
+                       isExpanded: r.kind == .node && state.expanded.contains(r.node))
+        }
+        switch OutlineNavigation.command(for: key, current: current, rows: outline) {
+        case .select(let id):
+            guard case .node(let n) = id else { return .handled }
+            if press.modifiers.contains(.shift), key == .up || key == .down {
+                state.selection.extend(to: n, visible: visible)
+            } else {
+                state.selection.select(n)
+            }
+            proxy.scrollTo(id)
+        case .expand(let id):
+            if case .node(let n) = id { state.expanded.insert(n) }
+        case .collapse(let id):
+            if case .node(let n) = id { state.expanded.remove(n) }
+        case .none:
+            break
+        }
+        return .handled
     }
 
     private func header(_ tree: ScanTree) -> some View {
@@ -60,7 +108,7 @@ struct DetailListView: View {
             HStack(spacing: 4) {
                 Text(ByteFormat.string(size)).monospacedDigit()
                 if state.focus != ScanTree.rootIndex, rootSize > 0 {
-                    Text("·")
+                    Text(TextFormat.inlineSeparatorGlyph)
                     Text(L("list.shareOfRoot", ByteFormat.percent(Double(size) / Double(rootSize))))
                 }
             }
@@ -146,12 +194,21 @@ private struct DetailRowView: View {
     let visibleNodes: [Int32]
     /// Laufender Teil-Rescan dieser Zeile (-1 = unbestimmt).
     let rescanProgress: Double?
+    /// Die Liste hat den Tastaturfokus.
+    let listFocused: Bool
+    let focusList: () -> Void
+
+    // Spaltenbreiten wachsen mit der Textgröße.
+    @ScaledMetric(relativeTo: .callout) private var indent: CGFloat = 14
+    @ScaledMetric(relativeTo: .callout) private var percentWidth: CGFloat = 44
+    @ScaledMetric(relativeTo: .callout) private var sizeWidth: CGFloat = 72
+    @ScaledMetric(relativeTo: .callout) private var rowHeight: CGFloat = 24
 
     var body: some View {
         let isSelected = row.kind == .node && state.selection.contains(row.node)
         let isHovered = row.kind == .node && state.hoverNode == row.node
         HStack(spacing: 6) {
-            Color.clear.frame(width: CGFloat(row.level) * 14, height: 1)
+            Color.clear.frame(width: CGFloat(row.level) * indent, height: 1)
             disclosure
             icon
             Text(title)
@@ -165,29 +222,29 @@ private struct DetailRowView: View {
             ShareBar(share: row.share, color: swatch ?? Color.secondary.opacity(0.6))
                 .frame(width: 54, height: 6)
             Text(ByteFormat.percent(row.share))
-                .font(.system(size: 11).monospacedDigit())
+                .font(.subheadline.monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 44, alignment: .trailing)
+                .frame(width: percentWidth, alignment: .trailing)
             if let p = rescanProgress {
                 Group {
                     if p >= 0 { ProgressView(value: p).progressViewStyle(.circular) } else { ProgressView() }
                 }
                 .controlSize(.mini)
-                .frame(width: 72, alignment: .trailing)
+                .frame(width: sizeWidth, alignment: .trailing)
                 .help(L("reason.rescanRunning"))
                 .accessibilityLabel(L("reason.rescanRunning"))
             } else {
                 Text(ByteFormat.string(row.size))
-                    .font(.system(size: 12).monospacedDigit())
-                    .frame(width: 72, alignment: .trailing)
+                    .monospacedDigit()
+                    .frame(width: sizeWidth, alignment: .trailing)
             }
         }
-        .font(.system(size: 12))
+        .font(.callout)
         .padding(.horizontal, 10)
-        .frame(height: 24)
+        .frame(height: rowHeight)
         .background {
             RoundedRectangle(cornerRadius: 5)
-                .fill(isSelected ? Color.accentColor.opacity(0.22) : (isHovered ? Color.primary.opacity(0.07) : .clear))
+                .fill(OutlineKeyboard.rowBackground(selected: isSelected, hovered: isHovered, listFocused: listFocused))
                 .padding(.horizontal, 4)
         }
         .contentShape(Rectangle())
@@ -197,6 +254,7 @@ private struct DetailRowView: View {
         // Nur ein Klick-Handler: ein zusätzlicher Doppelklick-Handler würde jeden
         // Einzelklick verzögern. Der Doppelklick wird über `clickCount` erkannt.
         .onTapGesture {
+            focusList()
             guard row.kind == .node else { return }
             let event = NSApp.currentEvent
             if (event?.clickCount ?? 1) >= 2 {
@@ -222,10 +280,17 @@ private struct DetailRowView: View {
         .help(row.kind == .unassigned ? L("list.unassigned.help") : "")
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("list.row.accessibility", title, ByteFormat.string(row.size), ByteFormat.percent(row.share)))
+        .accessibilityValue(row.kind == .node
+            ? OutlineAccessibility.value(level: row.level, isExpandable: isExpandable, isExpanded: isExpanded) : "")
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
         .accessibilityAction { activate() }
-        .accessibilityAction(named: L("accessibility.zoomIn")) { if row.kind == .node { state.navigate(to: row.node) } }
+        .modifier(ExpandCollapseActions(isExpandable: isExpandable, isExpanded: isExpanded) { toggle() })
+        .accessibilityAction(named: L("accessibility.zoomIn")) {
+            if row.kind == .node, tree.node(row.node).isDirectory { state.navigate(to: row.node) }
+        }
     }
+
+    private var isExpanded: Bool { row.kind == .node && state.expanded.contains(row.node) }
 
     private var isExpandable: Bool { row.kind == .node && tree.node(row.node).childCount > 0 }
 
@@ -233,7 +298,7 @@ private struct DetailRowView: View {
         if isExpandable {
             let open = state.expanded.contains(row.node)
             Image(systemName: "chevron.right")
-                .font(.system(size: 9, weight: .bold))
+                .font(.caption2.weight(.bold))
                 .foregroundStyle(.secondary)
                 .rotationEffect(.degrees(open ? 90 : 0))
                 .frame(width: 12)
@@ -291,5 +356,21 @@ struct ShareBar: View {
             }
         }
         .accessibilityHidden(true)
+    }
+}
+
+/// VoiceOver-Aktionen „Aufklappen“ bzw. „Zuklappen“ für Ordnerzeilen (der
+/// Pfeil selbst ist für VoiceOver ausgeblendet).
+struct ExpandCollapseActions: ViewModifier {
+    let isExpandable: Bool
+    let isExpanded: Bool
+    let toggle: () -> Void
+
+    func body(content: Content) -> some View {
+        if isExpandable {
+            content.accessibilityAction(named: isExpanded ? L("accessibility.collapse") : L("accessibility.expand")) { toggle() }
+        } else {
+            content
+        }
     }
 }

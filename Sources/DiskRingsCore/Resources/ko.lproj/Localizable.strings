@@ -377,7 +377,7 @@
 "compare.entry.accessibility" = "%1$@, %2$@, %3$@, 변화량 %4$@";
 "compare.listPicker" = "목록";
 "compare.viewPicker" = "보기";
-"compare.viewPicker.help" = "증가: 세그먼트 크기 = 증가량. 변화 색상: 일반 크기, 빨간색은 증가, 초록색은 감소.";
+"compare.viewPicker.help" = "증가: 세그먼트 크기 = 증가량. 변화 색상: 일반 크기, 주황색은 증가, 파란색은 감소.";
 "compare.end" = "비교 종료";
 "compare.end.help" = "일반 보기로 돌아가기(Esc)";
 "compare.breadcrumb" = "비교 내 경로";
@@ -407,3 +407,13 @@
 "trash.error.containsMountPoint" = "다른 볼륨(마운트 지점 ‘%@’)을 포함하므로 휴지통으로 이동할 수 없습니다";
 "trash.confirm.sizeUncertain" = "크기를 완전히 알 수 없으므로(클라우드 전용, 읽을 수 없음 또는 아직 스캔되지 않은 항목) 항상 확인합니다.";
 "reason.targetsChanged" = "그 사이에 항목이 변경되었습니다(예: 다시 스캔). 아무 작업도 수행되지 않았습니다. 다시 시도하십시오.";
+
+/* Tastaturbedienung und Barrierefreiheit der Listen; Trennzeichen */
+"outline.value.leaf" = "수준 %@";
+"outline.value.expanded" = "펼쳐짐, 수준 %@";
+"outline.value.collapsed" = "접힘, 수준 %@";
+"accessibility.expand" = "펼치기";
+"accessibility.collapse" = "접기";
+"format.labelValue" = "%1$@: %2$@";
+"format.inlineSeparator" = " · ";
+"format.degrees" = "%@°";
