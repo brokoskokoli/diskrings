@@ -438,3 +438,17 @@
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Lokalnych migawek APFS i Time Machine nie da się zmierzyć osobno; zależnie od stanu liczą się do „Do zwolnienia” lub „Nieczytelne dane systemowe”.";
 "center.usedOfTotal" = "%1$@ zajęte\nz %2$@";
+"trash.error.sandboxDenied" = "macOS nie pozwolił DiskRings przenieść tego elementu. DiskRings może zmieniać tylko elementy w folderach, do których udzielono dostępu.";
+"trash.undo.sandboxDenied" = "macOS nie pozwolił DiskRings odłożyć elementu z powrotem. Otwórz Kosz w Finderze i wybierz „Odłóż z powrotem”.";
+"trash.undo.noAccess" = "DiskRings nie ma już dostępu do oryginalnego folderu. Udziel dostępu ponownie albo otwórz Kosz w Finderze i wybierz „Odłóż z powrotem”.";
+"sandbox.panel.prompt" = "Udziel dostępu";
+"sandbox.panel.message" = "Aby przeskanować „%@”, DiskRings potrzebuje Twojej zgody. Kliknij „Udziel dostępu”, aby DiskRings mógł odczytać ten folder. Wybór zostanie zapamiętany.";
+"sandbox.panel.messageGeneric" = "Wybierz folder lub wolumin, który DiskRings może odczytać. Wybór zostanie zapamiętany.";
+"sandbox.grantMore" = "Udziel dostępu do kolejnych folderów…";
+"sandbox.banner.title" = "Dostęp do folderów";
+"sandbox.banner.message" = "DiskRings odczytuje tylko wybrane przez Ciebie foldery i woluminy. Po kliknięciu woluminu DiskRings raz prosi o dostęp i go zapamiętuje.";
+"settings.section.access" = "Dostęp do folderów";
+"settings.access.empty" = "Nie udzielono jeszcze dostępu do żadnego folderu.";
+"settings.access.remove" = "Usuń dostęp";
+"settings.access.footer" = "DiskRings odczytuje tylko te foldery i całą ich zawartość. Usunięcie dostępu nie zmienia żadnych plików.";
+"arc.unreadableSystem.sandboxHint" = "Obejmuje to również foldery, do których DiskRings nie ma dostępu.";

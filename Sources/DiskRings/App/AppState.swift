@@ -149,8 +149,32 @@ final class AppState {
         compareRefreshGate.invalidate()
     }
 
-    init(prefs: Preferences) {
+    // MARK: Sandbox (App-Store-Variante, SPEC 11)
+    /// Download-Version oder App Sandbox (zur Laufzeit erkannt).
+    let environment: AppEnvironment
+    /// Echte Security-Scoped Bookmarks (nur in der Sandbox benutzt).
+    @ObservationIgnored let bookmarks = SystemBookmarks()
+    /// Ordnerfreigaben; `nil` außerhalb der Sandbox (dann ist alles erlaubt,
+    /// was das System lesen lässt).
+    @ObservationIgnored private(set) var folderAccess: FolderAccessStore?
+    /// Freigaben für die Einstellungen (Spiegel von `folderAccess.grants`).
+    private(set) var grantedFolders: [FolderAccessStore.Grant] = []
+    /// Zugriff auf die Scan-Wurzel, solange ihr Baum gezeigt wird (Scan,
+    /// Teil-Rescans, Papierkorb, Finder, Quick Look, Snapshots).
+    @ObservationIgnored private var rootLease: FolderAccessStore.Lease?
+
+    init(prefs: Preferences, environment: AppEnvironment = .current,
+         grantPersistence: (any GrantPersistence)? = nil) {
         self.prefs = prefs
+        self.environment = environment
+        if environment.isSandboxed {
+            let store = FolderAccessStore(backend: bookmarks,
+                                          persistence: grantPersistence ?? UserDefaultsGrantPersistence())
+            store.load()
+            folderAccess = store
+            grantedFolders = store.grants
+        }
+        protection = ProtectedPaths(environment: environment)
         scanner.handler = { [weak self] event in
             guard let self else { return }
             switch event {
@@ -163,6 +187,7 @@ final class AppState {
                 self.scanError = L10n.describe(error)
                 self.setTree(nil)
                 self.phase = .start
+                self.releaseRootAccess()
             }
         }
     }
@@ -179,7 +204,7 @@ final class AppState {
 
     func refreshVolumes() {
         volumes = VolumeInfo.mountedVolumes()
-        fullDiskAccess = FullDiskAccess.status()
+        fullDiskAccess = FullDiskAccess.status(in: environment)
         // Andere Volumes je Container (für die Systemdaten im Balken) im Hintergrund.
         let paths = volumes.map(\.path)
         Task.detached(priority: .utility) {
@@ -208,14 +233,102 @@ final class AppState {
         panel.allowsMultipleSelection = false
         panel.prompt = L("panel.scan.prompt")
         panel.message = L("panel.scan.message")
-        if panel.runModal() == .OK, let url = panel.url { requestScan(url.path) }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // In der Sandbox gibt der Dialog den Ordner frei (Bookmark merken).
+        requestScan(grantAccess(url))
+    }
+
+    /// Ordner per Drag & Drop: In der Sandbox gilt das als Freigabe.
+    func handleDrop(_ url: URL) {
+        requestScan(grantAccess(url))
+    }
+
+    // MARK: Ordnerfreigaben (Sandbox)
+
+    var isSandboxed: Bool { environment.isSandboxed }
+
+    /// Darf die App den Pfad lesen? Außerhalb der Sandbox immer.
+    func hasAccess(_ path: String) -> Bool { folderAccess?.covers(path) ?? true }
+
+    /// Nimmt eine URL mit Zugriffsrecht (Öffnen-Dialog, Drag & Drop) als
+    /// Freigabe auf und liefert ihren Pfad. Außerhalb der Sandbox nur der Pfad.
+    @discardableResult
+    func grantAccess(_ url: URL) -> String {
+        guard let store = folderAccess else { return url.path }
+        bookmarks.adopt(url)
+        store.grant(path: url.path)
+        grantedFolders = store.grants
+        return FolderAccessStore.standardized(url.path) ?? url.path
+    }
+
+    /// In der Sandbox: der Pfad, wenn er freigegeben ist; sonst fragt der
+    /// Öffnen-Dialog (auf den Pfad gerichtet) nach der Freigabe und liefert
+    /// den gewählten Ordner, `nil` bei Abbruch.
+    func ensureAccess(_ path: String) -> String? {
+        guard folderAccess != nil, !hasAccess(path) else { return path }
+        return askForAccess(to: path)
+    }
+
+    /// Öffnen-Dialog zum Freigeben; mit `path` steht er schon auf diesem
+    /// Ordner bzw. Volume (dann genügt „Zugriff erlauben“).
+    @discardableResult
+    func askForAccess(to path: String?) -> String? {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.prompt = L("sandbox.panel.prompt")
+        if let path {
+            panel.directoryURL = URL(fileURLWithPath: path, isDirectory: true)
+            panel.message = L("sandbox.panel.message", accessDisplayName(path))
+        } else {
+            panel.message = L("sandbox.panel.messageGeneric")
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return grantAccess(url)
+    }
+
+    /// „Zugriff auf weitere Ordner erlauben …“ (Startbildschirm, Einstellungen, Kontextmenü).
+    func grantMoreFolders() {
+        askForAccess(to: nil)
+    }
+
+    func revokeAccess(_ path: String) {
+        guard let store = folderAccess else { return }
+        store.revoke(path: path)
+        grantedFolders = store.grants
+    }
+
+    private func accessDisplayName(_ path: String) -> String {
+        if let v = volumes.first(where: { $0.path == path }) { return v.name }
+        return FileManager.default.displayName(atPath: path)
+    }
+
+    private func releaseRootAccess() {
+        if let lease = rootLease { folderAccess?.endAccess(lease) }
+        rootLease = nil
+    }
+
+    /// Prüfung für ⌘Z in der Sandbox: Ziel durch eine Freigabe gedeckt oder
+    /// unter der gehaltenen Scan-Wurzel (deren Pfad kann aufgelöst sein,
+    /// z. B. /tmp → /private/tmp).
+    private var trashAccessCheck: ((String) -> Bool)? {
+        guard let store = folderAccess else { return nil }
+        let root = rootLease != nil ? tree?.rootPath : nil
+        return { path in
+            if store.covers(path) { return true }
+            guard let root else { return false }
+            return path == root || path.hasPrefix(root.hasSuffix("/") ? root : root + "/")
+        }
     }
 
     /// Scan auf Wunsch des Nutzers (Startbildschirm, Ordner wählen, Drag &
     /// Drop): Vor dem Scan von / oder ~ ohne Festplattenvollzugriff erscheint
     /// zuerst ein Hinweis (`fullDiskAccessPromptPath`).
-    func requestScan(_ path: String) {
-        fullDiskAccess = FullDiskAccess.status()
+    func requestScan(_ requested: String) {
+        guard let path = ensureAccess(requested) else { return }
+        fullDiskAccess = FullDiskAccess.status(in: environment)
         if FullDiskAccess.shouldWarnBeforeScan(of: path, status: fullDiskAccess,
                                                dismissed: prefs.fullDiskAccessHintDismissed) {
             fullDiskAccessPromptPath = path
@@ -244,7 +357,13 @@ final class AppState {
 
     // MARK: Scan
 
-    func startScan(_ path: String) {
+    func startScan(_ requested: String) {
+        // In der Sandbox fragt ein nicht freigegebener Pfad (Rescan nach dem
+        // Widerrufen, `--scan`) erst nach der Freigabe.
+        guard let path = ensureAccess(requested) else { return }
+        // Neuen Zugriff vor dem Freigeben des alten holen, damit dieselbe
+        // Freigabe (z. B. bei „Neu scannen“) nicht kurz endet.
+        let lease = folderAccess?.beginAccess(for: path)
         cancelScan()
         cancelPartialRescans()
         pendingFocusPath = nil
@@ -262,6 +381,8 @@ final class AppState {
         phase = .scanning
         stallDetector = ScanStallDetector(start: Date())
         scanOptionsUsed = prefs.scanOptions
+        releaseRootAccess()
+        rootLease = lease
         scanner.start(path, options: scanOptionsUsed)
     }
 
@@ -271,6 +392,7 @@ final class AppState {
         if phase == .scanning {
             phase = .start
             setTree(nil)
+            releaseRootAccess()
         }
     }
 
@@ -295,6 +417,7 @@ final class AppState {
         undoStack = []
         clearSearch()
         phase = .start
+        releaseRootAccess()
         refreshVolumes()
     }
 
@@ -665,7 +788,8 @@ final class AppState {
     func performTrash(_ plan: TrashPlan) {
         guard let tree else { return }
         protection = protection.refreshingVolumeRoots()
-        let out = TrashService(fileManager: fileTrasher, protection: protection).trash(plan)
+        let out = TrashService(fileManager: fileTrasher, protection: protection, sandboxed: isSandboxed,
+                               accessCheck: trashAccessCheck).trash(plan)
         if !out.removedPaths.isEmpty {
             for p in out.removedPaths { rescanQueue.noteEdit(at: p) }
             let chain = tree.removingNodes(atPaths: out.removedPaths)
@@ -697,7 +821,8 @@ final class AppState {
     /// ⌘Z: zurückverschieben, dann den Elternordner neu einlesen (SPEC 3.6).
     func undoTrash() {
         guard let tree, let records = undoStack.popLast() else { return }
-        let out = TrashService(fileManager: fileTrasher, protection: protection).restore(records)
+        let out = TrashService(fileManager: fileTrasher, protection: protection, sandboxed: isSandboxed,
+                               accessCheck: trashAccessCheck).restore(records)
         for p in out.restored {
             rescanQueue.noteEdit(at: p)
             let parent = ScanEngine.nearestExistingIndex(of: p, in: tree)

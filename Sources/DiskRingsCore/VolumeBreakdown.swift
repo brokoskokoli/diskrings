@@ -34,13 +34,28 @@ public struct VolumeBreakdown: Sendable, Hashable {
             }
         }
 
+        /// Zusatz zu den nicht lesbaren Systemdaten: ohne Festplattenvollzugriff
+        /// bzw. in der Sandbox (App-Store-Variante) stecken dort auch Ordner,
+        /// die DiskRings nicht lesen durfte.
+        public enum AccessHint: Sendable {
+            case none, fullDiskAccess, sandbox
+        }
+
         /// Erklärung für Tooltip und Liste.
         public func detail(fullDiskAccessDenied: Bool = false) -> String {
+            detail(accessHint: fullDiskAccessDenied ? .fullDiskAccess : .none)
+        }
+
+        public func detail(accessHint: AccessHint) -> String {
             switch kind {
             case .volume: return L("arc.volume.detail")
             case .unreadable:
                 let base = L("format.sentences", L("arc.unreadableSystem.detail"), L("arc.snapshots.note"))
-                return fullDiskAccessDenied ? L("format.sentences", base, L("arc.unreadableSystem.fdaHint")) : base
+                switch accessHint {
+                case .none: return base
+                case .fullDiskAccess: return L("format.sentences", base, L("arc.unreadableSystem.fdaHint"))
+                case .sandbox: return L("format.sentences", base, L("arc.unreadableSystem.sandboxHint"))
+                }
             }
         }
     }

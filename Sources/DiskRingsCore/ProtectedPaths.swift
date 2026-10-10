@@ -57,7 +57,7 @@ public struct ProtectedPaths: Sendable, Equatable {
     private let normApp: String?
     private let normVolumes: Set<String>
 
-    public init(home: String = NSHomeDirectory(), appBundlePath: String? = ProtectedPaths.runningAppBundlePath(),
+    public init(home: String = AppEnvironment.current.homeDirectory, appBundlePath: String? = ProtectedPaths.runningAppBundlePath(),
                 volumeRoots: [String] = ProtectedPaths.mountedVolumeRoots()) {
         self.home = home
         self.appBundlePath = appBundlePath
@@ -66,6 +66,13 @@ public struct ProtectedPaths: Sendable, Equatable {
         normHomeLibrary = Self.normalize(home + "/Library")
         normApp = appBundlePath.map(Self.normalize)
         normVolumes = Set(volumeRoots.map(Self.normalize))
+    }
+
+    /// Schutzliste mit dem echten Home-Ordner der Umgebung (in der Sandbox
+    /// nicht der Container, siehe `AppEnvironment.homeDirectory`).
+    public init(environment: AppEnvironment, appBundlePath: String? = ProtectedPaths.runningAppBundlePath(),
+                volumeRoots: [String] = ProtectedPaths.mountedVolumeRoots()) {
+        self.init(home: environment.homeDirectory, appBundlePath: appBundlePath, volumeRoots: volumeRoots)
     }
 
     /// Dieselbe Schutzliste mit aktuellen Volume-Wurzeln (beim Start

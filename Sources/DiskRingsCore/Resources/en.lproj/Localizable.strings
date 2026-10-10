@@ -438,3 +438,17 @@
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Local APFS and Time Machine snapshots can’t be measured separately; depending on their state they count as Purgeable or Unreadable System Data.";
 "center.usedOfTotal" = "%1$@ used\nof %2$@";
+"trash.error.sandboxDenied" = "macOS didn’t allow DiskRings to move this item. DiskRings can only change items in folders you granted access to.";
+"trash.undo.sandboxDenied" = "macOS didn’t allow DiskRings to put the item back. Open the Trash in the Finder and choose “Put Back”.";
+"trash.undo.noAccess" = "DiskRings no longer has access to the original folder. Grant access to it again, or open the Trash in the Finder and choose “Put Back”.";
+"sandbox.panel.prompt" = "Grant Access";
+"sandbox.panel.message" = "To scan “%@”, DiskRings needs your permission. Click “Grant Access” to let DiskRings read this folder. It remembers your choice.";
+"sandbox.panel.messageGeneric" = "Choose a folder or volume that DiskRings may read. It remembers your choice.";
+"sandbox.grantMore" = "Grant Access to More Folders…";
+"sandbox.banner.title" = "Access to Folders";
+"sandbox.banner.message" = "DiskRings only reads folders and volumes you choose. When you click a volume, DiskRings asks for access once and remembers it.";
+"settings.section.access" = "Folder Access";
+"settings.access.empty" = "No folders granted yet.";
+"settings.access.remove" = "Remove Access";
+"settings.access.footer" = "DiskRings only reads these folders and everything inside them. Removing access doesn’t change any files.";
+"arc.unreadableSystem.sandboxHint" = "This also includes folders DiskRings has no access to.";

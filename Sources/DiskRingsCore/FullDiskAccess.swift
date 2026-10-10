@@ -39,4 +39,13 @@ public enum FullDiskAccess {
     }
 
     public static var isGranted: Bool { status() == .granted }
+
+    /// Status für die Oberfläche: In der Sandbox (App-Store-Variante) gibt es
+    /// keinen Festplattenvollzugriff, der helfen würde; dort zählen nur die
+    /// freigegebenen Ordner. Dann immer `unknown`, damit weder Banner noch
+    /// Hinweis vor dem Scan noch der Weg in die Systemeinstellung erscheinen.
+    public static func status(in environment: AppEnvironment, probing paths: [String]? = nil) -> Status {
+        if environment.isSandboxed { return .unknown }
+        return status(probing: paths ?? probePaths(home: environment.homeDirectory))
+    }
 }

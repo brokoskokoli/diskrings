@@ -438,3 +438,17 @@
 "format.sentences" = "%1$@%2$@";
 "arc.snapshots.note" = "ローカルのAPFSおよびTime Machineスナップショットは個別に測定できません。状態に応じて「パージ可能」または「読み取れないシステムデータ」に含まれます。";
 "center.usedOfTotal" = "%1$@使用\n（全%2$@）";
+"trash.error.sandboxDenied" = "macOSによりDiskRingsはこの項目を移動できませんでした。DiskRingsが変更できるのは、アクセスを許可したフォルダ内の項目だけです。";
+"trash.undo.sandboxDenied" = "macOSによりDiskRingsは項目を戻せませんでした。Finderでゴミ箱を開き、“戻す”を選択してください。";
+"trash.undo.noAccess" = "DiskRingsは元のフォルダにアクセスできなくなりました。もう一度アクセスを許可するか、Finderでゴミ箱を開いて“戻す”を選択してください。";
+"sandbox.panel.prompt" = "アクセスを許可";
+"sandbox.panel.message" = "“%@”をスキャンするには、許可が必要です。“アクセスを許可”をクリックすると、DiskRingsがこのフォルダを読み取れるようになります。選択内容は記憶されます。";
+"sandbox.panel.messageGeneric" = "DiskRingsが読み取ってよいフォルダまたはボリュームを選択してください。選択内容は記憶されます。";
+"sandbox.grantMore" = "ほかのフォルダへのアクセスを許可…";
+"sandbox.banner.title" = "フォルダへのアクセス";
+"sandbox.banner.message" = "DiskRingsは選択したフォルダとボリュームだけを読み取ります。ボリュームをクリックすると、DiskRingsは一度だけアクセスを求め、それを記憶します。";
+"settings.section.access" = "フォルダへのアクセス";
+"settings.access.empty" = "アクセスを許可したフォルダはまだありません。";
+"settings.access.remove" = "アクセスを削除";
+"settings.access.footer" = "DiskRingsはこれらのフォルダとその中身だけを読み取ります。アクセスを削除してもファイルは変更されません。";
+"arc.unreadableSystem.sandboxHint" = "DiskRingsがアクセスできないフォルダもここに含まれます。";

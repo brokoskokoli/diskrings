@@ -14,6 +14,8 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 
 `scripts/check.sh` baut, führt alle Tests aus und danach die Performance-Tests im Release-Build. Die Oberfläche wird visuell über `swift run DiskRings --render-snapshots <ordner>` geprüft (PNGs hell und dunkel, Optionen `--scan <pfad>`, `--compare-demo`, `--language <code>`).
 
+Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, `build/DiskRings.app`) und `scripts/make-app.sh --appstore` (App Sandbox mit `Resources/DiskRings-AppStore.entitlements`, `build/appstore/DiskRings.app` und `build/DiskRings-<version>.pkg`). Die App erkennt die Sandbox zur Laufzeit (`AppEnvironment`), siehe SPEC 11 und `docs/APPSTORE.md`.
+
 ## Modulkarte
 
 ### Core: Scan
@@ -28,7 +30,11 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `VolumeInfo.swift`: Kennzahlen eingehängter Volumes, „Nicht zugeordnet“ (belegt − Scan-Summe).
 - `ContainerVolumes.swift`: `ContainerVolume` (Name, Gerät, Rollen, belegt, Anzeigename), `ContainerVolumes` (eingehängte APFS-Volumes per `getmntinfo`/`getattrlist`, Container aus dem Gerätenamen, `others(…)` ohne die vom Scan abgedeckten Volumes), `APFSVolumeListing` und `DiskutilAPFSListing` (nicht eingehängte Volumes über `diskutil apfs list -plist`, Zeitlimit, nicht in der Sandbox).
 - `VolumeBreakdown.swift`: `VolumeBreakdown` (rein: Ihre Daten, Systemdaten mit Teilen, löschbar, frei; Summe = altes „Nicht zugeordnet“), `RootSegments` (Segmente der Volume-Wurzel für das Layout).
-- `FullDiskAccess.swift`: Erkennung des Festplattenvollzugriffs, Hinweis vor dem Scan.
+- `FullDiskAccess.swift`: Erkennung des Festplattenvollzugriffs, Hinweis vor dem Scan; `status(in:)` liefert in der Sandbox immer `unknown`.
+
+### Core: App-Store-Variante (Sandbox, SPEC 11)
+- `AppEnvironment.swift`: `isSandboxed` (über `APP_SANDBOX_CONTAINER_ID`, übergebbar), `homeDirectory` (in der Sandbox der echte Home-Ordner statt des Containers).
+- `FolderAccess.swift`: `FolderAccessStore` (Ordnerfreigaben: laden mit Erneuern/Verwerfen, `grant`, `covers`/`grantedAncestor`, `revoke`, gezählte Leases `beginAccess`/`endAccess`), Protokolle `SecurityScopedBookmarks` (echt: `SystemBookmarks`) und `GrantPersistence` (`UserDefaultsGrantPersistence`, `InMemoryGrantPersistence` für Vorschaubilder).
 - `MappedBuffer.swift`: wachsender `mmap`-Puffer für Zwischenstände (gibt Speicher sofort zurück).
 - `MemDebug.swift`: Speicher- und Snapshot-Messausgaben über `DISKRINGS_DEBUG_MEM` / `DISKRINGS_DEBUG_SNAPSHOT`.
 
@@ -59,7 +65,7 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 ### Core: Aktionen, Papierkorb, Schutz
 - `NodeAction.swift`: Einträge des Kontextmenüs, `ActionShortcut`, `ActionContext`, `availability` (eine Prüfung für Menü, Hauptmenü und Kürzel).
 - `NodeTargets.swift`: `NodeTargetSnapshot`/`CompareTargetSnapshot`: Ziele über Pfad und Art festhalten und vor dem Ausführen neu auflösen.
-- `TrashService.swift`: `FileTrashing` (Protokoll, `FileManager` erfüllt es), `FileIdentity`, `TrashPlan`/`TrashPlanError`, `TrashConfirmation`, `TrashService` (`trash`, `restore`), Ergebnis-Typen.
+- `TrashService.swift`: `FileTrashing` (Protokoll, `FileManager` erfüllt es), `FileIdentity`, `TrashPlan`/`TrashPlanError`, `TrashConfirmation`, `TrashService` (`trash`, `restore`; in der Sandbox eigene Meldungen für Rechtefehler und `accessCheck` für ⌘Z), Ergebnis-Typen.
 - `ProtectedPaths.swift`: Schutzliste, Normalisierung, Volume-Wurzeln, laufende App.
 - `WindowLifecycle.swift`: Entscheidungen beim Schließen von Fenstern und beim Dock-Klick; Syntax von `--selftest-close`.
 
@@ -83,7 +89,7 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 
 ### App (`Sources/DiskRings`)
 - `App/DiskRingsApp.swift`: Einstieg (`Entry`: `--render-snapshots`, `--compare-demo`, `--language`; sonst normaler Start, `--scan <pfad>` scannt sofort), Szenen, `RootView`, Menübefehle `AppCommands`.
-- `App/AppState.swift`: zentraler `@Observable`-Zustand auf dem MainActor: Scan, Baum, Layout, Fokus, Auswahl, Papierkorb/Undo, Teil-Rescans, Suche, Toasts.
+- `App/AppState.swift`: zentraler `@Observable`-Zustand auf dem MainActor: Scan, Baum, Layout, Fokus, Auswahl, Papierkorb/Undo, Teil-Rescans, Suche, Toasts; in der Sandbox Ordnerfreigaben (`ensureAccess`, `askForAccess`, `grantAccess`, Lease auf die Scan-Wurzel).
 - `App/AppDelegate.swift`: Beenden mit dem letzten Fenster, Dock-Klick, Abbruch beim Schließen, Selbsttest `--selftest-close`.
 - `App/FileActions.swift`: AppKit-Seite der Aktionen (Finder, Öffnen, Pfad kopieren), `QuickLookController`, `KeyboardMonitor` (Leertaste).
 - `App/Preferences.swift`: Einstellungen in den UserDefaults.
@@ -104,8 +110,8 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `Snapshots/SnapshotLibrary.swift`: Snapshot-Einstellungen, Liste, Speichern/Umbenennen/Löschen im Hintergrund.
 - `Snapshots/SnapshotsWindow.swift`: Fenster „Snapshots“, Namensdialog, Menübefehle.
 - `Snapshots/SnapshotRenderer.swift`: `--render-snapshots` (Szenen als PNG).
-- `Start/StartView.swift`: Startbildschirm (Volumes, Ordnerwahl) und Scan-Ansicht mit Stillstands-Hinweis.
-- `Settings/SettingsView.swift`, `Settings/LanguageSection.swift`: Einstellungen, Sprachwahl, Neustart.
+- `Start/StartView.swift`: Startbildschirm (Volumes, Ordnerwahl, Hinweis auf Festplattenvollzugriff bzw. in der Sandbox `SandboxAccessBanner`) und Scan-Ansicht mit Stillstands-Hinweis.
+- `Settings/SettingsView.swift`, `Settings/LanguageSection.swift`: Einstellungen, Sprachwahl, Neustart; `FolderAccessSection` (nur Sandbox).
 - `Support/Support.swift`: Farbumrechnung, Texte zu Arcs, Volumes, `VolumeUsageBar`/`VolumeUsageLegend` (gestapelter Belegungsbalken auf Startbildschirm und Statusleiste), `ViewState` (Ersatz für `@State`, siehe DECISIONS).
 
 ### CLI (`Sources/diskrings-cli/main.swift`)
@@ -136,6 +142,10 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 4. `AppState` meldet `noteEdit` für jeden Pfad, entfernt die Knoten (`removingNodes(atPaths:)` → `applyEdit`) und liest einen Papierkorb im Baum still neu ein.
 5. ⌘Z: `TrashService.restore` legt nur dasselbe Objekt (Identität) an einen unveränderten, nicht geschützten Ort zurück, überschreibt nie; danach Teil-Rescan des Elternordners.
 
+### Ordnerfreigaben (nur Sandbox)
+1. `AppState.init` lädt die Freigaben (`FolderAccessStore.load`). `requestScan`/`startScan` rufen `ensureAccess`: gedeckter Pfad → weiter; sonst Öffnen-Dialog auf dem Pfad (`askForAccess`), die gewählte URL wird über `grantAccess` (`SystemBookmarks.adopt` + `grant`) gespeichert. Drag & Drop und „Ordner auswählen …“ gehen ebenfalls über `grantAccess`.
+2. `startScan` holt einen Lease auf die Freigabe der neuen Wurzel, bevor der alte endet (`rootLease`); freigegeben wird er bei Abbruch, Fehler und `backToStart`. Alle Dateizugriffe auf den Baum (Teil-Rescan, Papierkorb, ⌘Z, Finder, Quick Look) laufen unter diesem Lease.
+
 ### Snapshots und Vergleich
 - Speichern: `SnapshotMetadata.current(for: ScanSummary, tree:)` + `SnapshotStore.save` (Mindestgröße, atomar über temporäre Datei), danach `prune`.
 - Vergleich: `CompareSession` holt ein Token aus `compareRunGate`, berechnet `SnapshotDiff` und `CompareModel` in `Task.detached` und übernimmt das Ergebnis nur, wenn das Token noch aktuell ist. „Snapshot ↔ aktueller Scan“ nutzt `AppState.tree` und wird nach jeder Änderung neu berechnet (250-ms-Bündelung, Zustand über `CompareEntryMapping`).
@@ -154,3 +164,4 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 9. **Papierkorb-Regeln** (`TrashPlan.make`, zusätzlich in `TrashService`): nie die Scan-Wurzel, nie tote Knoten, nie geschützte Pfade, nie Einhängepunkte oder Ordner, die einen enthalten; eine Verletzung sperrt die **ganze** Aktion. Größe gilt als **unsicher** (Dialog immer, kein „Nicht mehr fragen“), wenn im Teilbaum Einhängepunkte, Dataless- oder nicht lesbare Knoten liegen, der Baum unvollständig ist, ein Teil-Rescan darin oder darüber läuft oder die Art auf der Platte nicht mehr passt. „Nicht mehr fragen“ nur unter 1 GB (Maximum aus belegt und logisch). Tests für Papierkorb und Löschen laufen nur in temporären Verzeichnissen.
 10. **Lokalisierung:** Alle sichtbaren Texte über `L("stabile.id", args…)`, Views bekommen fertige Strings (`Text(L(…))`). Jeder neue Schlüssel steht in **allen 14 Sprachen** (`Resources/*.lproj/Localizable.strings`, Pluralformen in `.stringsdict`) mit passenden Platzhaltern; keine deutschen Literale im Code (Diagnosen wie `precondition` ausgenommen). `LocalizationTests` prüft Vollständigkeit, verwaiste Schlüssel, Platzhalter und Pluralkategorien.
 11. **Testprotokoll:** Tests verwenden nie die echte Snapshot-Ablage (`~/Library/Application Support/DiskRings`) und nie echte Nutzerdaten; Fixtures entstehen in temporären Ordnern (`Fixture`).
+12. **Sandbox:** Kein Dateizugriff außerhalb von `ensureAccess`/Lease einbauen; neue Hinweise auf den Festplattenvollzugriff hinter `!state.isSandboxed` bzw. `FullDiskAccess.status(in:)`. Pfade des Home-Ordners immer über `AppEnvironment.homeDirectory`, nie `NSHomeDirectory()` (in der Sandbox der Container).

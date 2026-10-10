@@ -5,6 +5,8 @@ import SwiftUI
 /// Einstellungen (SPEC 3.7), soweit sie in M2/M3 schon wirken.
 struct SettingsView: View {
     @Bindable var prefs: Preferences
+    /// Für die Ordnerfreigaben der App-Store-Variante; `nil` in Vorschaubildern ohne Zustand.
+    var state: AppState?
     @ViewState private var selectedExclusion: String?
 
     var body: some View {
@@ -76,6 +78,9 @@ struct SettingsView: View {
                 Text(L("settings.scan.footer")).font(.footnote).foregroundStyle(.secondary)
             }
             SnapshotSettingsSection(prefs: prefs.snapshots)
+            if let state, state.isSandboxed {
+                FolderAccessSection(state: state)
+            }
         }
         .formStyle(.grouped)
         .frame(width: 480)
@@ -117,5 +122,37 @@ struct FileTypeLegend: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(L("settings.legend.accessibility", FileTypeCategory.allCases.map(\.label).joined(separator: L("list.separator"))))
+    }
+}
+
+/// Ordnerfreigaben der App-Store-Variante (SPEC 11.2): Liste, entfernen, hinzufügen.
+struct FolderAccessSection: View {
+    let state: AppState
+
+    var body: some View {
+        Section {
+            if state.grantedFolders.isEmpty {
+                Text(L("settings.access.empty")).foregroundStyle(.secondary)
+            }
+            ForEach(state.grantedFolders, id: \.path) { grant in
+                HStack {
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: grant.path))
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                        .accessibilityHidden(true)
+                    Text(grant.path).lineLimit(1).truncationMode(.middle)
+                    Spacer()
+                    Button { state.revokeAccess(grant.path) } label: { Image(systemName: "minus.circle") }
+                        .buttonStyle(.borderless)
+                        .help(L("settings.access.remove"))
+                        .accessibilityLabel(L("settings.access.remove"))
+                }
+            }
+            Button(L("sandbox.grantMore")) { state.grantMoreFolders() }
+        } header: {
+            Text(L("settings.section.access"))
+        } footer: {
+            Text(L("settings.access.footer")).font(.footnote).foregroundStyle(.secondary)
+        }
     }
 }

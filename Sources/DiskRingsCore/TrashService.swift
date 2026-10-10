@@ -21,6 +21,10 @@ public protocol FileTrashing {
     /// Ist hier ein anderes Volume eingehängt (Ordner auf einem anderen
     /// Gerät als sein Elternordner)?
     func isMountPoint(atPath path: String) -> Bool
+    /// Verweigert das System den Zugriff auf den Pfad (`EPERM`/`EACCES`,
+    /// z. B. die Sandbox außerhalb freigegebener Ordner)? Ein fehlender Pfad
+    /// zählt nicht.
+    func isAccessDenied(atPath path: String) -> Bool
 }
 
 extension FileTrashing {
@@ -30,6 +34,12 @@ extension FileTrashing {
         guard let r = realpath(path, nil) else { return nil }
         defer { free(r) }
         return String(cString: r)
+    }
+
+    public func isAccessDenied(atPath path: String) -> Bool {
+        var st = stat()
+        guard lstat(path, &st) != 0 else { return false }
+        return errno == EPERM || errno == EACCES
     }
 
     /// Über `statfs`: Der Einhängeort des Volumes ist genau dieser Ordner.
@@ -372,10 +382,19 @@ public struct RestoreOutcome: Sendable, Equatable {
 public struct TrashService {
     public let fileManager: any FileTrashing
     public let protection: ProtectedPaths
+    /// App-Store-Variante: Rechtefehler bekommen eine Meldung, die die
+    /// Sandbox erklärt (SPEC 11.5).
+    public let sandboxed: Bool
+    /// Nur in der Sandbox: Ist der Pfad durch eine Ordnerfreigabe gedeckt?
+    /// ⌘Z legt nur in einen freigegebenen Elternordner zurück.
+    public let accessCheck: ((String) -> Bool)?
 
-    public init(fileManager: any FileTrashing = FileManager.default, protection: ProtectedPaths = ProtectedPaths()) {
+    public init(fileManager: any FileTrashing = FileManager.default, protection: ProtectedPaths = ProtectedPaths(),
+                sandboxed: Bool = false, accessCheck: ((String) -> Bool)? = nil) {
         self.fileManager = fileManager
         self.protection = protection
+        self.sandboxed = sandboxed
+        self.accessCheck = accessCheck
     }
 
     public func trash(_ plan: TrashPlan) -> TrashOutcome {
@@ -406,7 +425,9 @@ public struct TrashService {
                                                allocatedSize: item.allocatedSize, identity: identity,
                                                resolvedParent: resolvedParent, parentIdentity: parentIdentity))
             } catch {
-                out.failures.append(TrashFailure(path: item.path, message: Self.describe(error)))
+                let message = sandboxed && Self.isPermissionError(error) ? L("trash.error.sandboxDenied")
+                    : Self.describe(error)
+                out.failures.append(TrashFailure(path: item.path, message: message))
             }
         }
         return out
@@ -458,7 +479,11 @@ public struct TrashService {
                 continue
             }
             guard fileManager.itemExists(atPath: src.path) else {
-                out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.notInTrash")))
+                // In der Sandbox kann der Papierkorb unlesbar sein; dann
+                // liegt das Element vermutlich noch dort.
+                let denied = sandboxed && fileManager.isAccessDenied(atPath: src.path)
+                out.failures.append(TrashFailure(path: r.originalPath,
+                                                 message: denied ? L("trash.undo.sandboxDenied") : L("trash.undo.notInTrash")))
                 continue
             }
             guard let expected = r.identity else {
@@ -478,6 +503,10 @@ public struct TrashService {
                 continue
             }
             let parent = (r.originalPath as NSString).deletingLastPathComponent
+            if let accessCheck, !accessCheck(parent) {
+                out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.noAccess")))
+                continue
+            }
             guard fileManager.itemExists(atPath: parent) else {
                 out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.parentMissing")))
                 continue
@@ -490,7 +519,9 @@ public struct TrashService {
                 try fileManager.moveItem(at: src, to: URL(fileURLWithPath: r.originalPath))
                 out.restored.append(r.originalPath)
             } catch {
-                out.failures.append(TrashFailure(path: r.originalPath, message: Self.describe(error)))
+                let message = sandboxed && Self.isPermissionError(error) ? L("trash.undo.sandboxDenied")
+                    : Self.describe(error)
+                out.failures.append(TrashFailure(path: r.originalPath, message: message))
             }
         }
         return out
@@ -520,6 +551,19 @@ public struct TrashService {
             return L("trash.error.protected", reason.message)
         }
         return nil
+    }
+
+    /// Fehlende Rechte (Cocoa-Rechtefehler oder `EPERM`/`EACCES`, auch als
+    /// darunterliegender Fehler), wie sie die Sandbox außerhalb freigegebener
+    /// Ordner meldet.
+    static func isPermissionError(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == NSCocoaErrorDomain, ns.code == NSFileReadNoPermissionError || ns.code == NSFileWriteNoPermissionError {
+            return true
+        }
+        if ns.domain == NSPOSIXErrorDomain, ns.code == Int(EPERM) || ns.code == Int(EACCES) { return true }
+        if let u = ns.userInfo[NSUnderlyingErrorKey] as? NSError { return isPermissionError(u) }
+        return false
     }
 
     static func describe(_ error: Error) -> String {

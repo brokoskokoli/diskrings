@@ -54,3 +54,14 @@ jobs:
 
       - name: Release-Build (universal)
         run: swift build -c release --product DiskRings --arch arm64 --arch x86_64
+
+      # Mac-App-Store-Variante (Sandbox), damit sie nicht unbemerkt bricht. Ohne
+      # Zertifikate auf dem Runner signiert make-app.sh ad hoc mit den
+      # Sandbox-Entitlements und baut ein unsigniertes .pkg (siehe docs/APPSTORE.md).
+      - name: App-Store-Variante (ad hoc)
+        run: |
+          scripts/make-app.sh --appstore
+          ENTITLEMENTS=$(codesign -d --entitlements - build/appstore/DiskRings.app 2>/dev/null)
+          grep -q "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS"
+          plutil -extract ITSAppUsesNonExemptEncryption raw build/appstore/DiskRings.app/Contents/Info.plist | grep -qx false
+          test -f "build/DiskRings-$(tr -d '[:space:]' < VERSION).pkg"

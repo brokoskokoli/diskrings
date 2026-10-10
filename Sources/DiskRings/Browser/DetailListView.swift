@@ -186,7 +186,8 @@ struct DetailListView: View {
     private func segmentRow(_ layout: SunburstLayout, _ arc: SunburstArc, level: Int, total: Double,
                             palette: Palette) -> DetailRow {
         DetailRow(kind: .segment(arc.kind, part: Int(arc.part), title: layout.volumeSegmentTitle(arc) ?? "",
-                                 help: layout.volumeSegmentDetail(arc, fullDiskAccessDenied: state.fullDiskAccess == .denied) ?? ""),
+                                 help: volumeSegmentDetail(layout, arc, fullDiskAccess: state.fullDiskAccess,
+                                                           sandboxed: state.isSandboxed)),
                   node: -1, level: level, size: arc.size, share: Double(arc.size) / total,
                   swatch: Color(palette.volumeSegmentFill(arc)))
     }

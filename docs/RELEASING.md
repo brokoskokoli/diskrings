@@ -11,7 +11,7 @@ Skripte nutzen:
 
 Beteiligte Skripte:
 
-- `scripts/make-app.sh`: baut `build/DiskRings.app` (universal) und signiert sie. `DISKRINGS_IDENTITY` wählt die Identität, `DISKRINGS_KEYCHAIN` beschränkt die Suche auf eine Keychain (dann ohne Rückfall auf ad hoc).
+- `scripts/make-app.sh`: baut `build/DiskRings.app` (universal) und signiert sie. `DISKRINGS_IDENTITY` wählt die Identität, `DISKRINGS_KEYCHAIN` beschränkt die Suche auf eine Keychain (dann ohne Rückfall auf ad hoc). Mit `--appstore` die Store-Variante (siehe „Mac App Store“ unten).
 - `scripts/notarize.sh`: `check` prüft die Zugangsdaten, `submit <datei>` reicht ein und wartet. Nutzt den API Key, wenn `NOTARY_API_KEY_ID` gesetzt ist, sonst das Profil `diskrings`.
 - `scripts/release.sh`: Tests, `make-app.sh`, Notarisierung von App und DMG, `stapler`, `spctl`, `SHA256SUMS`.
 - `scripts/ci-release.sh`: Schritte nur für den Workflow (Vorprüfung, temporäre Keychain).
@@ -171,6 +171,29 @@ scripts/release.sh
 ```
 
 Nicht beide Wege für dieselbe Version mischen: Wenn der Tag-Workflow schon ein Release angelegt hat, nicht zusätzlich `release.sh --publish` aufrufen.
+
+## Mac App Store
+
+Die Store-Variante (App Sandbox, SPEC 11) entsteht aus demselben Code, wird aber nicht notarisiert, sondern als `.pkg` bei App Store Connect hochgeladen. Einmalige Einrichtung (Zertifikate „Apple Distribution“ und „Mac Installer Distribution“, App-ID, Provisioning Profile, App in App Store Connect): [APPSTORE.md](APPSTORE.md).
+
+```sh
+# 1. Prüfen
+scripts/check.sh
+
+# 2. Bauen und signieren: build/appstore/DiskRings.app + build/DiskRings-<version>.pkg
+DISKRINGS_PROVISIONING_PROFILE="$HOME/Library/MobileDevice/Provisioning Profiles/DiskRings_App_Store.provisionprofile" \
+  scripts/make-app.sh --appstore
+
+# 3. Kontrollieren
+codesign -d --entitlements - build/appstore/DiskRings.app
+pkgutil --check-signature build/DiskRings-$(cat VERSION).pkg
+
+# 4. Hochladen: Transporter (App) oder
+/Applications/Transporter.app/Contents/itms/bin/iTMSTransporter -m upload \
+  -assetFile build/DiskRings-$(cat VERSION).pkg -apiKey <KEY_ID> -apiIssuer <ISSUER_ID> -v informational
+```
+
+Variablen von `make-app.sh --appstore`: `DISKRINGS_APPSTORE_IDENTITY` (Standard „Apple Distribution: Stefan Richter (AGRWTKQZ8C)“), `DISKRINGS_INSTALLER_IDENTITY` (Standard „3rd Party Mac Developer Installer: …“, ersatzweise „Mac Installer Distribution: …“), `DISKRINGS_PROVISIONING_PROFILE`, `DISKRINGS_KEYCHAIN` wie oben. Ohne Distributions-Identität signiert das Skript ad hoc mit den Sandbox-Entitlements und baut ein unsigniertes `.pkg` (Warnung; so baut auch die CI). Die Build-Nummer (Anzahl der Commits) muss höher sein als beim letzten Upload. Die Developer-ID-App in `build/DiskRings.app` bleibt unberührt.
 
 ## Fehlersuche
 

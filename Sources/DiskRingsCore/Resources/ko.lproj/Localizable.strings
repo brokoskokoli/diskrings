@@ -438,3 +438,17 @@
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "로컬 APFS 및 Time Machine 스냅샷은 따로 측정할 수 없습니다. 상태에 따라 ‘제거 가능’ 또는 ‘읽을 수 없는 시스템 데이터’에 포함됩니다.";
 "center.usedOfTotal" = "%1$@ 사용됨\n(전체 %2$@)";
+"trash.error.sandboxDenied" = "macOS가 DiskRings의 이 항목 이동을 허용하지 않았습니다. DiskRings는 접근을 허용한 폴더의 항목만 변경할 수 있습니다.";
+"trash.undo.sandboxDenied" = "macOS가 DiskRings의 항목 되돌려 놓기를 허용하지 않았습니다. Finder에서 휴지통을 열고 ‘되돌려 놓기’를 선택하십시오.";
+"trash.undo.noAccess" = "DiskRings가 더 이상 원래 폴더에 접근할 수 없습니다. 다시 접근을 허용하거나 Finder에서 휴지통을 열고 ‘되돌려 놓기’를 선택하십시오.";
+"sandbox.panel.prompt" = "접근 허용";
+"sandbox.panel.message" = "‘%@’을(를) 스캔하려면 DiskRings에 사용자의 허락이 필요합니다. ‘접근 허용’을 클릭하면 DiskRings가 이 폴더를 읽을 수 있습니다. 선택 사항은 기억됩니다.";
+"sandbox.panel.messageGeneric" = "DiskRings가 읽을 수 있는 폴더나 볼륨을 선택하십시오. 선택 사항은 기억됩니다.";
+"sandbox.grantMore" = "더 많은 폴더에 접근 허용…";
+"sandbox.banner.title" = "폴더 접근";
+"sandbox.banner.message" = "DiskRings는 사용자가 선택한 폴더와 볼륨만 읽습니다. 볼륨을 클릭하면 DiskRings가 한 번 접근을 요청하고 이를 기억합니다.";
+"settings.section.access" = "폴더 접근";
+"settings.access.empty" = "아직 접근을 허용한 폴더가 없습니다.";
+"settings.access.remove" = "접근 제거";
+"settings.access.footer" = "DiskRings는 이 폴더와 그 안의 모든 항목만 읽습니다. 접근을 제거해도 파일은 변경되지 않습니다.";
+"arc.unreadableSystem.sandboxHint" = "DiskRings가 접근할 수 없는 폴더도 여기에 포함됩니다.";

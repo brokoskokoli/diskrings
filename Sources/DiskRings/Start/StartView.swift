@@ -3,7 +3,8 @@ import DiskRingsCore
 import SwiftUI
 
 /// Startbildschirm (SPEC 3.1): Volumes mit Belegungsbalken, „Ordner wählen…“,
-/// Drag & Drop und Hinweis auf den Festplattenvollzugriff.
+/// Drag & Drop und Hinweis auf den Festplattenvollzugriff (in der Sandbox
+/// stattdessen auf die Ordnerfreigaben).
 struct StartView: View {
     let state: AppState
 
@@ -22,7 +23,9 @@ struct StartView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                if state.fullDiskAccess == .denied {
+                if state.isSandboxed {
+                    SandboxAccessBanner(state: state)
+                } else if state.fullDiskAccess == .denied {
                     FullDiskAccessBanner(state: state)
                 }
                 if let err = state.scanError {
@@ -44,7 +47,8 @@ struct StartView: View {
                     }
                     .controlSize(.large)
                     .keyboardShortcut("o", modifiers: .command)
-                    Button { state.requestScan(NSHomeDirectory()) } label: {
+                    // Echter Home-Ordner (in der Sandbox nicht der Container).
+                    Button { state.requestScan(state.environment.homeDirectory) } label: {
                         Label(L("start.scanHome"), systemImage: "house")
                     }
                     .controlSize(.large)
@@ -85,6 +89,34 @@ struct FullDiskAccessBanner: View {
         .padding(14)
         .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.orange.opacity(0.35), lineWidth: 1))
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// Hinweis der App-Store-Variante: DiskRings liest nur freigegebene Ordner.
+struct SandboxAccessBanner: View {
+    let state: AppState
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "folder.badge.person.crop")
+                .font(.title2)
+                .foregroundStyle(Color.accentColor)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L("sandbox.banner.title")).font(.headline)
+                Text(L("sandbox.banner.message"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(L("sandbox.grantMore")) { state.grantMoreFolders() }
+                    .padding(.top, 4)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.accentColor.opacity(0.3), lineWidth: 1))
         .accessibilityElement(children: .contain)
     }
 }
@@ -255,9 +287,12 @@ struct StallHint: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Button(L("scan.stalled.fda")) { state.openFullDiskAccessSettings() }
-                .buttonStyle(.link)
-                .help(L("scan.stalled.fda.help"))
+            // In der Sandbox hilft der Festplattenvollzugriff nicht.
+            if !state.isSandboxed {
+                Button(L("scan.stalled.fda")) { state.openFullDiskAccessSettings() }
+                    .buttonStyle(.link)
+                    .help(L("scan.stalled.fda.help"))
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

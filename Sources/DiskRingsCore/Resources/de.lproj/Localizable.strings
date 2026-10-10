@@ -438,3 +438,17 @@
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Lokale APFS- und Time-Machine-Snapshots lassen sich nicht getrennt messen; je nach Zustand zählen sie zu „Löschbar“ oder zu „Nicht lesbare Systemdaten“.";
 "center.usedOfTotal" = "%1$@ belegt\nvon %2$@";
+"trash.error.sandboxDenied" = "macOS hat DiskRings nicht erlaubt, das Objekt zu bewegen. DiskRings kann nur Objekte in Ordnern ändern, für die du den Zugriff erlaubt hast.";
+"trash.undo.sandboxDenied" = "macOS hat DiskRings nicht erlaubt, das Objekt zurückzulegen. Öffne den Papierkorb im Finder und wähle „Zurücklegen“.";
+"trash.undo.noAccess" = "DiskRings hat keinen Zugriff mehr auf den ursprünglichen Ordner. Erlaube den Zugriff erneut, oder öffne den Papierkorb im Finder und wähle „Zurücklegen“.";
+"sandbox.panel.prompt" = "Zugriff erlauben";
+"sandbox.panel.message" = "Um „%@“ zu scannen, braucht DiskRings deine Erlaubnis. Klicke auf „Zugriff erlauben“, damit DiskRings diesen Ordner lesen darf. Die Wahl wird gespeichert.";
+"sandbox.panel.messageGeneric" = "Wähle einen Ordner oder ein Volume, das DiskRings lesen darf. Die Wahl wird gespeichert.";
+"sandbox.grantMore" = "Zugriff auf weitere Ordner erlauben …";
+"sandbox.banner.title" = "Zugriff auf Ordner";
+"sandbox.banner.message" = "DiskRings liest nur Ordner und Volumes, die du auswählst. Beim Klick auf ein Volume fragt DiskRings einmal nach dem Zugriff und merkt ihn sich.";
+"settings.section.access" = "Ordnerzugriff";
+"settings.access.empty" = "Noch keine Ordner freigegeben.";
+"settings.access.remove" = "Zugriff entfernen";
+"settings.access.footer" = "DiskRings liest nur diese Ordner und alles darin. Das Entfernen des Zugriffs ändert keine Dateien.";
+"arc.unreadableSystem.sandboxHint" = "Dazu gehören auch Ordner, auf die DiskRings keinen Zugriff hat.";

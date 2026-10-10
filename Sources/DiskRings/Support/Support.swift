@@ -79,10 +79,19 @@ func describe(_ arc: SunburstArc, tree: ScanTree, layout: SunburstLayout) -> Arc
         return ArcDescription(title: L("arc.remainder.title"), path: tree.path(of: arc.nodeIndex), size: arc.size,
                               share: share, detail: L("arc.remainder.detail"))
     case .system, .systemPart, .purgeable, .free:
-        let denied = FullDiskAccess.status() == .denied
+        let env = AppEnvironment.current
         return ArcDescription(title: layout.volumeSegmentTitle(arc) ?? "", path: nil, size: arc.size, share: share,
-                              detail: layout.volumeSegmentDetail(arc, fullDiskAccessDenied: denied) ?? "")
+                              detail: volumeSegmentDetail(layout, arc, fullDiskAccess: FullDiskAccess.status(in: env),
+                                                          sandboxed: env.isSandboxed))
     }
+}
+
+/// Erklärung eines Segments der Volume-Wurzel mit dem passenden Hinweis:
+/// ohne Festplattenvollzugriff bzw. in der Sandbox (Ordnerfreigaben).
+func volumeSegmentDetail(_ layout: SunburstLayout, _ arc: SunburstArc, fullDiskAccess: FullDiskAccess.Status,
+                         sandboxed: Bool) -> String {
+    if sandboxed, let part = layout.systemPart(of: arc) { return part.detail(accessHint: .sandbox) }
+    return layout.volumeSegmentDetail(arc, fullDiskAccessDenied: fullDiskAccess == .denied) ?? ""
 }
 
 extension VolumeBreakdown {

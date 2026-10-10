@@ -438,3 +438,17 @@
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Yerel APFS ve Time Machine anlık görüntüleri ayrı ölçülemez; durumlarına göre “Temizlenebilir” veya “Okunamayan Sistem Verileri” olarak sayılır.";
 "center.usedOfTotal" = "%1$@ kullanılıyor\n(toplam %2$@)";
+"trash.error.sandboxDenied" = "macOS, DiskRings’in bu öğeyi taşımasına izin vermedi. DiskRings yalnızca erişim izni verdiğiniz klasörlerdeki öğeleri değiştirebilir.";
+"trash.undo.sandboxDenied" = "macOS, DiskRings’in öğeyi geri koymasına izin vermedi. Finder’da Çöp Sepeti’ni açın ve “Geri Koy”u seçin.";
+"trash.undo.noAccess" = "DiskRings’in özgün klasöre artık erişimi yok. Erişim iznini yeniden verin veya Finder’da Çöp Sepeti’ni açıp “Geri Koy”u seçin.";
+"sandbox.panel.prompt" = "Erişim İzni Ver";
+"sandbox.panel.message" = "“%@” öğesini taramak için DiskRings’in izninize ihtiyacı var. DiskRings’in bu klasörü okuyabilmesi için “Erişim İzni Ver”i tıklayın. Seçiminiz hatırlanır.";
+"sandbox.panel.messageGeneric" = "DiskRings’in okuyabileceği bir klasör veya bölüm seçin. Seçiminiz hatırlanır.";
+"sandbox.grantMore" = "Başka Klasörlere Erişim İzni Ver…";
+"sandbox.banner.title" = "Klasörlere Erişim";
+"sandbox.banner.message" = "DiskRings yalnızca seçtiğiniz klasörleri ve bölümleri okur. Bir bölümü tıkladığınızda DiskRings bir kez erişim ister ve bunu hatırlar.";
+"settings.section.access" = "Klasör Erişimi";
+"settings.access.empty" = "Henüz erişim izni verilen klasör yok.";
+"settings.access.remove" = "Erişimi Kaldır";
+"settings.access.footer" = "DiskRings yalnızca bu klasörleri ve içindeki her şeyi okur. Erişimi kaldırmak hiçbir dosyayı değiştirmez.";
+"arc.unreadableSystem.sandboxHint" = "DiskRings’in erişimi olmayan klasörler de buna dahildir.";

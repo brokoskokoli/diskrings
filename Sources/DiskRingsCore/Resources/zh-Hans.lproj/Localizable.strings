@@ -438,3 +438,17 @@
 "format.sentences" = "%1$@%2$@";
 "arc.snapshots.note" = "本地 APFS 和时间机器快照无法单独测量；根据状态，它们计入“可清除”或“无法读取的系统数据”。";
 "center.usedOfTotal" = "已用 %1$@\n共 %2$@";
+"trash.error.sandboxDenied" = "macOS 未允许 DiskRings 移动此项目。DiskRings 只能更改你已授权访问的文件夹中的项目。";
+"trash.undo.sandboxDenied" = "macOS 未允许 DiskRings 放回此项目。请在访达中打开废纸篓，然后选择“放回原处”。";
+"trash.undo.noAccess" = "DiskRings 已无法访问原文件夹。请重新授权访问，或在访达中打开废纸篓并选择“放回原处”。";
+"sandbox.panel.prompt" = "授予访问权限";
+"sandbox.panel.message" = "要扫描“%@”，DiskRings 需要你的许可。点按“授予访问权限”，允许 DiskRings 读取此文件夹。你的选择会被记住。";
+"sandbox.panel.messageGeneric" = "选择 DiskRings 可以读取的文件夹或宗卷。你的选择会被记住。";
+"sandbox.grantMore" = "授予访问更多文件夹的权限…";
+"sandbox.banner.title" = "文件夹访问权限";
+"sandbox.banner.message" = "DiskRings 只读取你选择的文件夹和宗卷。点按宗卷时，DiskRings 会请求一次访问权限并记住它。";
+"settings.section.access" = "文件夹访问权限";
+"settings.access.empty" = "尚未授权任何文件夹。";
+"settings.access.remove" = "移除访问权限";
+"settings.access.footer" = "DiskRings 只读取这些文件夹及其中的全部内容。移除访问权限不会更改任何文件。";
+"arc.unreadableSystem.sandboxHint" = "其中也包括 DiskRings 无权访问的文件夹。";
