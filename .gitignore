@@ -5,3 +5,13 @@ build/
 dist/
 *.xcodeproj/xcuserdata/
 .claude/
+
+# Signier- und Zugangsdateien gehören nie ins Repo (Sicherheitsnetz)
+*.p12
+*.p8
+*.cer
+*.certSigningRequest
+*.provisionprofile
+*.mobileprovision
+*.keychain
+*.keychain-db
