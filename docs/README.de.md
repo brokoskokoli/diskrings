@@ -46,7 +46,7 @@ Im Wachstumsmodus ist die Segmentgröße der Zuwachs seit dem Snapshot; die List
 
 ### Vergleich: Delta-Färbung
 
-Die Delta-Färbung behält das normale Layout und färbt Wachstum rot, Rückgang grün. Neue Elemente tragen einen Punkt, entfernte erscheinen gestrichelt.
+Die Delta-Färbung behält das normale Layout und färbt Wachstum orange, Rückgang blau (auch bei Rot-Grün-Schwäche unterscheidbar; mit „Ohne Farbe unterscheiden“ ist Geschrumpftes zusätzlich schraffiert und mit ± markiert). Neue Elemente tragen einen Punkt, entfernte erscheinen gestrichelt.
 
 <img src="images/compare-delta.png" alt="Delta-Färbung im Dunkelmodus" width="900">
 
