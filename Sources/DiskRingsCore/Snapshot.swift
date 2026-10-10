@@ -298,6 +298,16 @@ public enum SnapshotFile {
         guard rawLength < 1 << 36, compressedLength < 1 << 36 else { throw SnapshotError.corrupted("length fields") }
         let compressed = try r.bytes(Int(compressedLength))
         guard fnv1a(compressed) == checksum else { throw SnapshotError.corrupted("checksum") }
+        // Längenangaben prüfen, bevor Speicher für die Nutzdaten angelegt
+        // wird: Verhältnis zur komprimierten Länge und Kopf der Nutzdaten.
+        guard plausibleRawLength(rawLength, compressed: compressedLength) else {
+            throw SnapshotError.corrupted("length fields (ratio)")
+        }
+        let prefix = try decompressPrefix(compressed, count: 12)
+        var pr = Reader(prefix)
+        guard plausiblePayload(count: UInt64(try pr.u32()), nameLength: UInt64(try pr.u32()), rawLength: rawLength) else {
+            throw SnapshotError.corrupted("length fields (payload)")
+        }
         let payload = try decompress(compressed, expectedLength: Int(rawLength))
         let tree = try decodePayload(payload, rootPath: metadata.rootPath)
         return Snapshot(metadata: metadata, tree: tree)
@@ -323,6 +333,47 @@ public enum SnapshotFile {
         } catch {
             throw SnapshotError.corrupted("header: \(error)")
         }
+    }
+
+    /// Höchstes Verhältnis unkomprimiert/komprimiert, das beim Laden
+    /// akzeptiert wird. Echte Snapshots liegen bei etwa 2–5 (gemessen, siehe
+    /// docs/DECISIONS.md); auch ein Baum aus lauter gleich großen Dateien mit
+    /// fortlaufenden Namen bleibt weit darunter. Die Grenze verhindert, dass
+    /// eine präparierte Datei mit wenigen Bytes Gigabytes anfordert.
+    static let maximumCompressionRatio: UInt64 = 256
+    /// Bis zu dieser Länge ist jedes Verhältnis erlaubt (winzige Bäume).
+    static let ratioFreeRawLength: UInt64 = 1 << 20
+    /// Namen sind höchstens 255 UTF-16-Zeichen bzw. 255 Byte (`NAME_MAX`)
+    /// lang, in UTF-8 also unter 1024 Byte; im Schnitt pro Knoten kann der
+    /// Namenspuffer nicht länger sein.
+    static let maximumNameBytesPerNode: UInt64 = 1024
+
+    /// Passt die angegebene unkomprimierte Länge zur komprimierten?
+    static func plausibleRawLength(_ raw: UInt64, compressed: UInt64) -> Bool {
+        guard compressed > 0 else { return raw == 0 }
+        if raw <= ratioFreeRawLength { return true }
+        return raw / compressed <= maximumCompressionRatio
+    }
+
+    /// Passen Knotenzahl und Namenslänge aus dem Kopf der Nutzdaten zur
+    /// angegebenen unkomprimierten Länge?
+    static func plausiblePayload(count: UInt64, nameLength: UInt64, rawLength: UInt64) -> Bool {
+        guard count > 0, count < UInt64(Int32.max), nameLength <= count * maximumNameBytesPerNode else { return false }
+        return rawLength == 12 + count * UInt64(nodeRecordSize) + nameLength
+    }
+
+    /// Prüft die Namen aller Knoten außer der Wurzel: nicht leer, kein „/“,
+    /// kein NUL, nicht „.“ oder „..“. Solche Namen kann kein Scan erzeugen,
+    /// sie würden aber Pfade (und damit Aktionen wie den Papierkorb) auf
+    /// andere Orte lenken.
+    static func firstInvalidName(in tree: ScanTree) -> Int32? {
+        let slash = UInt8(ascii: "/"), dot = UInt8(ascii: ".")
+        for i in 1 ..< Int32(tree.count) {
+            let n = tree.nameBytes(of: i)
+            if n.isEmpty || n.contains(slash) || n.contains(0) { return i }
+            if n.count <= 2, n.allSatisfy({ $0 == dot }) { return i }
+        }
+        return nil
     }
 
     static func decodePayload(_ data: Data, rootPath: String) throws -> ScanTree {
@@ -363,6 +414,7 @@ public enum SnapshotFile {
         let tree = ScanTree(rootPath: rootPath, nodes: nodes, names: names, isComplete: flags & 1 != 0)
         let problems = tree.validate(limit: 1)
         guard problems.isEmpty else { throw SnapshotError.corrupted(problems[0]) }
+        if let bad = firstInvalidName(in: tree) { throw SnapshotError.corrupted("name of node \(bad)") }
         return tree
     }
 
@@ -382,6 +434,22 @@ public enum SnapshotFile {
         }
         guard written > 0 else { throw SnapshotError.corrupted("compression failed") }
         out.count = written
+        return out
+    }
+
+    /// Dekomprimiert nur die ersten `count` Bytes (für die Prüfung der
+    /// Längenangaben, ohne den ganzen Puffer anzulegen).
+    static func decompressPrefix(_ data: Data, count: Int) throws -> Data {
+        guard !data.isEmpty else { throw SnapshotError.corrupted("empty payload") }
+        var out = Data(count: count)
+        let written = out.withUnsafeMutableBytes { dst in
+            data.withUnsafeBytes { src in
+                compression_decode_buffer(
+                    dst.bindMemory(to: UInt8.self).baseAddress!, count,
+                    src.bindMemory(to: UInt8.self).baseAddress!, data.count, nil, COMPRESSION_LZFSE)
+            }
+        }
+        guard written == count else { throw SnapshotError.corrupted("payload header") }
         return out
     }
 
