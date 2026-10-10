@@ -1,7 +1,8 @@
 #!/bin/bash
 # Richtet einmalig die Secrets für den Release-Workflow ein (interaktiv).
 #
-#   scripts/setup-release-secrets.sh
+#   scripts/setup-release-secrets.sh             # Environment "release" (release.yml)
+#   scripts/setup-release-secrets.sh --appstore  # Environment "appstore" (appstore.yml)
 #
 # Ablauf:
 #   1. Ziel wählen: Environment "release" (empfohlen) oder Repository-Secrets;
@@ -19,6 +20,15 @@
 # Voraussetzungen: gh (angemeldet, Admin-Rechte am Repo), das Zertifikat
 # "Developer ID Application: …" im Anmelde-Schlüsselbund. Siehe dev/RELEASING.md.
 #
+# --appstore (dev/APPSTORE.md, "Upload per Workflow"): statt der Developer ID
+# die Identitäten "Apple Distribution: …" und "3rd Party Mac Developer Installer: …"
+# (bzw. "Mac Installer Distribution: …") in EIN .p12 (über eine temporäre
+# Keychain zusammengeführt), dazu das Provisioning Profile (Pfad) und derselbe
+# API Key (Rolle App Manager). Secrets im Environment "appstore":
+# APPSTORE_CERTIFICATES_P12_BASE64, APPSTORE_CERTIFICATES_PASSWORD,
+# APPSTORE_PROVISIONING_PROFILE_BASE64, NOTARY_API_KEY_P8_BASE64,
+# NOTARY_API_KEY_ID, NOTARY_API_ISSUER_ID.
+#
 # Nichts davon landet im Repo oder in der Shell-History; Werte werden nie
 # ausgegeben. Kein `set -x`.
 set -euo pipefail
@@ -32,6 +42,16 @@ LOGIN_KC="$HOME/Library/Keychains/login.keychain-db"
 OPENSSL=/usr/bin/openssl
 SECRETS=(MACOS_CERTIFICATE_P12_BASE64 MACOS_CERTIFICATE_PASSWORD
          NOTARY_API_KEY_P8_BASE64 NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID)
+# --appstore
+MODE=release
+TEAM_ID=AGRWTKQZ8C
+BUNDLE_ID=de.stefanrichter.DiskRings
+APPSTORE_IDENTITY=${DISKRINGS_APPSTORE_IDENTITY:-"Apple Distribution: Stefan Richter ($TEAM_ID)"}
+INSTALLER_CANDIDATES=("3rd Party Mac Developer Installer: Stefan Richter ($TEAM_ID)"
+                      "Mac Installer Distribution: Stefan Richter ($TEAM_ID)")
+APPSTORE_SECRETS=(APPSTORE_CERTIFICATES_P12_BASE64 APPSTORE_CERTIFICATES_PASSWORD
+                  APPSTORE_PROVISIONING_PROFILE_BASE64
+                  NOTARY_API_KEY_P8_BASE64 NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID)
 
 WORK=
 cleanup() {
@@ -304,7 +324,13 @@ MSG
 step_api_key() {
     say ""
     say "== App Store Connect API Key"
-    say "   (App Store Connect → Users and Access → Integrations → App Store Connect API → Team Keys, Rolle \"Developer\")"
+    if [ "$MODE" = "appstore" ]; then
+        say "   Für den Upload braucht der Key die Rolle \"App Manager\" (oder höher). Hat dein"
+        say "   Notarisierungs-Key nur \"Developer\", lege einen neuen Team Key mit \"App Manager\" an"
+        say "   (App Store Connect → Users and Access → Integrations → App Store Connect API → Team Keys)."
+    else
+        say "   (App Store Connect → Users and Access → Integrations → App Store Connect API → Team Keys, Rolle \"Developer\")"
+    fi
     ask "Pfad zur .p8-Datei (AuthKey_XXXXXXXXXX.p8)"
     P8=${REPLY/#\~/$HOME}
     [ -f "$P8" ] || die "Datei nicht gefunden: $P8"
@@ -347,7 +373,156 @@ step_set_secrets() {
     printf '%s' "$ISSUER_ID" | set_secret NOTARY_API_ISSUER_ID
 }
 
+# --- App Store (--appstore) ------------------------------------------------------
+# Führt mehrere .p12 (je eine Identität, Passwort $2) über eine temporäre Keychain
+# zu einem .p12 mit allen Identitäten zusammen (openssl kann nur einen Schlüssel
+# pro PKCS#12 schreiben, `security export` alle einer Keychain).
+#   merge_p12 <out.p12> <passwort> <in.p12>...
+merge_p12() {
+    local out=$1 pass=$2; shift 2
+    local kc="$WORK/merge.keychain-db" kc_pass in
+    kc_pass=$("$OPENSSL" rand -hex 24)
+    security create-keychain -p "$kc_pass" "$kc"
+    security unlock-keychain -p "$kc_pass" "$kc"
+    for in in "$@"; do
+        security import "$in" -k "$kc" -f pkcs12 -P "$pass" -T /usr/bin/security >/dev/null \
+            || { security delete-keychain "$kc"; return 1; }
+    done
+    # Export ohne Rückfrage erlauben (nur diese temporäre Keychain).
+    security set-key-partition-list -S apple-tool:,apple: -s -k "$kc_pass" "$kc" >/dev/null
+    if ! security export -k "$kc" -t identities -f pkcs12 -P "$pass" -o "$out" >/dev/null; then
+        security delete-keychain "$kc"
+        return 1
+    fi
+    security delete-keychain "$kc"
+}
+
+# Erste Identität aus INSTALLER_CANDIDATES, die das .p12 $1 (Passwort $2) enthält.
+find_installer_in_p12() {
+    local candidate
+    for candidate in "${INSTALLER_CANDIDATES[@]}"; do
+        if [ -n "$(p12_dump "$1" "$2" | awk -v mode=list -v id="$candidate" "$P12_AWK")" ]; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+step_appstore_certificates() {
+    say ""
+    say "== Zertifikate: $APPSTORE_IDENTITY"
+    say "   und \"3rd Party Mac Developer Installer\" bzw. \"Mac Installer Distribution\""
+    say "Passwort für das .p12 (wird als APPSTORE_CERTIFICATES_PASSWORD gespeichert;"
+    say "am besten ein neues, zufälliges, z. B. aus dem Passwortmanager):"
+    ask_secret "Passwort" 12
+    P12_PASS=$REPLY
+    P12="$WORK/appstore.p12"
+
+    local chain="$WORK/chain.pem"
+    security find-certificate -a -c "Apple Worldwide Developer Relations Certification Authority" -p \
+        /Library/Keychains/System.keychain "$LOGIN_KC" > "$chain" 2>/dev/null || true
+
+    say ""
+    say "  a) automatisch aus dem Anmelde-Schlüsselbund exportieren (security export;"
+    say "     macOS fragt pro privatem Schlüssel einmal nach dem Anmeldepasswort,"
+    say "     dort \"Erlauben\" wählen)"
+    say "  b) eine selbst exportierte .p12-Datei angeben, die BEIDE Identitäten enthält"
+    say "     (in der Schlüsselbundverwaltung beide Zertifikate markieren → exportieren)"
+    ask "Weg" a
+    local way=$REPLY src src_pass
+    if [ "$way" = "a" ]; then
+        src="$WORK/all.p12"
+        src_pass=$("$OPENSSL" rand -hex 24)
+        say "==> security export (alle Identitäten, wird gleich auf zwei reduziert)"
+        security export -k "$LOGIN_KC" -t identities -f pkcs12 -P "$src_pass" -o "$src" \
+            || die "security export fehlgeschlagen. Weg b) nutzen."
+    else
+        ask "Pfad zur exportierten .p12"
+        src=${REPLY/#\~/$HOME}
+        [ -f "$src" ] || die "Datei nicht gefunden: $src"
+        read -r -s -p "Passwort dieser .p12: " src_pass; echo
+    fi
+
+    local installer rc=0
+    installer=$(find_installer_in_p12 "$src" "$src_pass") \
+        || die "Keine Installer-Identität (${INSTALLER_CANDIDATES[*]}) samt Schlüssel gefunden (oder falsches Passwort)."
+    extract_identity "$src" "$src_pass" "$APPSTORE_IDENTITY" "$WORK/dist.p12" "$P12_PASS" "$chain" || rc=$?
+    [ "$rc" -eq 0 ] || die "Identität \"$APPSTORE_IDENTITY\" samt Schlüssel nicht gefunden oder abgelaufen (Code $rc)."
+    extract_identity "$src" "$src_pass" "$installer" "$WORK/installer.p12" "$P12_PASS" "$chain" || rc=$?
+    [ "$rc" -eq 0 ] || die "Identität \"$installer\" samt Schlüssel nicht gefunden oder abgelaufen (Code $rc)."
+    if [ "$way" = "a" ]; then rm -f "$src"; else say "  Hinweis: Die Datei $src kannst du nach dem Einrichten löschen."; fi
+    unset src_pass
+
+    verify_p12 "$WORK/dist.p12" "$P12_PASS" "$APPSTORE_IDENTITY" || die ".p12 (Apple Distribution) ungültig."
+    verify_p12 "$WORK/installer.p12" "$P12_PASS" "$installer" || die ".p12 (Installer) ungültig."
+    say "==> Beide Identitäten in ein .p12 zusammenführen (temporäre Keychain)"
+    merge_p12 "$P12" "$P12_PASS" "$WORK/dist.p12" "$WORK/installer.p12" \
+        || die "Zusammenführen der .p12 fehlgeschlagen."
+    rm -f "$WORK/dist.p12" "$WORK/installer.p12"
+    local id
+    for id in "$APPSTORE_IDENTITY" "$installer"; do
+        [ -n "$(p12_dump "$P12" "$P12_PASS" | awk -v mode=list -v id="$id" "$P12_AWK")" ] \
+            || die "Das zusammengeführte .p12 enthält \"$id\" nicht."
+    done
+    say "  OK: .p12 mit \"$APPSTORE_IDENTITY\" und \"$installer\""
+}
+
+step_profile() {
+    say ""
+    say "== Provisioning Profile \"Mac App Store Connect\" (dev/APPSTORE.md, Schritt 3)"
+    ask "Pfad zum Profil" "$HOME/Library/MobileDevice/Provisioning Profiles/DiskRings_App_Store.provisionprofile"
+    PROFILE=${REPLY/#\~/$HOME}
+    [ -f "$PROFILE" ] || die "Datei nicht gefunden: $PROFILE"
+    local plist="$WORK/profile.plist" app_id
+    security cms -D -i "$PROFILE" > "$plist" 2>/dev/null || die "$PROFILE ist kein Provisioning Profile."
+    app_id=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.application-identifier" "$plist" 2>/dev/null || true)
+    [ "$app_id" = "$TEAM_ID.$BUNDLE_ID" ] || die "Profil gehört zu '$app_id', erwartet $TEAM_ID.$BUNDLE_ID."
+    if /usr/libexec/PlistBuddy -c "Print :ProvisionedDevices" "$plist" >/dev/null 2>&1; then
+        die "Das ist ein Development-Profil; gebraucht wird \"Mac App Store Connect\"."
+    fi
+    say "  OK: $app_id, gültig bis $(/usr/libexec/PlistBuddy -c "Print :ExpirationDate" "$plist")"
+}
+
+step_set_secrets_appstore() {
+    local where="Repository-Secrets"
+    if [ "${#SECRET_SCOPE[@]}" -gt 0 ]; then where="Environment \"$ENV_NAME\""; fi
+    say ""
+    say "== Secrets setzen in $REPO ($where): ${APPSTORE_SECRETS[*]}"
+    confirm "Jetzt setzen (vorhandene werden überschrieben)?" j || die "Abgebrochen, nichts gesetzt."
+    base64 -i "$P12" | tr -d '\n' | set_secret APPSTORE_CERTIFICATES_P12_BASE64
+    printf '%s' "$P12_PASS" | set_secret APPSTORE_CERTIFICATES_PASSWORD
+    base64 -i "$PROFILE" | tr -d '\n' | set_secret APPSTORE_PROVISIONING_PROFILE_BASE64
+    base64 -i "$P8" | tr -d '\n' | set_secret NOTARY_API_KEY_P8_BASE64
+    printf '%s' "$KEY_ID" | set_secret NOTARY_API_KEY_ID
+    printf '%s' "$ISSUER_ID" | set_secret NOTARY_API_ISSUER_ID
+}
+
+main_appstore() {
+    say "DiskRings: Secrets für den Workflow \"App Store Upload\" einrichten (dev/APPSTORE.md)"
+    step_target
+    step_appstore_certificates
+    step_profile
+    step_api_key
+    step_set_secrets_appstore
+    unset P12_PASS
+
+    cat <<MSG
+
+Fertig. Nächste Schritte:
+  - Trockenlauf: GitHub → Actions → App Store Upload → Run workflow (dry_run angehakt),
+    oder: gh workflow run appstore.yml --repo $REPO -f dry_run=true
+  - Temporäre Dateien werden jetzt gelöscht.
+MSG
+}
+
 main() {
+    case "${1:-}" in
+        "") ;;
+        --appstore) MODE=appstore; ENV_NAME=${DISKRINGS_APPSTORE_ENV:-appstore} ;;
+        -h|--help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; return 0 ;;
+        *) die "Unbekannte Option: $1 (erlaubt: --appstore)" ;;
+    esac
     [ "$(uname -s)" = "Darwin" ] || die "Nur auf macOS (Schlüsselbund)."
     [ -t 0 ] || die "Interaktives Skript: bitte im Terminal starten."
     cd "$(dirname "$0")/.."
@@ -356,6 +531,10 @@ main() {
     trap cleanup EXIT
     trap 'exit 130' INT TERM
 
+    if [ "$MODE" = "appstore" ]; then
+        main_appstore
+        return 0
+    fi
     say "DiskRings: Secrets für den Release-Workflow einrichten (dev/RELEASING.md)"
     step_target
     step_certificate
