@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Chemin introuvable : %@";
+"error.scan.ancestorChanged" = "Un dossier parent a changé : %@";
 "error.scan.tooManyNodes" = "Trop d’entrées pour une seule arborescence d’analyse";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

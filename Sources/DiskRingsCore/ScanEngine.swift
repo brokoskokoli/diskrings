@@ -108,6 +108,11 @@ public struct ScanEngine: Sendable {
         guard let rootPath = followRootSymlink || !path.hasPrefix("/") ? Self.resolve(path) : path else {
             throw ScanError.notFound(path)
         }
+        // Ohne Wurzel-Symlink auch keinem Symlink weiter oben im Pfad folgen:
+        // Sonst würde ein fremder Ordner gelesen und hier eingehängt.
+        if !followRootSymlink, path.hasPrefix("/"), let changed = Self.firstChangedAncestor(of: path) {
+            throw ScanError.ancestorChanged(path, ancestor: changed)
+        }
         var st = stat()
         guard lstat(rootPath, &st) == 0 else { throw ScanError.notFound(path) }
 
@@ -222,6 +227,23 @@ public struct ScanEngine: Sendable {
     }
 
     /// Absoluter, aufgelöster Pfad (Symlinks in der Wurzel werden aufgelöst).
+    /// Erster Vorfahr von `path` (absolut, ohne `path` selbst), der kein
+    /// echter Ordner ist: ein Symlink, eine Datei oder nicht mehr vorhanden.
+    /// `nil`, wenn die ganze Kette aus Ordnern besteht. Jede Komponente wird
+    /// mit `lstat` geprüft, byteweise so, wie der Pfad im Baum steht (keine
+    /// Normalisierung von Unicode oder Groß-/Kleinschreibung nötig).
+    public static func firstChangedAncestor(of path: String) -> String? {
+        let parts = path.split(separator: "/", omittingEmptySubsequences: true)
+        guard parts.count > 1 else { return nil }
+        var prefix = ""
+        var st = stat()
+        for part in parts.dropLast() {
+            prefix += "/" + part
+            guard lstat(prefix, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR else { return prefix }
+        }
+        return nil
+    }
+
     static func resolve(_ path: String) -> String? {
         let expanded = (path as NSString).expandingTildeInPath
         guard let r = realpath(expanded, nil) else { return nil }

@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Sökvägen hittades inte: %@";
+"error.scan.ancestorChanged" = "En överordnad mapp har ändrats: %@";
 "error.scan.tooManyNodes" = "För många objekt för ett skanningsträd";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

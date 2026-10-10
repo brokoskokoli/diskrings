@@ -111,7 +111,8 @@ public struct TrashItem: Sendable, Equatable {
     /// Die Größe ist nicht verlässlich: Im Teilbaum liegt etwas nur in der
     /// Cloud, nicht Lesbares oder ein Einhängepunkt (zählt mit 0 Byte), der
     /// Baum ist dort unvollständig, oder die Art auf der Platte hat sich
-    /// seit dem Scan geändert. Dann wird immer nachgefragt.
+    /// seit dem Scan geändert bzw. die Datei ist deutlich gewachsen. Dann
+    /// wird immer nachgefragt.
     public var sizeIsUncertain: Bool
 
     public init(node: Int32, path: String, name: String, isDirectory: Bool, allocatedSize: UInt64,
@@ -222,16 +223,40 @@ public struct TrashPlan: Sendable, Equatable {
         return (nil, uncertain)
     }
 
-    /// Vergleicht die Art (Ordner oder nicht, per `lstat`) jedes Elements
-    /// mit dem Scan; hat sie sich geändert, ist die Größe unsicher.
+    /// Vergleicht jedes Element per `lstat` mit dem Scan: Hat sich die Art
+    /// (Ordner oder nicht) geändert, ist die Größe unsicher. Bei Dateien
+    /// ebenso, wenn die logische Größe deutlich über der Scan-Größe
+    /// (`limitSize`) liegt (`grewNoticeably`) oder das Wachstum den Plan über
+    /// die 1-GB-Grenze für „Nicht mehr fragen“ hebt.
     public func checkingCurrentKinds(using fileManager: any FileTrashing) -> TrashPlan {
         var out = self
+        var currentLimit: UInt64 = 0
+        var grown: [Int] = []
         for i in out.items.indices {
-            if let id = fileManager.identity(atPath: out.items[i].path), id.isDirectory != out.items[i].isDirectory {
-                out.items[i].sizeIsUncertain = true
+            let item = out.items[i]
+            var size = item.limitSize
+            if let id = fileManager.identity(atPath: item.path) {
+                if id.isDirectory != item.isDirectory {
+                    out.items[i].sizeIsUncertain = true
+                } else if !id.isDirectory, let now = id.size, now > item.limitSize {
+                    size = now
+                    grown.append(i)
+                    if Self.grewNoticeably(from: item.limitSize, to: now) { out.items[i].sizeIsUncertain = true }
+                }
             }
+            currentLimit &+= size
+        }
+        if limitSize < TrashConfirmation.dontAskLimit, currentLimit >= TrashConfirmation.dontAskLimit {
+            for i in grown { out.items[i].sizeIsUncertain = true }
         }
         return out
+    }
+
+    /// Wachstum über die Scan-Größe hinaus, das mehr als 10 % und mehr als
+    /// 1 MB beträgt.
+    static func grewNoticeably(from scanned: UInt64, to now: UInt64) -> Bool {
+        guard now > scanned else { return false }
+        return now - scanned > max(1_000_000, scanned / 10)
     }
 
     public var hasUncertainSize: Bool { items.contains { $0.sizeIsUncertain } }
@@ -299,15 +324,20 @@ public struct TrashRecord: Sendable, Equatable {
     /// ⌘Z legt nur zurück, wenn der Elternordner noch genau dorthin
     /// aufgelöst wird; `nil` → Vergleich mit dem Elternpfad selbst.
     public var resolvedParent: String?
+    /// Identität (Gerät und Inode) des aufgelösten Elternordners beim
+    /// Verschieben. ⌘Z legt nur zurück, wenn dort noch derselbe Ordner liegt
+    /// (nicht ein neuer gleichen Namens); `nil` → keine Prüfung (alte Einträge).
+    public var parentIdentity: FileIdentity?
 
     public init(originalPath: String, trashURL: URL?, name: String, allocatedSize: UInt64,
-                identity: FileIdentity? = nil, resolvedParent: String? = nil) {
+                identity: FileIdentity? = nil, resolvedParent: String? = nil, parentIdentity: FileIdentity? = nil) {
         self.originalPath = originalPath
         self.trashURL = trashURL
         self.name = name
         self.allocatedSize = allocatedSize
         self.identity = identity
         self.resolvedParent = resolvedParent
+        self.parentIdentity = parentIdentity
     }
 }
 
@@ -369,11 +399,12 @@ public struct TrashService {
             }
             let identity = fileManager.identity(atPath: item.path)
             let resolvedParent = fileManager.resolvedPath((item.path as NSString).deletingLastPathComponent)
+            let parentIdentity = resolvedParent.flatMap { fileManager.identity(atPath: $0) }
             do {
                 let url = try fileManager.trashItem(at: URL(fileURLWithPath: item.path))
                 out.trashed.append(TrashRecord(originalPath: item.path, trashURL: url, name: item.name,
                                                allocatedSize: item.allocatedSize, identity: identity,
-                                               resolvedParent: resolvedParent))
+                                               resolvedParent: resolvedParent, parentIdentity: parentIdentity))
             } catch {
                 out.failures.append(TrashFailure(path: item.path, message: Self.describe(error)))
             }
@@ -474,6 +505,14 @@ public struct TrashService {
         guard let resolved = fileManager.resolvedPath(parent),
               ProtectedPaths.normalize(resolved) == ProtectedPaths.normalize(r.resolvedParent ?? parent) else {
             return L("trash.undo.parentChanged")
+        }
+        // Gleicher Pfad, aber ein anderer Ordner (verschoben und neu angelegt)?
+        if let expected = r.parentIdentity {
+            guard let current = fileManager.identity(atPath: resolved),
+                  current.device == expected.device, current.inode == expected.inode,
+                  current.isDirectory == expected.isDirectory else {
+                return L("trash.undo.parentChanged")
+            }
         }
         let name = (r.originalPath as NSString).lastPathComponent
         let target = resolved == "/" ? "/" + name : resolved + "/" + name

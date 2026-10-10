@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Percorso non trovato: %@";
+"error.scan.ancestorChanged" = "Una cartella superiore è cambiata: %@";
 "error.scan.tooManyNodes" = "Troppe voci per un albero di scansione";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

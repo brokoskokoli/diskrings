@@ -162,11 +162,10 @@ extension AppState {
     /// Auswahl bleiben über die Pfade erhalten.
     func scheduleCompareRefresh() {
         guard let session = compare, session.source == .currentScan else { return }
-        compareRefreshGeneration &+= 1
-        let generation = compareRefreshGeneration
+        let token = compareRefreshGate.begin()
         Task {
             try? await Task.sleep(for: .milliseconds(250))
-            guard generation == compareRefreshGeneration, compare === session,
+            guard compareRefreshGate.isCurrent(token), compare === session,
                   let current = currentSnapshot() else { return }
             let old = session.diff.old
             let mode = session.model.mode
@@ -174,10 +173,12 @@ extension AppState {
             let model = await Task.detached(priority: .userInitiated) {
                 CompareModel(diff: SnapshotDiff(old: old, new: current), mode: mode)
             }.value
-            // Nur die aktuelle Aktualisierung räumt ihren Hinweis ab (nicht den einer neueren).
-            if generation == compareRefreshGeneration { snapshots.busy = nil }
-            // Inzwischen beendet, ersetzt oder erneut geändert: verwerfen.
-            guard generation == compareRefreshGeneration, compare === session else { return }
+            // Inzwischen beendet, ersetzt (neuer Vergleich, neuer Scan) oder
+            // erneut geändert: Das Gate ist dann überholt; verwerfen und den
+            // Hinweis des Neueren nicht abräumen.
+            guard compareRefreshGate.isCurrent(token) else { return }
+            snapshots.busy = nil
+            guard compare === session else { return }
             let fresh = CompareSession(model: model, oldTitle: session.oldTitle, newTitle: session.newTitle,
                                        comparesSnapshots: session.comparesSnapshots, options: session.options)
             fresh.adopt(from: session)

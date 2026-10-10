@@ -251,7 +251,7 @@ extension AppState {
     /// statt in eine leere Hauptansicht.
     func endCompare() {
         compare = nil
-        compareRunGate.invalidate()
+        invalidateCompareWork()
         // Ein verworfener Lauf räumt seine Meldung nicht mehr selbst ab.
         snapshots.busy = nil
         if tree == nil, phase == .browsing {
@@ -266,6 +266,8 @@ extension AppState {
         let mode = prefs.sizeMode
         let options = prefs.layoutOptions(unassigned: 0)
         let token = compareRunGate.begin()
+        // Eine laufende Neuberechnung des alten Vergleichs ist damit überholt.
+        compareRefreshGate.invalidate()
         // Für „Snapshot ↔ aktueller Scan“: der Baum, der verglichen wird.
         let comparedTree = tree
         snapshots.busy = L("compare.busy.computing")

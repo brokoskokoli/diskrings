@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Nie znaleziono ścieżki: %@";
+"error.scan.ancestorChanged" = "Folder nadrzędny uległ zmianie: %@";
 "error.scan.tooManyNodes" = "Zbyt wiele pozycji dla jednego drzewa skanowania";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

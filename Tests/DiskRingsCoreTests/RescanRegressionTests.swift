@@ -81,6 +81,68 @@ struct RescanRegressionTests {
         #expect(sub?.tree.root.flags.contains(.directory) == true)
     }
 
+    // MARK: Symlink in der Mitte des Pfads
+
+    /// `root/a/b` wird gescannt; danach wird `a` durch einen Symlink auf
+    /// einen Ordner außerhalb ersetzt, der ebenfalls ein `b` (5 MB) enthält.
+    private func middleSymlinkFixture() throws -> (Fixture, ScanTree) {
+        let fx = try Fixture()
+        try fx.file("root/a/b/f.bin", size: 100_000)
+        try fx.file("root/c/g.bin", size: 10_000)
+        let t0 = try engine.scanBlocking(fx.path("root")).tree
+        try fx.file("external/b/big.bin", size: 5_000_000)
+        try FileManager.default.removeItem(atPath: fx.path("root/a"))
+        try fx.symlink("root/a", to: fx.path("external"))
+        return (fx, t0)
+    }
+
+    @Test("scanBlocking ohne Wurzel-Symlink: Symlink weiter oben im Pfad → Fehler, nichts gelesen")
+    func scanRejectsSymlinkInParentChain() throws {
+        let (fx, _) = try middleSymlinkFixture()
+        defer { fx.remove() }
+        #expect(throws: ScanError.ancestorChanged(fx.path("root/a/b"), ancestor: fx.path("root/a"))) {
+            try engine.scanBlocking(fx.path("root/a/b"), followRootSymlink: false)
+        }
+        #expect(throws: ScanError.ancestorChanged(fx.path("root/a/b"), ancestor: fx.path("root/a"))) {
+            try PartialRescan.scan(fx.path("root/a/b"), options: engine.options)
+        }
+    }
+
+    @Test("rescanBlocking(path:): Symlink weiter oben → nächster intakter Vorfahr wird neu gelesen")
+    func engineRescanRedirectsToChangedAncestor() throws {
+        let (fx, t0) = try middleSymlinkFixture()
+        defer { fx.remove() }
+        let r = try engine.rescanBlocking(path: fx.path("root/a/b"), in: t0)
+        #expect(r.path == fx.path("root/a"))
+        expectValidTree(r.tree)
+        expectEquivalent(r.tree, try engine.scanBlocking(fx.path("root")).tree)
+        #expect(r.tree.root.allocatedSize < 1_000_000)
+        let a = try #require(r.tree.index(ofPath: "a"))
+        #expect(r.tree.node(a).flags.contains(.symlink))
+    }
+
+    @Test("Vorfahr verschwunden → Vorfahr wird entfernt, nicht nur der Unterordner")
+    func engineRescanRemovesVanishedAncestor() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        try fx.file("root/a/b/f.bin", size: 100_000)
+        try fx.file("root/c/g.bin", size: 10_000)
+        let t0 = try engine.scanBlocking(fx.path("root")).tree
+        try FileManager.default.removeItem(atPath: fx.path("root/a"))
+        let r = try engine.rescanBlocking(path: fx.path("root/a/b"), in: t0)
+        #expect(r.removed)
+        expectEquivalent(r.tree, try engine.scanBlocking(fx.path("root")).tree)
+    }
+
+    @Test("Intakte Kette: Unicode-Namen im Pfad stören die Prüfung nicht")
+    func unicodeChainStillScans() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        try fx.file("root/Übersicht/日本/f.bin", size: 30_000)
+        let sub = try PartialRescan.scan(fx.path("root/Übersicht/日本"), options: engine.options)
+        #expect(sub?.tree.root.allocatedSize ?? 0 >= 30_000)
+    }
+
     // MARK: L1 – Rescan einer Hardlink-Datei
 
     @Test("Rescan einer Datei mit Hardlink: Gruppe bleibt einmal gezählt, Tabelle gültig")

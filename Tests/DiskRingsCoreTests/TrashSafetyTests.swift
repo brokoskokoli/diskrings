@@ -164,6 +164,45 @@ struct TrashSafetyTests {
         #expect(fm.fileExists(atPath: try #require(record.trashURL).path))
     }
 
+    @Test("Undo: anderer echter Ordner unter demselben Elternpfad → verweigert")
+    func undoRefusesReplacedParentFolder() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        try fx.file("scan/sub/a.bin", size: 1000)
+        let trash = TempTrash(fx.path("trash"))
+        let service = TrashService(fileManager: trash, protection: noProtection)
+        let plan = TrashPlan(items: [item(fx, "scan/sub/a.bin")], rootPath: fx.path("scan"))
+        let record = try #require(service.trash(plan).trashed.first)
+        #expect(record.parentIdentity == FileIdentity(path: fx.path("scan/sub")))
+        // Ordner weggeschoben, ein neuer gleichen Namens angelegt: realpath passt noch.
+        try fm.moveItem(atPath: fx.path("scan/sub"), toPath: fx.path("scan/alt"))
+        try fx.dir("scan/sub")
+
+        let r = service.restore([record])
+        #expect(r.restored.isEmpty)
+        #expect(r.failures.first?.message == L("trash.undo.parentChanged"))
+        #expect(!fm.fileExists(atPath: fx.path("scan/sub/a.bin")))
+        #expect(fm.fileExists(atPath: try #require(record.trashURL).path))
+
+        // Alte Einträge ohne festgehaltene Identität: nur der Pfadvergleich.
+        var legacy = record
+        legacy.parentIdentity = nil
+        #expect(service.restore([legacy]).restored == [fx.path("scan/sub/a.bin")])
+    }
+
+    @Test("Undo: unveränderter Elternordner → wird zurückgelegt")
+    func undoSameParentFolder() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        try fx.file("scan/sub/a.bin", size: 1000)
+        try fx.file("scan/sub/b.bin", size: 10)
+        let service = TrashService(fileManager: TempTrash(fx.path("trash")), protection: noProtection)
+        let record = try #require(service.trash(TrashPlan(items: [item(fx, "scan/sub/a.bin")],
+                                                          rootPath: fx.path("scan"))).trashed.first)
+        try fx.file("scan/sub/neu.bin", size: 10) // Inhalt geändert, Ordner derselbe
+        #expect(service.restore([record]).restored == [fx.path("scan/sub/a.bin")])
+    }
+
     @Test("Undo: Ziel liegt (aufgelöst) in einem geschützten Bereich → verweigert")
     func undoRefusesProtectedTarget() throws {
         let fx = try Fixture()

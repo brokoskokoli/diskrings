@@ -48,6 +48,13 @@ extension ScanEngine {
             // Nur der Wurzel folgen; ein inzwischen durch einen Symlink ersetzter
             // Ordner wird wie im vollständigen Scan ein Symlink-Blatt.
             sub = try scanBlocking(path, followRootSymlink: index == ScanTree.rootIndex, cancellation: cancellation)
+        } catch ScanError.ancestorChanged(_, let ancestor) where index != ScanTree.rootIndex {
+            // Ein Vorfahr ist kein echter Ordner mehr (z. B. durch einen
+            // Symlink ersetzt): den nächsten Vorfahren im Baum neu einlesen;
+            // dessen eigene Kette wird dabei wieder geprüft.
+            let target = Self.nearestExistingIndex(of: ancestor, in: tree)
+            guard target != index else { throw ScanError.ancestorChanged(path, ancestor: ancestor) }
+            return try rescanBlocking(subtree: target, in: tree, cancellation: cancellation)
         } catch ScanError.notFound where index != ScanTree.rootIndex {
             let scanTime = seconds(since: start)
             let t = DispatchTime.now().uptimeNanoseconds

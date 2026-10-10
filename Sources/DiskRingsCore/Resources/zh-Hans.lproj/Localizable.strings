@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "找不到路径：%@";
+"error.scan.ancestorChanged" = "上级文件夹已更改：%@";
 "error.scan.tooManyNodes" = "条目过多，无法放入一个扫描树";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

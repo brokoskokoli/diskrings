@@ -440,3 +440,18 @@ Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4).
 ### Zeitabhängige Tests
 - Die Tests von `ScanController` warteten nach Abbruch bzw. Neustart 100–500 ms und prüften dann, dass nichts mehr ankam. Jetzt wartet `ScanController.drain()` auf das Ende aller Lese-Tasks, auch abgebrochener. Weil nur diese Tasks den Handler aufrufen, ist „danach kommt nichts mehr“ damit bewiesen statt nur wahrscheinlich, und die Tests warten nicht länger als nötig. Das Verhalten der App ändert sich nicht (`drain()` ruft sie nicht auf).
 - Der Test S6 (begrenzter Ereignispuffer) wartete nach dem Beginn des Baumaufbaus fest 0,5 s auf `.finished`. Jetzt meldet der Test-Hook `ScanHooks.streamFinished`, dass `events(_:)` das Endergebnis gepuffert und den Stream beendet hat; erst danach liest der Test.
+
+## Review-Befunde: Nachprüfung der Korrekturen
+
+### Teil-Rescan: Symlink in der Mitte des Pfads
+- Ohne Wurzel-Symlink (`followRootSymlink: false`) prüft `scanBlocking` vorab jede Komponente oberhalb des Pfads mit `lstat` (`ScanEngine.firstChangedAncestor`); ist eine davon kein echter Ordner mehr (Symlink, Datei, verschwunden), wird nichts gelesen und `ScanError.ancestorChanged(path, ancestor:)` geworfen. Verglichen wird byteweise am Pfad aus dem Baum, also ohne Unicode- oder Groß-/Kleinschreibungs-Normalisierung (kein `realpath`-Vergleich).
+- `rescanBlocking(subtree:)` liest dann den nächsten Vorfahren im Baum neu ein (er wird z. B. zum Symlink-Blatt oder entfernt), die App startet für diesen Vorfahren einen eigenen Teil-Rescan. Bekannte Grenze: Zwischen Prüfung und Öffnen bleibt ein kurzes Zeitfenster (kein `openat`-Abstieg); das deckt den gemeldeten Fall (Ordner zwischen Scan und Rescan ersetzt) ab.
+
+### Vergleich: veraltete Neuberechnung räumt keinen neueren Hinweis ab
+- Der Zähler der Neuberechnung ist jetzt ein `GenerationGate` (`compareRefreshGate`). Neuer Vergleich (`runCompare`), neuer Scan, `backToStart` und `endCompare` verwerfen auch laufende Neuberechnungen (`invalidateCompareWork`). Eine Neuberechnung räumt den Hinweis „Vergleich wird aktualisiert“ nur ab, wenn ihr Gate noch aktuell ist; sonst gehört der Hinweis einem neueren Vorgang. Kein eigener Test (App-Schicht, `GenerationGate` selbst ist getestet).
+
+### Papierkorb: gewachsene Dateien
+- `checkingCurrentKinds` vergleicht bei Dateien zusätzlich die aktuelle logische Größe (`lstat`, `st_size`) mit der Scan-Größe (`limitSize`, das Größere aus belegter und logischer Größe). Unsicher wird die Größe, wenn die Datei um mehr als 10 % und mehr als 1 MB gewachsen ist oder wenn das Wachstum die Summe des Plans über die 1-GB-Grenze hebt. Geschrumpfte Dateien bleiben sicher (die Scan-Größe ist dann zu groß, die Rückfrage also strenger). Ordner werden aus Zeitgründen nicht neu summiert (siehe oben).
+
+### ⌘Z: derselbe Elternordner, nicht nur derselbe Pfad
+- `TrashRecord.parentIdentity` hält Gerät und Inode des aufgelösten Elternordners beim Verschieben fest. Vor dem Zurücklegen muss unter dem (weiterhin per `realpath` geprüften) Elternpfad noch derselbe Ordner liegen; wurde er weggeschoben und ein neuer gleichen Namens angelegt, verweigert ⌘Z mit derselben Meldung („ersetzt oder verschoben“). Einträge ohne festgehaltene Identität werden wie bisher nur über den Pfad geprüft. Geänderter Inhalt des Ordners stört nicht (Ordner-Identität ohne Größe und Änderungsdatum).
