@@ -343,6 +343,7 @@
 "compare.busy.computing" = "Vergelijking berekenen…";
 "compare.error" = "Vergelijken niet mogelijk: %@";
 "compare.currentScan" = "Huidige scan";
+"store.demo.snapshotName" = "voor Xcode-update";
 "compare.list.accessibility" = "Vergelijking: inhoud van %@";
 "compare.column.name" = "Naam";
 "compare.column.before" = "Vooraf";

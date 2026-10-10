@@ -12,7 +12,7 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 | `DiskRings` (App) | dünne SwiftUI/AppKit-Oberfläche | **kein Testziel** |
 | `diskrings-cli` | Kommandozeile für Tests, Messungen, Debugging | keine eigenen |
 
-`scripts/check.sh` baut, führt alle Tests aus und danach die Performance-Tests im Release-Build. Die Oberfläche wird visuell über `swift run DiskRings --render-snapshots <ordner>` geprüft (PNGs hell und dunkel, Optionen `--scan <pfad>`, `--compare-demo`, `--language <code>`).
+`scripts/check.sh` baut, führt alle Tests aus und danach die Performance-Tests im Release-Build. Die Oberfläche wird visuell über `swift run DiskRings --render-snapshots <ordner>` geprüft (PNGs hell und dunkel, Optionen `--scan <pfad>`, `--compare-demo`, `--language <code>`). App-Store-Screenshots (2880 × 1800, nur Demo-Daten): `--store-screenshots <ordner> [--language <code>] [--appearance light|dark]`, siehe `docs/APPSTORE.md`.
 
 Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, `build/DiskRings.app`) und `scripts/make-app.sh --appstore` (App Sandbox mit `Resources/DiskRings-AppStore.entitlements`, `build/appstore/DiskRings.app` und `build/DiskRings-<version>.pkg`). Die App erkennt die Sandbox zur Laufzeit (`AppEnvironment`), siehe SPEC 11 und `docs/APPSTORE.md`.
 
@@ -23,6 +23,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 - `DirectoryReader.swift`: liest Verzeichnisse blockweise mit `getattrlistbulk`, öffnet ohne Symlinks zu folgen (`openat`, `O_NOFOLLOW`).
 - `ScanTypes.swift`: `ScanOptions`, `ScanProgress`, `ScanEvent`, `ScanResult`, `ScanError`, `ScanCancellation`, `SystemInfo`.
 - `ScanProgress+Make.swift`: öffentlicher Konstruktor für `ScanProgress` (Vorschaubilder).
+- `ScanResult+Make.swift`: öffentlicher Konstruktor für `ScanResult` aus einem Baum ohne Scan (Vorschaubilder, Store-Screenshots).
 - `ScanController.swift`: MainActor-Steuerung genau eines Scans für die App; Generationsnummer verwirft Ereignisse alter Scans; `drain()` für Tests.
 - `ScanStall.swift`: `ScanStallDetector`, erkennt Stillstand (z. B. wartender TCC-Dialog) über Einträge und Herzschlag.
 - `ScanSummary.swift`: Kennzahlen eines Scans ohne Baum; `updated(for:)` nach Änderungen.
@@ -48,7 +49,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 - `Rescan.swift`: `RescanResult`, `ScanEngine.rescanBlocking`/`rescan` (Engine-seitiger Teil-Rescan), `nearestExistingIndex`.
 - `PartialRescan.swift`: `RescanQueue` (Regeln für parallele Teil-Rescans), `RescanMerge`, `PartialRescan` (Scan, Einhängen in den aktuellen Baum, Hinweistext, Fortschrittsschätzung).
 - `TreeSearch.swift`: Namenssuche im Teilbaum (ohne Groß-/Kleinschreibung und Akzente).
-- `DemoTree.swift`: deterministische Beispielbäume (Vorschauen, Performance-Tests).
+- `DemoTree.swift`: deterministische Beispielbäume (Vorschauen, Performance-Tests); `home(scale:afterChanges:)` skaliert die Größen und liefert einen späteren Stand für den Vergleich.
 
 ### Core: Sunburst
 - `SunburstLayout.swift`: `SunburstOptions`, `SunburstArc`, Layout ab Fokus (Arcs ringweise, je Ring nach Winkel sortiert, Sammel- und Restsegmente, Segmente der Volume-Wurzel: Systemdaten mit Teilen im zweiten Ring, löschbar, frei; Titel und Erklärungen).
@@ -88,7 +89,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 - `Resources/<sprache>.lproj/`: `Localizable.strings`, `Localizable.stringsdict`, `InfoPlist.strings` für 14 Sprachen.
 
 ### App (`Sources/DiskRings`)
-- `App/DiskRingsApp.swift`: Einstieg (`Entry`: `--render-snapshots`, `--compare-demo`, `--language`; sonst normaler Start, `--scan <pfad>` scannt sofort), Szenen, `RootView`, Menübefehle `AppCommands`.
+- `App/DiskRingsApp.swift`: Einstieg (`Entry`: `--render-snapshots`, `--compare-demo`, `--store-screenshots`, `--appearance`, `--language`; sonst normaler Start, `--scan <pfad>` scannt sofort), Szenen, `RootView`, Menübefehle `AppCommands`.
 - `App/AppState.swift`: zentraler `@Observable`-Zustand auf dem MainActor: Scan, Baum, Layout, Fokus, Auswahl, Papierkorb/Undo, Teil-Rescans, Suche, Toasts; in der Sandbox Ordnerfreigaben (`ensureAccess`, `askForAccess`, `grantAccess`, `revokeAccess`, Lease auf die Scan-Wurzel bzw. die Wurzeln eines Snapshot-Vergleichs).
 - `App/AppDelegate.swift`: Beenden mit dem letzten Fenster, Dock-Klick, Abbruch beim Schließen, Selbsttest `--selftest-close`.
 - `App/FileActions.swift`: AppKit-Seite der Aktionen (Finder, Öffnen, Pfad kopieren), `QuickLookController`, `KeyboardMonitor` (Leertaste).
@@ -110,6 +111,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 - `Snapshots/SnapshotLibrary.swift`: Snapshot-Einstellungen, Liste, Speichern/Umbenennen/Löschen im Hintergrund.
 - `Snapshots/SnapshotsWindow.swift`: Fenster „Snapshots“, Namensdialog, Menübefehle.
 - `Snapshots/SnapshotRenderer.swift`: `--render-snapshots` (Szenen als PNG).
+- `Snapshots/StoreScreenshotRenderer.swift`: `--store-screenshots` (sechs App-Store-Szenen, 1440 × 900 pt bei Skalierung 2).
 - `Start/StartView.swift`: Startbildschirm (Volumes, Ordnerwahl, Hinweis auf Festplattenvollzugriff bzw. in der Sandbox `SandboxAccessBanner`) und Scan-Ansicht mit Stillstands-Hinweis.
 - `Settings/SettingsView.swift`, `Settings/LanguageSection.swift`: Einstellungen, Sprachwahl, Neustart; `FolderAccessSection` (nur Sandbox).
 - `Support/Support.swift`: Farbumrechnung, Texte zu Arcs, Volumes, `VolumeUsageBar`/`VolumeUsageLegend` (gestapelter Belegungsbalken auf Startbildschirm und Statusleiste), `ViewState` (Ersatz für `@State`, siehe DECISIONS).

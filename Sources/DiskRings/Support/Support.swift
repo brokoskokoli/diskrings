@@ -1,6 +1,7 @@
 import AppKit
 import DiskRingsCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 extension Color {
     init(_ c: DiskRingsCore.RGBColor) {
@@ -159,8 +160,14 @@ struct VolumeUsageLegend: View {
 }
 
 enum Volumes {
+    /// Icon des Volumes; fehlt der Pfad (gerade ausgeworfen, erfundene Volumes
+    /// in den Vorschaubildern), das Icon externer Laufwerke statt eines Dokuments.
     @MainActor static func icon(for path: String) -> NSImage {
-        NSWorkspace.shared.icon(forFile: path)
+        guard FileManager.default.fileExists(atPath: path) else {
+            return NSImage(contentsOfFile: "/System/Library/Extensions/IOStorageFamily.kext/Contents/Resources/External.icns")
+                ?? NSWorkspace.shared.icon(for: .volume)
+        }
+        return NSWorkspace.shared.icon(forFile: path)
     }
 }
 

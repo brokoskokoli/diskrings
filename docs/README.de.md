@@ -36,7 +36,7 @@ DiskRings scannt ein Volume oder einen Ordner und zeigt die Belegung als Sunburs
 
 ### Sunburst-Diagramm
 
-<img src="images/sunburst.png" alt="Sunburst-Diagramm von /usr/share mit Ordnerliste" width="900">
+<img src="images/sunburst.png" alt="Sunburst-Diagramm, hineingezoomt in Library, mit Ordnerliste (Beispieldaten)" width="900">
 
 ### Vergleich: Wachstum
 
@@ -110,6 +110,7 @@ swift run -c release diskrings-cli scan ~ --top 10 --depth 2
 swift run -c release diskrings-cli volumes
 swift run DiskRings --render-snapshots build/snapshots --scan /usr/share   # PNGs, hell/dunkel
 swift run DiskRings --render-snapshots build/snapshots --compare-demo      # Vergleichsansichten
+swift run DiskRings --store-screenshots build/store --language de --appearance light  # App-Store-Screenshots 2880×1800
 swift scripts/make-icon.swift            # App-Icon (Resources/DiskRings.icns)
 swift scripts/make-social-preview.swift  # docs/images/social-preview.png
 ```

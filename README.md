@@ -46,7 +46,7 @@ DiskRings scans a volume or folder and draws its disk usage as a sunburst: every
 
 Every ring is a folder level. Hover for details, click to zoom in, and the list on the right follows along.
 
-<img src="docs/images/sunburst.png" alt="Sunburst chart of /usr/share with the folder list" width="900">
+<img src="docs/images/sunburst.png" alt="Sunburst chart zoomed into the Library folder, with the folder list (demo data)" width="900">
 
 ### Compare scans: growth view
 
@@ -134,6 +134,13 @@ Command-line tool:
 swift run -c release diskrings-cli scan ~ --top 10 --depth 2
 swift run -c release diskrings-cli scan / --json
 swift run -c release diskrings-cli volumes
+```
+
+UI previews and Mac App Store screenshots (demo data only, nothing is scanned):
+
+```sh
+swift run DiskRings --render-snapshots build/snapshots        # PNGs of many views, light and dark
+swift run DiskRings --store-screenshots build/store --language en --appearance dark   # 2880×1800
 ```
 
 ## Publishing a new version

@@ -1,18 +1,37 @@
 /// Deterministische Beispielbäume für gerenderte Vorschauen, Tests und
 /// Performance-Messungen. Kein Dateisystemzugriff.
 public enum DemoTree {
+    /// Neuer Ordner im späteren Stand (`afterChanges`), relativ zur Wurzel.
+    public static let newFolder = "Downloads/Xcode 26 beta"
+
     /// Ein Home-Verzeichnis mit typischer Verteilung (Library, Filme, Fotos,
-    /// Projekte …), rund 1 500 Knoten, ca. 180 GB.
-    public static func home(rootPath: String = "/Users/demo") -> ScanTree {
+    /// Projekte …), rund 1 500 Knoten, ca. 250 GB.
+    ///
+    /// - Parameters:
+    ///   - scale: Faktor für alle zufällig verteilten Dateigrößen (App-Store-
+    ///     Screenshots: 2 für ein plausibles 1-TB-Volume). Die Struktur bleibt gleich.
+    ///   - afterChanges: späterer Stand für den Vergleichsmodus: neuer Ordner
+    ///     `newFolder` in Downloads, ein neues Simulator-Gerät, gewachsene
+    ///     Caches und Datensätze; weniger Filme und Installer.
+    public static func home(rootPath: String = "/Users/demo", scale: UInt64 = 1,
+                            afterChanges: Bool = false) -> ScanTree {
         var b = ScanTreeBuilder(rootName: (rootPath as String).split(separator: "/").last.map(String.init) ?? "/")
         var rng = SplitMix64(seed: 42)
         let GB: UInt64 = 1_000_000_000, MB: UInt64 = 1_000_000
 
-        func files(_ parent: Int32, prefix: String, ext: String, count: Int, avg: UInt64) {
+        /// `keep`: nur die ersten Dateien anlegen; der Zufallsgenerator läuft
+        /// trotzdem für alle weiter, damit der übrige Baum gleich bleibt.
+        func files(_ parent: Int32, prefix: String, ext: String, count: Int, avg: UInt64, keep: Int? = nil) {
             for i in 0 ..< count {
                 let f = 0.15 + 1.7 * rng.nextUnit()
-                b.file("\(prefix) \(i + 1).\(ext)", size: UInt64(Double(avg) * f * f), in: parent)
+                if i < (keep ?? count) {
+                    b.file("\(prefix) \(i + 1).\(ext)", size: UInt64(Double(avg * scale) * f * f), in: parent)
+                }
             }
+        }
+        /// Gleich große Dateien ohne Zufall (nur im späteren Stand).
+        func added(_ parent: Int32, prefix: String, ext: String, count: Int, size: UInt64, from first: Int = 1) {
+            for i in 0 ..< count { b.file("\(prefix) \(first + i).\(ext)", size: size * scale, in: parent) }
         }
 
         let library = b.directory("Library")
@@ -29,6 +48,7 @@ public enum DemoTree {
                      "org.swift.swiftpm", "com.apple.dt.Xcode"] {
             let c = b.directory(name, in: caches)
             files(c, prefix: "chunk", ext: "cache", count: 8 + Int(rng.next() % 40), avg: UInt64(rng.next() % 300) * MB + 20 * MB)
+            if afterChanges, name == "Google" { added(c, prefix: "update", ext: "cache", count: 6, size: 600 * MB) }
         }
         let developer = b.directory("Developer", in: library)
         let derived = b.directory("DerivedData", in: developer)
@@ -43,6 +63,10 @@ public enum DemoTree {
             let s = b.directory("Device \(i)", in: sims)
             files(s, prefix: "data", ext: "img", count: 5, avg: 1_400 * MB)
         }
+        if afterChanges {
+            let s = b.directory("Device 5", in: sims)
+            added(s, prefix: "data", ext: "img", count: 5, size: 1_400 * MB)
+        }
         let appSupport = b.directory("Application Support", in: library)
         for name in ["MobileSync", "Slack", "Code", "Steam", "JetBrains"] {
             let c = b.directory(name, in: appSupport)
@@ -51,7 +75,7 @@ public enum DemoTree {
         files(library, prefix: "prefs", ext: "plist", count: 120, avg: 40_000)
 
         let movies = b.directory("Movies")
-        files(movies, prefix: "Vacation", ext: "mov", count: 9, avg: 3 * GB)
+        files(movies, prefix: "Vacation", ext: "mov", count: 9, avg: 3 * GB, keep: afterChanges ? 6 : nil)
         let fcp = b.directory("Final Cut Library.fcpbundle", in: movies, flags: .package)
         files(fcp, prefix: "render", ext: "mov", count: 14, avg: 900 * MB)
 
@@ -71,7 +95,11 @@ public enum DemoTree {
         files(documents, prefix: "Note", ext: "txt", count: 200, avg: 4_000)
 
         let downloads = b.directory("Downloads")
-        files(downloads, prefix: "Installer", ext: "dmg", count: 7, avg: 1_200 * MB)
+        files(downloads, prefix: "Installer", ext: "dmg", count: 7, avg: 1_200 * MB, keep: afterChanges ? 3 : nil)
+        if afterChanges {
+            let xcode = b.directory(String(newFolder.split(separator: "/").last ?? ""), in: downloads)
+            added(xcode, prefix: "Xcode.xip.part", ext: "bin", count: 6, size: 2_500 * MB)
+        }
         files(downloads, prefix: "File", ext: "zip", count: 25, avg: 90 * MB)
 
         let music = b.directory("Music")
@@ -89,8 +117,11 @@ public enum DemoTree {
             let nm = b.directory(p == "ml-experiments" ? "datasets" : "node_modules", in: d)
             files(nm, prefix: "pkg", ext: p == "ml-experiments" ? "csv" : "js", count: 40,
                   avg: p == "ml-experiments" ? 300 * MB : 2 * MB)
+            if afterChanges, p == "ml-experiments" {
+                added(nm, prefix: "pkg", ext: "csv", count: 8, size: 500 * MB, from: 41)
+            }
         }
-        b.directory("Leer")
+        b.directory("Empty")
         b.directory("Public")
         b.file(".zsh_history", size: 2 * MB, flags: .hidden)
         b.file(".DS_Store", size: 12_000, flags: .hidden)

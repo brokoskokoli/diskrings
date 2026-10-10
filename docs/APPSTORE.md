@@ -53,7 +53,7 @@ Danach in der App:
 | Preise und Verfügbarkeit | Gratis (oder Preis; dafür braucht es den Vertrag „Paid Apps“ mit Steuer- und Bankdaten unter *Business*) |
 | App-Datenschutz | „Daten werden nicht erfasst“; **URL zur Datenschutzrichtlinie**: `https://brokoskokoli.github.io/diskrings/privacy.html` (Quelle `docs/privacy.html`, erscheint nach dem Merge auf `main` über GitHub Pages) |
 | Version 0.x | Beschreibung, Schlüsselwörter, Support-URL (`https://github.com/brokoskokoli/diskrings/issues`), Marketing-URL (die Pages-Seite), Copyright „2026 Stefan Richter“ |
-| Screenshots | mindestens einer, 16:10: 1280×800, 1440×900, 2560×1600 oder 2880×1800 (liefere ich aus dem Snapshot-Renderer) |
+| Screenshots | mindestens einer, 16:10: 1280×800, 1440×900, 2560×1600 oder 2880×1800; fertig gerendert mit `--store-screenshots`, siehe [Screenshots](#screenshots) |
 | App Review | Kontaktdaten; Hinweis für die Prüfer, siehe unten |
 
 **Exportkontrolle:** DiskRings verwendet keine eigene Verschlüsselung. Die Store-Variante setzt `ITSAppUsesNonExemptEncryption = false` im Info.plist, dann entfällt die Frage beim Hochladen.
@@ -89,6 +89,31 @@ Danach in der App:
 5. In der Version den Build auswählen → **Zur Prüfung einreichen**.
 6. Nach der Freigabe automatisch oder von Hand veröffentlichen.
 
+## Screenshots
+
+Die App rendert die Store-Screenshots selbst, ausschließlich aus Demo-Daten (Home `/Users/demo`, erfundenes 994-GB-Volume „Macintosh HD“, zwei erfundene externe Volumes). Es wird nichts gescannt, und weder die echte Snapshot-Ablage noch die Volumes des Rechners erscheinen:
+
+```sh
+swift build
+for lang in en de; do for app in light dark; do
+  .build/debug/DiskRings --store-screenshots build/store/$lang/$app --language $lang --appearance $app
+done; done
+sips -g pixelWidth -g pixelHeight build/store/*/*/*.png   # alle 2880 × 1800
+```
+
+`--store-screenshots <ordner>` rendert den ganzen Fensterinhalt mit 1440 × 900 Punkten bei Skalierung 2, also genau **2880 × 1800 px** (16:10). `--language <code>` wählt die Sprache (alle 14 möglich), `--appearance light|dark` das Erscheinungsbild (Standard: hell). Szenen:
+
+| Datei | Inhalt |
+|---|---|
+| `01-overview.png` | ganzes Volume mit Systemdaten, Löschbar und Frei im Ring, Liste, Belegungsbalken in der Statusleiste, Tooltip auf Library |
+| `02-drilldown.png` | hineingezoomt in Library, Breadcrumb, Caches in der Liste aufgeklappt |
+| `03-compare-growth.png` | Vergleich mit einem Snapshot: Wachstums-Sunburst und „Größte Veränderungen“ |
+| `04-compare-delta.png` | Delta-Färbung (orange/blau), entfernte Filme gestrichelt |
+| `05-context-menu.png` | Kontextmenü auf Downloads (nachgebildet wie im Snapshot-Renderer, ins Fenster gesetzt) |
+| `06-start.png` | Startbildschirm mit Volumes und gestapelten Balken |
+
+Code: `Sources/DiskRings/Snapshots/StoreScreenshotRenderer.swift`, Demo-Bäume in `DemoTree.home(scale:afterChanges:)`.
+
 ## Hinweis für die App-Prüfung (Vorschlag)
 
 > DiskRings visualizes disk usage. In the sandboxed App Store version it only reads folders the user explicitly selects in the Open dialog (security-scoped bookmarks). "Move to Trash" uses FileManager.trashItem, always within user-selected folders, never deletes permanently, is undoable (⌘Z), and asks for confirmation. The app makes no network connections and collects no data.
@@ -120,4 +145,4 @@ Die Store-Variante hat einen eigenen Container mit eigenen Einstellungen, Freiga
 ## Offene Punkte vor der ersten Einreichung
 
 - Auf echtem Gerät mit Distributionssignatur einmal prüfen: Volume freigeben und scannen, App neu starten (Bookmark wird aufgelöst), Testordner in einem freigegebenen temporären Ordner in den Papierkorb legen und mit ⌘Z zurücklegen. Ob die Sandbox das Zurücklegen aus `~/.Trash` erlaubt, ist bisher nicht auf echten Daten geprüft.
-- Screenshots aus dem Snapshot-Renderer (`swift run DiskRings --render-snapshots build/snapshots`; Sandbox-Ansichten: `start-sandbox-*`, `settings-sandbox-*`).
+- Screenshots: `--store-screenshots` (siehe [Screenshots](#screenshots)) hochladen; Sandbox-Ansichten bei Bedarf aus dem Snapshot-Renderer (`start-sandbox-*`, `settings-sandbox-*`).

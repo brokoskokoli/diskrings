@@ -401,7 +401,7 @@ struct SunburstLayoutTests {
             expectConsistent(l, t)
             #expect(l.ringCount <= rings)
         }
-        for path in ["Library", "Library/Caches", "Pictures/Photos Library.photoslibrary", "Leer"] {
+        for path in ["Library", "Library/Caches", "Pictures/Photos Library.photoslibrary", "Empty"] {
             let l = SunburstLayout(tree: t, focus: idx(t, path))
             expectConsistent(l, t)
         }

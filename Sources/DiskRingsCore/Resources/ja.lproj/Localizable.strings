@@ -343,6 +343,7 @@
 "compare.busy.computing" = "比較を計算中…";
 "compare.error" = "比較できません：%@";
 "compare.currentScan" = "現在のスキャン";
+"store.demo.snapshotName" = "Xcode アップデート前";
 "compare.list.accessibility" = "比較：%@の内容";
 "compare.column.name" = "名前";
 "compare.column.before" = "以前";
