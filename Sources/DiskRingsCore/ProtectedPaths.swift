@@ -68,6 +68,12 @@ public struct ProtectedPaths: Sendable, Equatable {
         normVolumes = Set(volumeRoots.map(Self.normalize))
     }
 
+    /// Dieselbe Schutzliste mit aktuellen Volume-Wurzeln (beim Start
+    /// bestimmt, aber Volumes werden auch später ein- und ausgehängt).
+    public func refreshingVolumeRoots(_ roots: [String] = ProtectedPaths.mountedVolumeRoots()) -> ProtectedPaths {
+        ProtectedPaths(home: home, appBundlePath: appBundlePath, volumeRoots: roots)
+    }
+
     /// `nil`, wenn der Pfad in den Papierkorb darf.
     public func reason(for path: String) -> Reason? {
         let n = Self.normalize(path)

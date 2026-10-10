@@ -403,3 +403,6 @@
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
 "trash.undo.parentChanged" = "Oryginalny folder został zastąpiony lub przeniesiony (np. przez dowiązanie symboliczne)";
+"trash.error.mountPoint" = "„%@” to inny wolumin (punkt montowania) i nie można go przenieść do kosza";
+"trash.error.containsMountPoint" = "Zawiera inny wolumin (punkt montowania „%@”) i nie można go przenieść do kosza";
+"trash.confirm.sizeUncertain" = "Rozmiar nie jest w pełni znany (elementy tylko w chmurze, nieczytelne lub jeszcze niezeskanowane), dlatego zawsze wymagane jest potwierdzenie.";

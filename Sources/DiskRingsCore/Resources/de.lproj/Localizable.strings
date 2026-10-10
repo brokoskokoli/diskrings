@@ -403,3 +403,6 @@
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
 "trash.undo.parentChanged" = "Der ursprüngliche Ordner wurde ersetzt oder verschoben (z. B. durch einen symbolischen Link)";
+"trash.error.mountPoint" = "„%@“ ist ein anderes Volume (Einhängepunkt) und kann nicht in den Papierkorb gelegt werden";
+"trash.error.containsMountPoint" = "Enthält ein anderes Volume (Einhängepunkt „%@“) und kann nicht in den Papierkorb gelegt werden";
+"trash.confirm.sizeUncertain" = "Die Größe ist nicht vollständig bekannt (nur in der Cloud, nicht lesbar oder noch nicht eingelesen), deshalb wird immer nachgefragt.";

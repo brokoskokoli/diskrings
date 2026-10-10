@@ -403,3 +403,6 @@
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
 "trash.undo.parentChanged" = "Le dossier d’origine a été remplacé ou déplacé (par exemple par un lien symbolique)";
+"trash.error.mountPoint" = "« %@ » est un autre volume (point de montage) et ne peut pas être placé dans la corbeille";
+"trash.error.containsMountPoint" = "Contient un autre volume (point de montage « %@ ») et ne peut pas être placé dans la corbeille";
+"trash.confirm.sizeUncertain" = "La taille n’est pas entièrement connue (éléments uniquement dans le cloud, illisibles ou pas encore analysés) ; une confirmation est donc toujours demandée.";

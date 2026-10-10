@@ -403,3 +403,6 @@
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
 "trash.undo.parentChanged" = "La cartella originale è stata sostituita o spostata (ad esempio da un link simbolico)";
+"trash.error.mountPoint" = "“%@” è un altro volume (punto di montaggio) e non può essere spostato nel Cestino";
+"trash.error.containsMountPoint" = "Contiene un altro volume (punto di montaggio “%@”) e non può essere spostato nel Cestino";
+"trash.confirm.sizeUncertain" = "La dimensione non è del tutto nota (elementi solo nel cloud, non leggibili o non ancora scansionati), quindi viene sempre chiesta conferma.";
