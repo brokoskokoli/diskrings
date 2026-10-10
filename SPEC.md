@@ -34,7 +34,7 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 ## 3. Funktionsumfang
 
 ### 3.1 Startbildschirm
-- Liste der eingehängten Volumes (Name, Icon, Gesamt/Belegt/Frei als Balken).
+- Liste der eingehängten Volumes (Name, Icon, gestapelter Balken *Ihre Daten / Systemdaten / Löschbar / Frei* mit Legende, Farben wie im Diagramm; ohne Scan sind „Ihre Daten“ geschätzt als belegt − andere Volumes − löschbar).
 - Daten über `URLResourceValues`: `volumeTotalCapacity`, `volumeAvailableCapacityForImportantUsage` (enthält den bereinigbaren Speicher) und `volumeAvailableCapacity` (wirklich frei).
 - Button „Ordner wählen…“ (NSOpenPanel), außerdem Drag & Drop eines Ordners aufs Fenster.
 - Hinweis-Banner, wenn kein Festplattenvollzugriff erteilt ist, mit Button, der die Systemeinstellung öffnet:
@@ -65,7 +65,7 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 ```
 
 - **Links:** Sunburst. **Rechts:** Detailliste (Outline) des aktuell fokussierten Ordners, nach Größe sortiert, mit Prozentbalken. Diagramm und Liste sind synchronisiert (Hover und Auswahl wirken in beiden).
-- **Unten:** Statusleiste mit der Volume-Belegung.
+- **Unten:** Statusleiste mit der Volume-Belegung; beim Scan einer Volume-Wurzel zusätzlich „Systemdaten X“ und ein kleiner gestapelter Balken wie auf dem Startbildschirm (Tooltip mit den vier Werten).
 - **Optionaler Tab „Größte Dateien“:** Top 100 Dateien im gesamten Scan, filterbar nach Typ.
 
 ### 3.4 Sunburst-Diagramm
@@ -127,7 +127,7 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 ### 3.9 Snapshots und Vergleich („Wo ist mein Speicher hin?“)
 **Snapshot speichern**
 - Nach jedem vollständigen Scan (automatisch, abschaltbar) oder manuell per Menü „Ablage → Snapshot sichern“ (⌘S), mit optionalem Namen („vor Xcode-Update“).
-- Gespeichert wird ein kompaktes Abbild des Baums: Pfadstruktur, allokierte Größe und Dateianzahl pro Knoten, dazu Zeitpunkt, Scan-Wurzel, Volume-UUID und die Volume-Kennzahlen (belegt, frei, nicht zugeordnet).
+- Gespeichert wird ein kompaktes Abbild des Baums: Pfadstruktur, allokierte Größe und Dateianzahl pro Knoten, dazu Zeitpunkt, Scan-Wurzel, Volume-UUID und die Volume-Kennzahlen (belegt, frei, nicht zugeordnet und – beim Scan einer Volume-Wurzel – dessen Aufteilung in andere Volumes, nicht lesbar, löschbar, frei; optionales Feld im JSON-Kopf, ältere Snapshots laden ohne).
 - Um Platz zu sparen, werden standardmäßig nur **Ordner und Dateien ab 1 MB** gespeichert; kleinere Dateien fließen nur in die Ordnersumme ein. Ein Snapshot von 2 Mio. Dateien wird so etwa 5–15 MB groß.
 - Format: eigenes Binärformat (Knoten-Array wie in 4.2 plus Namenspuffer), mit LZFSE komprimiert (`Compression`-Framework). Ablage unter `~/Library/Application Support/DiskRings/Snapshots/<volume-uuid>/<zeitstempel>.drsnap`.
 - Verwaltung im Fenster „Snapshots“: Liste mit Datum, Name, Scan-Wurzel und Gesamtgröße; umbenennen, löschen, im Finder zeigen.
@@ -139,7 +139,7 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 - Ergebnis pro Knoten: `alt`, `neu`, `delta = neu − alt` und ein Status: *neu*, *entfernt*, *gewachsen*, *geschrumpft* oder *unverändert*.
 
 **Darstellung im Vergleichsmodus**
-- Kopfzeile: „Seit 02.10., 09:14: belegt +38,2 GB · frei −38,2 GB · davon nicht zugeordnet +4,1 GB“.
+- Kopfzeile: „Seit 02.10., 09:14: belegt +38,2 GB · frei −38,2 GB · davon Systemdaten +4,1 GB“ (enthält ein Snapshot die Aufteilung nicht, weiter „davon nicht zugeordnet“).
 - **Sunburst-Variante „Wachstum“:** Die Segmentgröße entspricht dem *Zuwachs* (nur positive Deltas), sodass das Diagramm direkt zeigt, wohin der neue Speicher gegangen ist. Drill-down funktioniert wie gewohnt.
 - Umschaltbar auf die normale Ansicht mit **Delta-Färbung**: Rot bedeutet gewachsen, Grün geschrumpft, die Intensität richtet sich nach der Größe des Deltas, neue Elemente erhalten eine Markierung und entfernte Elemente erscheinen grau gestrichelt.
 - Die Detailliste bekommt zusätzliche Spalten (*Vorher*, *Jetzt*, *Δ*) und lässt sich nach Δ sortieren.
@@ -158,7 +158,12 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 1. **Allokierte Größe statt logischer Größe:** Gezählt wird `st_blocks * 512` beziehungsweise `totalFileAllocatedSize`. Sparse-Dateien und Dateien mit APFS-Kompression sind sonst völlig falsch.
 2. **Hardlinks:** Bei `st_nlink > 1` wird `(st_dev, st_ino)` in einem Set gemerkt und die Datei nur beim ersten Auftreten gezählt. Das betrifft vor allem Time-Machine-Restbestände und Xcode.
 3. **APFS-Klone:** Geklonte Dateien teilen sich Blöcke, das ist über die öffentliche API aber nicht erkennbar. Die Summe kann deshalb über der tatsächlichen Belegung liegen. Das ist ein bekannte Grenze, die in der Statusleiste erklärt wird („Klone/Snapshots können Abweichungen verursachen“).
-4. **Snapshots und bereinigbarer Speicher:** Lokale Time-Machine-Snapshots belegen Platz, der in keinem Ordner auftaucht. Die Differenz *Volume belegt − Scan-Summe* wird deshalb als eigenes Segment **„Nicht zugeordnet (System, Snapshots, Purgeable)“** im äußersten Bereich der Wurzel gezeigt. Genau das macht Scanner unter Windows auch, und es ist der wichtigste Aha-Effekt.
+4. **Systemdaten, löschbarer und freier Speicher:** Platz, der in keinem Ordner auftaucht (*Volume belegt − Scan-Summe*, früher ein graues Segment „Nicht zugeordnet“), wird beim Scan einer Volume-Wurzel im ersten Ring hinter den Ordnern aufgeteilt (`VolumeBreakdown`):
+   - **„Systemdaten“** (eigene, nicht graue Farbe) mit Teilen im zweiten Ring: die **anderen APFS-Volumes im selben Container** (Preboot, VM, Recovery, Update, aber auch z. B. „Nix Store“), jeweils mit Namen (bekannte Rollen verständlich: „Startdaten (Preboot)“, „Auslagerung & Ruhezustand (VM)“ …) und ihrem belegten Platz, sowie der Rest **„Nicht lesbare Systemdaten“** (Spotlight-Index, Dokumentversionen, fseventsd, `/private/var/db`, lokale Snapshots, APFS-Metadaten; ohne Festplattenvollzugriff auch die nicht lesbaren Ordner, mit Hinweis). Gemessen werden eingehängte Volumes über `getmntinfo` (Container aus `f_mntfromname`) und `getattrlist(ATTR_VOL_SPACEUSED)`, ohne Administratorrechte; außerhalb der Sandbox ergänzt `diskutil apfs list -plist` (Zeitlimit) nicht eingehängte Volumes und die Rollen. Nicht mitgezählt werden das gescannte Volume selbst, beim Scan von „/“ das über Firmlinks verbundene Data-Volume und, bei „Andere Volumes überqueren“, unter der Wurzel eingehängte Volumes.
+   - **„Löschbar“** = `volumeAvailableCapacityForImportantUsage − volumeAvailableCapacity` (gehört bei macOS zu „belegt“).
+   - Systemdaten + löschbar ergeben **genau** belegt − Scan-Summe (nie negativ). Reicht dieser Rest nicht, werden zuerst die anderen Volumes (größte zuerst), dann löschbar zugeteilt und geklemmt; der Rest ist „Nicht lesbare Systemdaten“.
+   - **„Frei“** (`volumeAvailableCapacity`): hellgrau und schraffiert, ohne Ast-Farbe. Die Prozente im Diagramm beziehen sich dann auf das ganze Volume. Abschaltbar im Menü „Darstellung → Freien Speicher im Ring zeigen“ (Standard: an).
+   - Diese Segmente lassen sich weder in den Papierkorb legen noch neu scannen; das Kontextmenü zeigt nur Informationen. Teile der Systemdaten, löschbar und frei reichen bis zum Außenrand. In der Liste stehen sie als eigene Zeilen auf der obersten Ebene (Systemdaten mit eingerückten Teilen). Nur im Größenmodus „belegt“ und nur, wenn der Fokus die Wurzel ist.
 5. **Firmlinks / Data-Volume:** `/` (System, schreibgeschützt) und `/System/Volumes/Data` sind auf APFS zwei Volumes, die über Firmlinks verbunden sind. Beim Scan von „Macintosh HD“ wird `/` gescannt. Mount-Grenzen werden über `st_dev` erkannt; `/System/Volumes/Data` wird **nicht** doppelt gescannt, wohl aber die Firmlink-Ziele wie `/Users` und `/Applications`, die unter `/` erscheinen.
 6. **Symlinks** werden nicht verfolgt (`FTS_PHYSICAL`); sie zählen mit ihrer eigenen, winzigen Größe.
 7. **Pakete** (`.app`, `.photoslibrary`, `.bundle`) sind Ordner und werden normal durchlaufen, damit man in die Photos-Mediathek hineinzoomen kann. In der Anzeige bekommen sie das Finder-Icon und das Kennzeichen „Paket“.
@@ -232,7 +237,7 @@ Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbin
 - Notarisierung über `xcrun notarytool` mit einem im Schlüsselbund gespeicherten Profil (`notarytool store-credentials`). Es werden keine Zugangsdaten im Repo abgelegt.
 - Verteilung als ZIP oder DMG über **GitHub Releases** (Repo `brokoskokoli/diskrings`). Ein Auto-Update mit Sparkle ist für später vorgesehen.
 - Signieren und Notarisieren laufen lokal, nicht in der CI, damit das Zertifikat den Rechner nicht verlässt.
-- **Festplattenvollzugriff (Full Disk Access)** ist nötig für `~/Library/Mail`, `Messages`, `Safari`, Container anderer Apps usw. Ohne diesen Zugriff funktioniert die App trotzdem, zeigt aber mehr „nicht lesbar“-Ordner und einen größeren Anteil „Nicht zugeordnet“.
+- **Festplattenvollzugriff (Full Disk Access)** ist nötig für `~/Library/Mail`, `Messages`, `Safari`, Container anderer Apps usw. Ohne diesen Zugriff funktioniert die App trotzdem, zeigt aber mehr „nicht lesbar“-Ordner und einen größeren Anteil „Nicht lesbare Systemdaten“.
   - Erkennung: einen Lesetest auf `~/Library/Safari` oder `/Library/Application Support/com.apple.TCC/TCC.db` versuchen.
 - Keine Netzwerkzugriffe und keine Telemetrie.
 - Bei der Variante für den App Store wären nur vom Nutzer gewählte Ordner per Security-Scoped Bookmark erlaubt. Das ist bewusst nicht Teil von v1.
@@ -247,7 +252,7 @@ Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbin
 | M2 | SwiftUI-Fenster: Volume-Liste, Ordnerwahl, Fortschritt, Detailliste | Benutzbar ohne Diagramm |
 | M3 | Sunburst: Layout, Canvas, Hover, Tooltip, Klick-Zoom, Breadcrumb, Zurück/Vor | Kernerlebnis wie bei Scanner |
 | M4 | Kontextmenü, Finder, Quick Look, Papierkorb mit Undo, Schutzliste | Aufräumen direkt aus der App |
-| M5 | Segment „Nicht zugeordnet“, Volume-Statusleiste, Hinweis auf Festplattenvollzugriff, Live-Update während des Scans | macOS-spezifischer Feinschliff |
+| M5 | Segment „Nicht zugeordnet“ (heute Systemdaten/Löschbar/Frei, siehe 4.1 Punkt 4), Volume-Statusleiste, Hinweis auf Festplattenvollzugriff, Live-Update während des Scans | macOS-spezifischer Feinschliff |
 | M6 | Teil-Rescan per Rechtsklick, Snapshots speichern/verwalten, Vergleichsmodus (Wachstums-Sunburst, Delta-Spalten, Größte Veränderungen) | „Wo ist mein Speicher hin?“ |
 | M7 | Signieren, Notarisieren, Release-Skript, erstes GitHub Release | Weitergabe möglich |
 | M8 (opt.) | `getattrlistbulk`, FSEvents-Live-Update, Tab „Größte Dateien“, Farbschema nach Dateityp, Einstellungen | Tempo und Komfort |
@@ -257,7 +262,7 @@ Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbin
 ## 9. Akzeptanzkriterien (Auszug)
 
 - Ein Scan von `~` liefert eine Gesamtgröße, die maximal 1 % von `du -sk ~` abweicht (bei identischem Hardlink-Verhalten).
-- Ein Scan von „Macintosh HD“ ergibt *Scan-Summe + Nicht zugeordnet = Volume belegt*.
+- Ein Scan von „Macintosh HD“ ergibt *Scan-Summe + Systemdaten + Löschbar = Volume belegt* (sofern die Scan-Summe nicht darüber liegt).
 - Das Diagramm bleibt bei 2 Mio. Dateien flüssig (Hover unter 16 ms pro Frame) und der Speicherbedarf unter 300 MB.
 - „In den Papierkorb“ verschiebt das Element nachweislich in `~/.Trash`, ⌘Z stellt es wieder her, und das Diagramm aktualisiert sich ohne Rescan.
 - Auf geschützte Pfade ist kein Löschen möglich, auch nicht per Tastenkürzel.

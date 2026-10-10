@@ -25,7 +25,9 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `ScanStall.swift`: `ScanStallDetector`, erkennt Stillstand (z. B. wartender TCC-Dialog) über Einträge und Herzschlag.
 - `ScanSummary.swift`: Kennzahlen eines Scans ohne Baum; `updated(for:)` nach Änderungen.
 - `PackageDetector.swift`: erkennt Pakete an der Endung (feste Liste).
-- `VolumeInfo.swift`: Kennzahlen eingehängter Volumes, „Nicht zugeordnet“.
+- `VolumeInfo.swift`: Kennzahlen eingehängter Volumes, „Nicht zugeordnet“ (belegt − Scan-Summe).
+- `ContainerVolumes.swift`: `ContainerVolume` (Name, Gerät, Rollen, belegt, Anzeigename), `ContainerVolumes` (eingehängte APFS-Volumes per `getmntinfo`/`getattrlist`, Container aus dem Gerätenamen, `others(…)` ohne die vom Scan abgedeckten Volumes), `APFSVolumeListing` und `DiskutilAPFSListing` (nicht eingehängte Volumes über `diskutil apfs list -plist`, Zeitlimit, nicht in der Sandbox).
+- `VolumeBreakdown.swift`: `VolumeBreakdown` (rein: Ihre Daten, Systemdaten mit Teilen, löschbar, frei; Summe = altes „Nicht zugeordnet“), `RootSegments` (Segmente der Volume-Wurzel für das Layout).
 - `FullDiskAccess.swift`: Erkennung des Festplattenvollzugriffs, Hinweis vor dem Scan.
 - `MappedBuffer.swift`: wachsender `mmap`-Puffer für Zwischenstände (gibt Speicher sofort zurück).
 - `MemDebug.swift`: Speicher- und Snapshot-Messausgaben über `DISKRINGS_DEBUG_MEM` / `DISKRINGS_DEBUG_SNAPSHOT`.
@@ -43,10 +45,11 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `DemoTree.swift`: deterministische Beispielbäume (Vorschauen, Performance-Tests).
 
 ### Core: Sunburst
-- `SunburstLayout.swift`: `SunburstOptions`, `SunburstArc`, Layout ab Fokus (Arcs ringweise, je Ring nach Winkel sortiert, Sammel- und Restsegmente, „Nicht zugeordnet“).
+- `SunburstLayout.swift`: `SunburstOptions`, `SunburstArc`, Layout ab Fokus (Arcs ringweise, je Ring nach Winkel sortiert, Sammel- und Restsegmente, Segmente der Volume-Wurzel: Systemdaten mit Teilen im zweiten Ring, löschbar, frei; Titel und Erklärungen).
 - `SunburstGeometry.swift`: Ringradien, `SunburstHit`, `SunburstHitTester` (Polarkoordinaten + binäre Suche).
 - `SunburstLabels.swift`: Platzierung der Beschriftungen.
 - `Palette.swift`: `RGBColor`, Farbschemata „Ast“ und „Dateityp“, Hell/Dunkel, Kontrast der Beschriftung.
+- `Palette+Volume.swift`: Farben der Volume-Segmente (Systemdaten, löschbar, frei), auch für die Belegungsbalken.
 - `Palette+Delta.swift`: `DeltaScale` und Farben des Vergleichsmodus.
 - `ZoomTransition.swift`: Zoom-Animation zwischen zwei Layouts (`ZoomTransform`, `DisplayArc`).
 - `EditTransition.swift`: Animation nach Papierkorb, Teil-Rescan, Undo (Zuordnung über `translate`).
@@ -85,7 +88,7 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `App/SwipeNavigation.swift`: Wischgesten für Zurück/Vor.
 - `Browser/BrowserView.swift`: Hauptansicht, Toolbar, Breadcrumb, Statusleiste.
 - `Browser/DetailListView.swift`: Detailliste (Outline) neben dem Diagramm.
-- `Browser/NodeContextMenu.swift`: `ContextMenuTarget`, `ContextMenuRegistry` (erweiterbare Abschnitte), Menü-Views.
+- `Browser/NodeContextMenu.swift`: `ContextMenuTarget`, `ContextMenuRegistry` (erweiterbare Abschnitte), Menü-Views, `VolumeSegmentMenu` (nur Informationen für Systemdaten, löschbar, frei).
 - `Browser/ActionViews.swift`: Papierkorb-Dialog, Info-Fenster, Toast, Suchfeld und Trefferliste.
 - `Sunburst/SunburstView.swift`: Diagramm-View (Canvas, Hover, Klick, Tooltip, VoiceOver-Elemente).
 - `Sunburst/SunburstRenderer.swift`: Zeichnen der Arcs in einen `GraphicsContext`.
@@ -100,21 +103,21 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 - `Snapshots/SnapshotRenderer.swift`: `--render-snapshots` (Szenen als PNG).
 - `Start/StartView.swift`: Startbildschirm (Volumes, Ordnerwahl) und Scan-Ansicht mit Stillstands-Hinweis.
 - `Settings/SettingsView.swift`, `Settings/LanguageSection.swift`: Einstellungen, Sprachwahl, Neustart.
-- `Support/Support.swift`: Farbumrechnung, Texte zu Arcs, Volumes, `ViewState` (Ersatz für `@State`, siehe DECISIONS).
+- `Support/Support.swift`: Farbumrechnung, Texte zu Arcs, Volumes, `VolumeUsageBar`/`VolumeUsageLegend` (gestapelter Belegungsbalken auf Startbildschirm und Statusleiste), `ViewState` (Ersatz für `@State`, siehe DECISIONS).
 
 ### CLI (`Sources/diskrings-cli/main.swift`)
-- Eine Datei: `scan` (Summen, größte Ordner, `--json`, `--live`), `volumes`, `snapshot save|list`, `diff` (Snapshot gegen Snapshot oder frischen Scan). Ausgaben englisch, nicht lokalisiert; Ctrl-C bricht den Scan ab (Exit 130).
+- Eine Datei: `scan` (Summen, Aufteilung der Volume-Belegung bei Volume-Wurzeln, größte Ordner, `--json`, `--live`), `volumes`, `snapshot save|list`, `diff` (Snapshot gegen Snapshot oder frischen Scan). Ausgaben englisch, nicht lokalisiert; Ctrl-C bricht den Scan ab (Exit 130).
 
 ## Datenfluss
 
 ### Vollständiger Scan
 1. `AppState.startScan` ruft `ScanController.start`; dieser liest `ScanEngine.events(...)` (Fortschritt, Live-Snapshots als vorläufige `ScanTree`s nur mit Ordnern, am Ende `.finished(ScanResult)`).
 2. Der Controller reicht nur Ereignisse der aktuellen Generation an `AppState` weiter (`handler` auf dem MainActor). Ein neuer `start` oder `cancel` erhöht die Generation; gepufferte Ereignisse alter Scans verfallen.
-3. `AppState.finish` übernimmt den Baum (`setTree`), berechnet „Nicht zugeordnet“, hält nur eine `ScanSummary` (nicht das `ScanResult`) und speichert automatisch einen Snapshot (`SnapshotLibrary.didFinishScan`).
+3. `AppState.finish` übernimmt den Baum (`setTree`), liest die eingehängten anderen Volumes des Containers, berechnet `breakdown` (`VolumeBreakdown`), ergänzt im Hintergrund nicht eingehängte Volumes (`loadOtherVolumes`, Generationsprüfung über `containerGate`), hält nur eine `ScanSummary` (nicht das `ScanResult`) und speichert automatisch einen Snapshot (`SnapshotLibrary.didFinishScan`).
 4. Views lesen `AppState`; das Layout (`SunburstLayout`) wird nur bei Fokuswechsel, neuem Baum oder Änderung neu berechnet.
 
 ### Änderungen am Baum
-- Jede Änderung erzeugt eine **neue** `ScanTree`-Version (`TreeEdit`); der alte Baum bleibt gültig. `AppState.applyEdit(new, translate:)` führt Fokus, Historie, Auswahl, aufgeklappte Ordner und Suchtreffer per `translate` nach, startet die `EditTransition`, aktualisiert Summary und „Nicht zugeordnet“ und plant die Neuberechnung eines laufenden Vergleichs.
+- Jede Änderung erzeugt eine **neue** `ScanTree`-Version (`TreeEdit`); der alte Baum bleibt gültig. `AppState.applyEdit(new, translate:)` führt Fokus, Historie, Auswahl, aufgeklappte Ordner und Suchtreffer per `translate` nach, startet die `EditTransition`, aktualisiert Summary und die Aufteilung der Belegung und plant die Neuberechnung eines laufenden Vergleichs.
 - Neue Bäume ohne Änderungsbezug (Live-Snapshot → Endergebnis) überträgt `setTree` über Pfade.
 
 ### Teil-Rescan
