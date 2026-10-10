@@ -127,11 +127,20 @@ final class AppState {
     // MARK: Snapshots und Vergleich (SPEC 3.9, siehe Snapshots/ und Compare/)
     var snapshots = SnapshotLibrary()
     var compare: CompareSession?
-    /// Zähler für die Neuberechnung des Vergleichs nach Änderungen am Baum.
-    @ObservationIgnored var compareRefreshGeneration = 0
+    /// Generation für die Neuberechnung des Vergleichs nach Änderungen am
+    /// Baum. Auch ein neuer Vergleich, ein neuer Scan, `backToStart` und
+    /// `endCompare` verwerfen laufende (`invalidateCompareWork`), damit eine
+    /// veraltete Neuberechnung keinen neueren Hinweis abräumt.
+    @ObservationIgnored var compareRefreshGate = GenerationGate()
     /// Generation für das Starten eines Vergleichs (`runCompare`): Ein neuer
     /// Vergleich, ein neuer Scan und `backToStart` verwerfen laufende.
     @ObservationIgnored var compareRunGate = GenerationGate()
+
+    /// Verwirft laufende Vergleichs-Berechnungen und Neuberechnungen.
+    func invalidateCompareWork() {
+        compareRunGate.invalidate()
+        compareRefreshGate.invalidate()
+    }
 
     init(prefs: Preferences) {
         self.prefs = prefs
@@ -225,7 +234,7 @@ final class AppState {
         undoStack = []
         clearSearch()
         compare = nil
-        compareRunGate.invalidate()
+        invalidateCompareWork()
         snapshots.busy = nil
         setTree(nil)
         phase = .scanning
@@ -255,7 +264,7 @@ final class AppState {
 
     func backToStart() {
         compare = nil
-        compareRunGate.invalidate()
+        invalidateCompareWork()
         snapshots.busy = nil
         cancelScan()
         cancelPartialRescans()
