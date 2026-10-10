@@ -5,11 +5,27 @@ import SwiftUI
 /// Einstieg: Mit `--render-snapshots <ordner>` rendert die App Vorschaubilder
 /// der Oberfläche als PNG und beendet sich (siehe `SnapshotRenderer`);
 /// `--language <code>` (z. B. `fr`, `zh-Hans`) legt die Sprache dafür fest.
+/// `--store-screenshots <ordner>` rendert die App-Store-Screenshots
+/// (2880 × 1800, `--appearance light|dark`, siehe `StoreScreenshotRenderer`).
 /// Sonst startet sie normal.
 @main
 enum Entry {
     static func main() {
         let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--store-screenshots") {
+            let dir = i + 1 < args.count ? args[i + 1] : "build/store-screenshots"
+            if let l = args.firstIndex(of: "--language"), l + 1 < args.count {
+                L10n.setProcessLanguage(args[l + 1])
+            }
+            let appearance = args.firstIndex(of: "--appearance").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
+            guard appearance == nil || appearance == "light" || appearance == "dark" else {
+                FileHandle.standardError.write(Data("--appearance must be light or dark\n".utf8))
+                exit(2)
+            }
+            MainActor.assumeIsolated {
+                exit(StoreScreenshotRenderer.run(outputDirectory: dir, scheme: appearance == "dark" ? .dark : .light))
+            }
+        }
         if let i = args.firstIndex(of: "--render-snapshots") {
             let dir = i + 1 < args.count ? args[i + 1] : "build/snapshots"
             if let l = args.firstIndex(of: "--language"), l + 1 < args.count {

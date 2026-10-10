@@ -343,6 +343,7 @@
 "compare.busy.computing" = "Karşılaştırma hesaplanıyor…";
 "compare.error" = "Karşılaştırma olanaklı değil: %@";
 "compare.currentScan" = "Geçerli Tarama";
+"store.demo.snapshotName" = "Xcode güncellemesinden önce";
 "compare.list.accessibility" = "Karşılaştırma: %@ içeriği";
 "compare.column.name" = "Ad";
 "compare.column.before" = "Önce";

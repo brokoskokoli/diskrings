@@ -343,6 +343,7 @@
 "compare.busy.computing" = "비교 계산 중…";
 "compare.error" = "비교할 수 없음: %@";
 "compare.currentScan" = "현재 스캔";
+"store.demo.snapshotName" = "Xcode 업데이트 전";
 "compare.list.accessibility" = "비교: %@의 내용";
 "compare.column.name" = "이름";
 "compare.column.before" = "이전";

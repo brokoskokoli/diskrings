@@ -343,6 +343,7 @@
 "compare.busy.computing" = "Calculando comparação…";
 "compare.error" = "Comparação impossível: %@";
 "compare.currentScan" = "Análise Atual";
+"store.demo.snapshotName" = "antes da atualização do Xcode";
 "compare.list.accessibility" = "Comparação: conteúdo de %@";
 "compare.column.name" = "Nome";
 "compare.column.before" = "Antes";

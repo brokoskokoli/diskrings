@@ -343,6 +343,7 @@
 "compare.busy.computing" = "Вычисление сравнения…";
 "compare.error" = "Сравнение невозможно: %@";
 "compare.currentScan" = "Текущее сканирование";
+"store.demo.snapshotName" = "до обновления Xcode";
 "compare.list.accessibility" = "Сравнение, содержимое: %@";
 "compare.column.name" = "Имя";
 "compare.column.before" = "Было";
