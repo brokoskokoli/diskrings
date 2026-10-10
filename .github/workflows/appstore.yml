@@ -73,6 +73,9 @@ jobs:
         env:
           DRY_RUN: ${{ inputs.dry_run }}
           SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
+          APPSTORE_DISTRIBUTION_P12_BASE64: ${{ secrets.APPSTORE_DISTRIBUTION_P12_BASE64 }}
+          APPSTORE_INSTALLER_P12_BASE64: ${{ secrets.APPSTORE_INSTALLER_P12_BASE64 }}
+          # Nur für einen Hinweis, falls noch das alte Secret (ein .p12) gesetzt ist.
           APPSTORE_CERTIFICATES_P12_BASE64: ${{ secrets.APPSTORE_CERTIFICATES_P12_BASE64 }}
           APPSTORE_CERTIFICATES_PASSWORD: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
           APPSTORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPSTORE_PROVISIONING_PROFILE_BASE64 }}
@@ -101,7 +104,8 @@ jobs:
 
       - name: Zertifikate in temporäre Keychain importieren
         env:
-          APPSTORE_CERTIFICATES_P12_BASE64: ${{ secrets.APPSTORE_CERTIFICATES_P12_BASE64 }}
+          APPSTORE_DISTRIBUTION_P12_BASE64: ${{ secrets.APPSTORE_DISTRIBUTION_P12_BASE64 }}
+          APPSTORE_INSTALLER_P12_BASE64: ${{ secrets.APPSTORE_INSTALLER_P12_BASE64 }}
           APPSTORE_CERTIFICATES_PASSWORD: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
         run: scripts/ci-appstore.sh keychain-setup
 

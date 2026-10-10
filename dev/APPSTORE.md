@@ -80,16 +80,18 @@ Der Workflow [`.github/workflows/appstore.yml`](../.github/workflows/appstore.ym
    ```sh
    scripts/setup-release-secrets.sh --appstore
    ```
-   Antworten wie in [RELEASING.md](RELEASING.md), Schritt 2; zusätzlich der Pfad zum Provisioning Profile. Das Skript führt „Apple Distribution“ und „3rd Party Mac Developer Installer“ in ein `.p12` zusammen und setzt sechs Secrets im Environment `appstore`:
+   Antworten wie in [RELEASING.md](RELEASING.md), Schritt 2; zusätzlich der Pfad zum Provisioning Profile. Das Skript schreibt „Apple Distribution“ und „3rd Party Mac Developer Installer“ in je ein eigenes `.p12` (gleiches Passwort) und setzt sieben Secrets im Environment `appstore`; ein altes `APPSTORE_CERTIFICATES_P12_BASE64` löscht es:
 
    | Secret | Inhalt |
    |---|---|
-   | `APPSTORE_CERTIFICATES_P12_BASE64` | `.p12` mit beiden Identitäten (Zertifikat + privater Schlüssel), base64 |
-   | `APPSTORE_CERTIFICATES_PASSWORD` | Passwort dieses `.p12` |
+   | `APPSTORE_DISTRIBUTION_P12_BASE64` | `.p12` mit „Apple Distribution: …“ (Zertifikat + privater Schlüssel), base64 |
+   | `APPSTORE_INSTALLER_P12_BASE64` | `.p12` mit „3rd Party Mac Developer Installer: …“ (Zertifikat + privater Schlüssel), base64 |
+   | `APPSTORE_CERTIFICATES_PASSWORD` | Passwort beider `.p12` |
    | `APPSTORE_PROVISIONING_PROFILE_BASE64` | `DiskRings_App_Store.provisionprofile`, base64 |
    | `NOTARY_API_KEY_P8_BASE64` | `AuthKey_<KeyID>.p8` (Rolle App Manager), base64 |
    | `NOTARY_API_KEY_ID` | Key-ID (10 Zeichen) |
    | `NOTARY_API_ISSUER_ID` | Issuer-ID (UUID) |
+   Warum zwei `.p12`: Beide Zertifikate entstehen meist aus derselben CSR und teilen sich einen privaten Schlüssel. Aus einem gemeinsamen `.p12` ordnet `security import` diesen Schlüssel nur einem der Zertifikate zu, dann fehlt in der CI die Identität „Apple Distribution“ („Gefundene Identitäten … (keine)“). Nacheinander in dieselbe Keychain importiert, sind beide Identitäten da. Ist noch das alte Secret `APPSTORE_CERTIFICATES_P12_BASE64` gesetzt, bricht der Workflow im ersten Schritt mit dem Hinweis ab, das Skript erneut auszuführen.
 4. **Trockenlauf:** `gh workflow run appstore.yml -f dry_run=true`, unter Actions freigeben. Er baut, signiert und validiert bei Apple, lädt aber nichts hoch; das `.pkg` hängt einen Tag lang als Artefakt am Lauf.
 
 Optional kann der Workflow nach dem Upload auch zur Prüfung einreichen (Eingabe `submit_for_review`, siehe „Einreichen per Workflow“ unten); das braucht keine weiteren Secrets.

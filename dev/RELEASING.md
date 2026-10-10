@@ -207,8 +207,8 @@ Variablen von `make-app.sh --appstore`: `DISKRINGS_APPSTORE_IDENTITY` (Standard 
 |---|---|
 | „Release nicht möglich: Es fehlen Secrets“ | Secrets fehlen im Environment `release` (oder der Lauf nutzt ein anderes Environment). `scripts/setup-release-secrets.sh` ausführen. |
 | „Tag 'vX' passt nicht zu VERSION“ | `VERSION` erhöhen und committen, falschen Tag löschen (`git push origin :refs/tags/vX && git tag -d vX`), richtigen Tag pushen. |
-| „Import des .p12 fehlgeschlagen“ | Falsches `MACOS_CERTIFICATE_PASSWORD` oder unvollständiges base64. Skript erneut ausführen. |
-| „Das .p12 enthält nicht die Identität …“ | Falsches Zertifikat exportiert (z. B. „Apple Development“) oder ohne privaten Schlüssel. Die Liste der gefundenen Identitäten steht im Log. |
+| „Import von MACOS_CERTIFICATE_P12_BASE64 fehlgeschlagen“ | Falsches `MACOS_CERTIFICATE_PASSWORD` oder unvollständiges base64. Skript erneut ausführen. |
+| „Die importierten .p12 enthalten nicht die Identität …“ | Falsches Zertifikat exportiert (z. B. „Apple Development“) oder ohne privaten Schlüssel. Die Liste der gefundenen Identitäten steht im Log. Beim App-Store-Workflow: je ein `.p12` pro Identität (`APPSTORE_DISTRIBUTION_P12_BASE64`, `APPSTORE_INSTALLER_P12_BASE64`, siehe [APPSTORE.md](APPSTORE.md)); `scripts/setup-release-secrets.sh --appstore` erneut ausführen. |
 | „Identität … ist nicht gültig“ | Zertifikat abgelaufen oder widerrufen. Neues Developer-ID-Zertifikat anlegen, Skript erneut ausführen. |
 | „Apple lehnt den API-Key ab“ | Key ID, Issuer ID oder `.p8` passen nicht zusammen, Key widerrufen oder ein Individual Key statt eines Team Keys. Die letzten Zeilen von `notarytool` stehen darüber. |
 | „Notarisierung … nicht akzeptiert“ | Das Protokoll von Apple steht direkt darunter im Log (`notarytool log`). Meist fehlende Hardened Runtime oder eine unsignierte Datei im Bündel. |

@@ -22,10 +22,12 @@
 #
 # --appstore (dev/APPSTORE.md, "Upload per Workflow"): statt der Developer ID
 # die Identitäten "Apple Distribution: …" und "3rd Party Mac Developer Installer: …"
-# (bzw. "Mac Installer Distribution: …") in EIN .p12 (über eine temporäre
-# Keychain zusammengeführt), dazu das Provisioning Profile (Pfad) und derselbe
-# API Key (Rolle App Manager). Secrets im Environment "appstore":
-# APPSTORE_CERTIFICATES_P12_BASE64, APPSTORE_CERTIFICATES_PASSWORD,
+# (bzw. "Mac Installer Distribution: …") in je ein .p12 (gleiches Passwort;
+# getrennt, weil beide Zertifikate meist denselben privaten Schlüssel haben und
+# `security import` ihn aus einem gemeinsamen .p12 nur einem Zertifikat zuordnet),
+# dazu das Provisioning Profile (Pfad) und derselbe API Key (Rolle App Manager).
+# Secrets im Environment "appstore": APPSTORE_DISTRIBUTION_P12_BASE64,
+# APPSTORE_INSTALLER_P12_BASE64, APPSTORE_CERTIFICATES_PASSWORD,
 # APPSTORE_PROVISIONING_PROFILE_BASE64, NOTARY_API_KEY_P8_BASE64,
 # NOTARY_API_KEY_ID, NOTARY_API_ISSUER_ID.
 #
@@ -49,7 +51,8 @@ BUNDLE_ID=de.stefanrichter.DiskRings
 APPSTORE_IDENTITY=${DISKRINGS_APPSTORE_IDENTITY:-"Apple Distribution: Stefan Richter ($TEAM_ID)"}
 INSTALLER_CANDIDATES=("3rd Party Mac Developer Installer: Stefan Richter ($TEAM_ID)"
                       "Mac Installer Distribution: Stefan Richter ($TEAM_ID)")
-APPSTORE_SECRETS=(APPSTORE_CERTIFICATES_P12_BASE64 APPSTORE_CERTIFICATES_PASSWORD
+APPSTORE_SECRETS=(APPSTORE_DISTRIBUTION_P12_BASE64 APPSTORE_INSTALLER_P12_BASE64
+                  APPSTORE_CERTIFICATES_PASSWORD
                   APPSTORE_PROVISIONING_PROFILE_BASE64
                   NOTARY_API_KEY_P8_BASE64 NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID)
 
@@ -378,29 +381,6 @@ step_set_secrets() {
 }
 
 # --- App Store (--appstore) ------------------------------------------------------
-# Führt mehrere .p12 (je eine Identität, Passwort $2) über eine temporäre Keychain
-# zu einem .p12 mit allen Identitäten zusammen (openssl kann nur einen Schlüssel
-# pro PKCS#12 schreiben, `security export` alle einer Keychain).
-#   merge_p12 <out.p12> <passwort> <in.p12>...
-merge_p12() {
-    local out=$1 pass=$2; shift 2
-    local kc="$WORK/merge.keychain-db" kc_pass in
-    kc_pass=$("$OPENSSL" rand -hex 24)
-    security create-keychain -p "$kc_pass" "$kc"
-    security unlock-keychain -p "$kc_pass" "$kc"
-    for in in "$@"; do
-        security import "$in" -k "$kc" -f pkcs12 -P "$pass" -T /usr/bin/security >/dev/null \
-            || { security delete-keychain "$kc"; return 1; }
-    done
-    # Export ohne Rückfrage erlauben (nur diese temporäre Keychain).
-    security set-key-partition-list -S apple-tool:,apple: -s -k "$kc_pass" "$kc" >/dev/null
-    if ! security export -k "$kc" -t identities -f pkcs12 -P "$pass" -o "$out" >/dev/null; then
-        security delete-keychain "$kc"
-        return 1
-    fi
-    security delete-keychain "$kc"
-}
-
 # Erste Identität aus INSTALLER_CANDIDATES, die das .p12 $1 (Passwort $2) enthält.
 find_installer_in_p12() {
     local candidate
@@ -417,11 +397,12 @@ step_appstore_certificates() {
     say ""
     say "== Zertifikate: $APPSTORE_IDENTITY"
     say "   und \"3rd Party Mac Developer Installer\" bzw. \"Mac Installer Distribution\""
-    say "Passwort für das .p12 (wird als APPSTORE_CERTIFICATES_PASSWORD gespeichert;"
+    say "Passwort für die beiden .p12 (wird als APPSTORE_CERTIFICATES_PASSWORD gespeichert;"
     say "am besten ein neues, zufälliges, z. B. aus dem Passwortmanager):"
     ask_secret "Passwort" 12
     P12_PASS=$REPLY
-    P12="$WORK/appstore.p12"
+    P12_DIST="$WORK/dist.p12"
+    P12_INST="$WORK/installer.p12"
 
     local chain="$WORK/chain.pem"
     security find-certificate -a -c "Apple Worldwide Developer Relations Certification Authority" -p \
@@ -451,25 +432,15 @@ step_appstore_certificates() {
     local installer rc=0
     installer=$(find_installer_in_p12 "$src" "$src_pass") \
         || die "Keine Installer-Identität (${INSTALLER_CANDIDATES[*]}) samt Schlüssel gefunden (oder falsches Passwort)."
-    extract_identity "$src" "$src_pass" "$APPSTORE_IDENTITY" "$WORK/dist.p12" "$P12_PASS" "$chain" || rc=$?
+    extract_identity "$src" "$src_pass" "$APPSTORE_IDENTITY" "$P12_DIST" "$P12_PASS" "$chain" || rc=$?
     [ "$rc" -eq 0 ] || die "Identität \"$APPSTORE_IDENTITY\" samt Schlüssel nicht gefunden oder abgelaufen (Code $rc)."
-    extract_identity "$src" "$src_pass" "$installer" "$WORK/installer.p12" "$P12_PASS" "$chain" || rc=$?
+    extract_identity "$src" "$src_pass" "$installer" "$P12_INST" "$P12_PASS" "$chain" || rc=$?
     [ "$rc" -eq 0 ] || die "Identität \"$installer\" samt Schlüssel nicht gefunden oder abgelaufen (Code $rc)."
     if [ "$way" = "a" ]; then rm -f "$src"; else say "  Hinweis: Die Datei $src kannst du nach dem Einrichten löschen."; fi
     unset src_pass
 
-    verify_p12 "$WORK/dist.p12" "$P12_PASS" "$APPSTORE_IDENTITY" || die ".p12 (Apple Distribution) ungültig."
-    verify_p12 "$WORK/installer.p12" "$P12_PASS" "$installer" || die ".p12 (Installer) ungültig."
-    say "==> Beide Identitäten in ein .p12 zusammenführen (temporäre Keychain)"
-    merge_p12 "$P12" "$P12_PASS" "$WORK/dist.p12" "$WORK/installer.p12" \
-        || die "Zusammenführen der .p12 fehlgeschlagen."
-    rm -f "$WORK/dist.p12" "$WORK/installer.p12"
-    local id
-    for id in "$APPSTORE_IDENTITY" "$installer"; do
-        [ -n "$(p12_dump "$P12" "$P12_PASS" | awk -v mode=list -v id="$id" "$P12_AWK")" ] \
-            || die "Das zusammengeführte .p12 enthält \"$id\" nicht."
-    done
-    say "  OK: .p12 mit \"$APPSTORE_IDENTITY\" und \"$installer\""
+    verify_p12 "$P12_DIST" "$P12_PASS" "$APPSTORE_IDENTITY" || die ".p12 (Apple Distribution) ungültig."
+    verify_p12 "$P12_INST" "$P12_PASS" "$installer" || die ".p12 (Installer) ungültig."
 }
 
 step_profile() {
@@ -494,12 +465,18 @@ step_set_secrets_appstore() {
     say ""
     say "== Secrets setzen in $REPO ($where): ${APPSTORE_SECRETS[*]}"
     confirm "Jetzt setzen (vorhandene werden überschrieben)?" j || die "Abgebrochen, nichts gesetzt."
-    base64 -i "$P12" | tr -d '\n' | set_secret APPSTORE_CERTIFICATES_P12_BASE64
+    base64 -i "$P12_DIST" | tr -d '\n' | set_secret APPSTORE_DISTRIBUTION_P12_BASE64
+    base64 -i "$P12_INST" | tr -d '\n' | set_secret APPSTORE_INSTALLER_P12_BASE64
     printf '%s' "$P12_PASS" | set_secret APPSTORE_CERTIFICATES_PASSWORD
     base64 -i "$PROFILE" | tr -d '\n' | set_secret APPSTORE_PROVISIONING_PROFILE_BASE64
     base64 -i "$P8" | tr -d '\n' | set_secret NOTARY_API_KEY_P8_BASE64
     printf '%s' "$KEY_ID" | set_secret NOTARY_API_KEY_ID
     printf '%s' "$ISSUER_ID" | set_secret NOTARY_API_ISSUER_ID
+    # Altes Secret (ein .p12 mit beiden Identitäten) entfernen, damit es nicht verwirrt.
+    if gh secret delete APPSTORE_CERTIFICATES_P12_BASE64 --repo "$REPO" \
+        ${SECRET_SCOPE[@]+"${SECRET_SCOPE[@]}"} >/dev/null 2>&1; then
+        say "  altes APPSTORE_CERTIFICATES_P12_BASE64 gelöscht"
+    fi
 }
 
 main_appstore() {
@@ -524,7 +501,7 @@ main() {
     case "${1:-}" in
         "") ;;
         --appstore) MODE=appstore; ENV_NAME=${DISKRINGS_APPSTORE_ENV:-appstore} ;;
-        -h|--help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; return 0 ;;
+        -h|--help) sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//'; return 0 ;;
         *) die "Unbekannte Option: $1 (erlaubt: --appstore)" ;;
     esac
     [ "$(uname -s)" = "Darwin" ] || die "Nur auf macOS (Schlüsselbund)."

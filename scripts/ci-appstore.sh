@@ -3,7 +3,7 @@
 # Lokal aufrufbar, um den Workflow nachzustellen (siehe dev/APPSTORE.md).
 #
 #   scripts/ci-appstore.sh preflight         # Ref/VERSION, Secrets vorhanden und plausibel?
-#   scripts/ci-appstore.sh keychain-setup    # .p12 (Apple Distribution + Installer) importieren
+#   scripts/ci-appstore.sh keychain-setup    # beide .p12 (Apple Distribution, Installer) importieren
 #   scripts/ci-appstore.sh build             # make-app.sh --appstore, Signaturen prüfen
 #   scripts/ci-appstore.sh validate          # xcrun altool --validate-app (API Key)
 #   scripts/ci-appstore.sh upload            # xcrun altool --upload-app (API Key)
@@ -13,9 +13,12 @@
 #
 # preflight liest GITHUB_REF_TYPE, GITHUB_REF_NAME, DRY_RUN, SUBMIT_FOR_REVIEW und prüft diese
 # Secrets (Environment "appstore"), ohne Werte auszugeben:
-#   APPSTORE_CERTIFICATES_P12_BASE64  .p12 mit "Apple Distribution: …" und
-#                                     "3rd Party Mac Developer Installer: …", base64
-#   APPSTORE_CERTIFICATES_PASSWORD    Passwort des .p12
+#   APPSTORE_DISTRIBUTION_P12_BASE64  .p12 mit "Apple Distribution: …", base64
+#   APPSTORE_INSTALLER_P12_BASE64     .p12 mit "3rd Party Mac Developer Installer: …", base64
+#   APPSTORE_CERTIFICATES_PASSWORD    Passwort beider .p12
+#   (Zwei .p12 statt einem: Beide Zertifikate stammen meist aus derselben CSR und
+#   teilen sich den privaten Schlüssel; aus einem gemeinsamen .p12 ordnet
+#   `security import` den Schlüssel nur einem Zertifikat zu.)
 #   APPSTORE_PROVISIONING_PROFILE_BASE64  Profil "Mac App Store Connect", base64
 #   NOTARY_API_KEY_P8_BASE64, NOTARY_API_KEY_ID, NOTARY_API_ISSUER_ID
 #                                     App Store Connect API Key (Rolle App Manager)
@@ -59,7 +62,7 @@ version() { tr -d '[:space:]' < VERSION; }
 pkg_path() { echo "build/DiskRings-$(version).pkg"; }
 
 # --- preflight -----------------------------------------------------------------
-SECRETS=(APPSTORE_CERTIFICATES_P12_BASE64 APPSTORE_CERTIFICATES_PASSWORD
+SECRETS=(APPSTORE_DISTRIBUTION_P12_BASE64 APPSTORE_INSTALLER_P12_BASE64 APPSTORE_CERTIFICATES_PASSWORD
          APPSTORE_PROVISIONING_PROFILE_BASE64
          NOTARY_API_KEY_P8_BASE64 NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID)
 
@@ -83,20 +86,31 @@ appstore_secrets_help() {
 
         scripts/setup-release-secrets.sh --appstore
 
-    Das Skript exportiert beide Identitäten in ein .p12, kodiert das
+    Das Skript exportiert beide Identitäten in je ein .p12, kodiert das
     Provisioning Profile und setzt alle Secrets im Environment "appstore"
     von $repo.
  4. Workflow erneut starten (Actions → App Store Upload → Run workflow).
 
  Manuell: Settings → Environments → appstore → Environment secrets:
-   APPSTORE_CERTIFICATES_P12_BASE64      .p12 mit beiden Identitäten, base64
-   APPSTORE_CERTIFICATES_PASSWORD        Passwort des .p12
+   APPSTORE_DISTRIBUTION_P12_BASE64      .p12 mit "Apple Distribution: …", base64
+   APPSTORE_INSTALLER_P12_BASE64         .p12 mit "3rd Party Mac Developer Installer: …", base64
+   APPSTORE_CERTIFICATES_PASSWORD        Passwort beider .p12
    APPSTORE_PROVISIONING_PROFILE_BASE64  DiskRings_App_Store.provisionprofile, base64
    NOTARY_API_KEY_P8_BASE64              AuthKey_<KeyID>.p8, base64
    NOTARY_API_KEY_ID                     Key-ID (10 Zeichen)
    NOTARY_API_ISSUER_ID                  Issuer-ID (UUID)
 ==============================================================================
 MSG
+    if [ -n "${APPSTORE_CERTIFICATES_P12_BASE64:-}" ]; then
+        cat <<'MSG'
+ Hinweis: Das alte Secret APPSTORE_CERTIFICATES_P12_BASE64 (ein .p12 mit beiden
+ Identitäten) wird nicht mehr verwendet. Bitte erneut ausführen:
+     scripts/setup-release-secrets.sh --appstore
+ Es setzt APPSTORE_DISTRIBUTION_P12_BASE64 und APPSTORE_INSTALLER_P12_BASE64
+ und löscht das alte Secret.
+==============================================================================
+MSG
+    fi
 }
 
 # Dekodiert APPSTORE_PROVISIONING_PROFILE_BASE64 nach $1 und prüft es: Mac App
@@ -167,6 +181,9 @@ cmd_preflight() {
         if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
             { echo '```'; appstore_secrets_help "${missing[*]}"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
         fi
+        if [ -n "${APPSTORE_CERTIFICATES_P12_BASE64:-}" ]; then
+            die "Secrets fehlen: ${missing[*]}. Das alte APPSTORE_CERTIFICATES_P12_BASE64 reicht nicht mehr: scripts/setup-release-secrets.sh --appstore erneut ausführen."
+        fi
         die "Secrets fehlen: ${missing[*]} (Anleitung siehe oben bzw. dev/APPSTORE.md)"
     fi
 
@@ -180,9 +197,11 @@ cmd_preflight() {
     grep -q -- '-----BEGIN PRIVATE KEY-----' <<<"$p8" \
         || die "NOTARY_API_KEY_P8_BASE64 ist keine base64-kodierte .p8-Datei (base64 -i AuthKey_….p8)."
     unset p8
-    if ! printf '%s' "$APPSTORE_CERTIFICATES_P12_BASE64" | tr -d '[:space:]' | base64 --decode >/dev/null 2>&1; then
-        die "APPSTORE_CERTIFICATES_P12_BASE64 ist kein gültiges base64 (base64 -i zertifikate.p12)."
-    fi
+    for name in APPSTORE_DISTRIBUTION_P12_BASE64 APPSTORE_INSTALLER_P12_BASE64; do
+        if ! printf '%s' "${!name}" | tr -d '[:space:]' | base64 --decode >/dev/null 2>&1; then
+            die "$name ist kein gültiges base64 (base64 -i datei.p12)."
+        fi
+    done
     mkdir -p "$STATE"
     chmod 700 "$STATE"
     decode_profile "$STATE/preflight.provisionprofile"
@@ -213,8 +232,8 @@ pick_installer_identity() {
 }
 
 cmd_keychain_setup() {
-    keychain_import APPSTORE_CERTIFICATES_P12_BASE64 APPSTORE_CERTIFICATES_PASSWORD \
-        "Neu erzeugen mit scripts/setup-release-secrets.sh --appstore."
+    keychain_import "Neu erzeugen mit scripts/setup-release-secrets.sh --appstore." \
+        APPSTORE_CERTIFICATES_PASSWORD APPSTORE_DISTRIBUTION_P12_BASE64 APPSTORE_INSTALLER_P12_BASE64
     ensure_intermediate "Apple Worldwide Developer Relations Certification Authority" \
         "$WWDR_G3_URL" "$WWDR_G3_SHA256"
     DISKRINGS_REQUIRE_VALID_IDENTITY=${DISKRINGS_REQUIRE_VALID_IDENTITY:-1} require_identity "$APPSTORE_IDENTITY" codesigning
@@ -427,6 +446,6 @@ case "${1:-}" in
     submit) cmd_submit ;;
     summary) cmd_summary ;;
     cleanup) cmd_cleanup ;;
-    -h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//' ;;
+    -h|--help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//' ;;
     *) echo "Aufruf: $0 preflight | keychain-setup | build | validate | upload | submit | summary | cleanup" >&2; exit 2 ;;
 esac
