@@ -148,7 +148,7 @@ gh workflow run release.yml -f dry_run=true
 gh run watch
 ```
 
-Alles läuft wie beim Release, nur ohne Veröffentlichung. ZIP, DMG und `SHA256SUMS` liegen als Artefakt am Lauf (14 Tage). Ein Trockenlauf notarisiert wirklich; das ist harmlos (Apple speichert nur das Ticket).
+Alles läuft wie beim Release, nur ohne Veröffentlichung. ZIP, DMG und `SHA256SUMS` liegen als Artefakt am Lauf, bei einem Trockenlauf nur 1 Tag (bei echten Releases 14 Tage), weil sie signiert, notarisiert und öffentlich herunterladbar sind. Ein Trockenlauf notarisiert wirklich; das ist harmlos (Apple speichert nur das Ticket).
 
 Mit `dry_run = false` veröffentlicht der Workflow nur, wenn er auf einem Tag gestartet wird („Use workflow from“ → Tags → `v0.2.0`), z. B. um einen fehlgeschlagenen Release-Lauf zu wiederholen.
 

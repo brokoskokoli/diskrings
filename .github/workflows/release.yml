@@ -110,7 +110,9 @@ jobs:
             dist/*.dmg
             dist/SHA256SUMS
           if-no-files-found: error
-          retention-days: 14
+          # Trockenlauf: Artefakte sind signiert, notarisiert und öffentlich
+          # herunterladbar, daher nur 1 Tag; echte Releases 14 Tage.
+          retention-days: ${{ steps.preflight.outputs.publish == 'true' && 14 || 1 }}
 
   publish:
     name: GitHub Release anlegen
