@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "パスが見つかりません：%@";
+"error.scan.ancestorChanged" = "親フォルダが変更されました：%@";
 "error.scan.tooManyNodes" = "1つのスキャンツリーとしては項目が多すぎます";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

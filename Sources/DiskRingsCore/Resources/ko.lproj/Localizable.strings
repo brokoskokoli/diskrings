@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "경로를 찾을 수 없음: %@";
+"error.scan.ancestorChanged" = "상위 폴더가 변경됨: %@";
 "error.scan.tooManyNodes" = "하나의 스캔 트리에 비해 항목이 너무 많습니다";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

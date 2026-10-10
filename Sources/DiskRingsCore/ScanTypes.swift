@@ -99,11 +99,16 @@ public struct ScanResult: Sendable {
 
 public enum ScanError: Error, Equatable, CustomStringConvertible {
     case notFound(String)
+    /// Teil-Rescan ohne Wurzel-Symlink: Ein Vorfahr des Pfads ist kein echter
+    /// Ordner mehr (Symlink, Datei oder verschwunden). Es wurde nichts
+    /// gelesen; neu einzulesen ist `ancestor`.
+    case ancestorChanged(String, ancestor: String)
     case tooManyNodes
 
     public var description: String {
         switch self {
         case .notFound(let p): L("error.scan.notFound", p)
+        case .ancestorChanged(_, let a): L("error.scan.ancestorChanged", a)
         case .tooManyNodes: L("error.scan.tooManyNodes")
         }
     }

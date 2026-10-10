@@ -725,6 +725,11 @@ final class AppState {
         guard phase == .browsing, let tree else { return }
         let name = (path as NSString).lastPathComponent
         switch result {
+        case .failure(ScanError.ancestorChanged(_, let ancestor)):
+            // Ein Vorfahr ist kein echter Ordner mehr: ihn statt des Pfads
+            // neu einlesen (wird z. B. zum Symlink-Blatt).
+            let target = tree.path(of: ScanEngine.nearestExistingIndex(of: ancestor, in: tree))
+            if target != path { startPartialRescan(path: target, silentIfCovered: true, announce: announce) }
         case .failure(let error):
             if !(error is CancellationError) { showToast(.error, L("toast.rescanFailed", name, L10n.describe(error))) }
         case .success(let scanned):

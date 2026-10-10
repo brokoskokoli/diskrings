@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Pfad nicht gefunden: %@";
+"error.scan.ancestorChanged" = "Ein übergeordneter Ordner hat sich geändert: %@";
 "error.scan.tooManyNodes" = "Zu viele Einträge für einen Scan-Baum";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

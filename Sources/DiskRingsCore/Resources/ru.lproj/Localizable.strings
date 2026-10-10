@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Путь не найден: %@";
+"error.scan.ancestorChanged" = "Родительская папка изменилась: %@";
 "error.scan.tooManyNodes" = "Слишком много объектов для одного дерева сканирования";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

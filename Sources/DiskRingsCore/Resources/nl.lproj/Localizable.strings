@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Pad niet gevonden: %@";
+"error.scan.ancestorChanged" = "Een bovenliggende map is gewijzigd: %@";
 "error.scan.tooManyNodes" = "Te veel onderdelen voor één scanboom";
 
 /* Snapshot errors (technical detail in %@ stays in English) */

@@ -60,6 +60,7 @@
 
 /* Scan errors */
 "error.scan.notFound" = "Yol bulunamadı: %@";
+"error.scan.ancestorChanged" = "Bir üst klasör değişti: %@";
 "error.scan.tooManyNodes" = "Bir tarama ağacı için çok fazla öğe";
 
 /* Snapshot errors (technical detail in %@ stays in English) */
