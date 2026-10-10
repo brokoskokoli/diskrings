@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DiskRings Privacy Policy</title>
+<meta name="description" content="Privacy policy of DiskRings, the disk space analyzer for macOS: no data collection, no network connections, everything stays on your Mac.">
+<link rel="canonical" href="https://brokoskokoli.github.io/diskrings/privacy.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14171f" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --bg-alt: #ffffff;
+    --text: #1b1f27;
+    --muted: #5a6270;
+    --border: #e1e4ea;
+    --accent: #0a6cff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171f;
+      --bg-alt: #1b1f29;
+      --text: #eef0f4;
+      --muted: #a2a9b6;
+      --border: #2b303c;
+      --accent: #3d8bff;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text); }
+  .brand img { width: 32px; height: 32px; }
+  nav a { margin-left: 20px; color: var(--muted); font-size: 15px; }
+  h1 { font-size: clamp(32px, 5vw, 44px); line-height: 1.15; margin: 32px 0 8px; letter-spacing: -.02em; }
+  .meta { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+  .card { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin: 16px 0; }
+  .card h2 { margin: 0 0 6px; font-size: 20px; }
+  .card p, .card ul { margin: 0; color: var(--muted); }
+  .card li { margin: 4px 0; }
+  code { font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; overflow-wrap: anywhere; }
+  footer { color: var(--muted); font-size: 14px; text-align: center; padding: 48px 0 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="favicon.png" alt="" width="32" height="32">DiskRings</a>
+    <nav>
+      <a href="https://github.com/brokoskokoli/diskrings">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Privacy Policy</h1>
+    <p class="meta">Applies to all versions of DiskRings (Mac App Store and direct download). Last updated: October 10, 2026.</p>
+
+    <div class="card">
+      <h2>In short</h2>
+      <p>DiskRings does not collect, store or share any personal data. Everything it reads and saves stays on your Mac.</p>
+    </div>
+
+    <div class="card">
+      <h2>No data collection</h2>
+      <p>DiskRings has no analytics, no telemetry, no crash reporting service, no advertising and no user accounts. The developer receives no information about you or how you use the app.</p>
+    </div>
+
+    <div class="card">
+      <h2>No network connections</h2>
+      <p>DiskRings never connects to the internet. File names, sizes and scan results are never sent anywhere.</p>
+    </div>
+
+    <div class="card">
+      <h2>What stays on your Mac</h2>
+      <ul>
+        <li>To show disk usage, DiskRings reads the names and sizes of files and folders you choose to scan. It does not read file contents.</li>
+        <li>Scan snapshots (folder structure and sizes, used for comparing scans) and settings are saved locally in the app’s own storage. In the Mac App Store version this is the app’s container, <code>~/Library/Containers/de.stefanrichter.DiskRings</code>. You can delete snapshots in the app at any time; removing the app removes its container.</li>
+        <li>In the Mac App Store version, DiskRings only reads folders and volumes you select in the Open dialog or drag onto its window. It remembers these choices on your Mac so it doesn’t have to ask again; you can remove them in Settings.</li>
+        <li>“Move to Trash” only moves items to the macOS Trash after you confirm. Nothing is deleted permanently by the app.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Contact</h2>
+      <p>Questions about privacy? Please open an issue on <a href="https://github.com/brokoskokoli/diskrings/issues">GitHub</a>.</p>
+    </div>
+  </main>
+
+  <footer>
+    DiskRings is free software under the <a href="https://github.com/brokoskokoli/diskrings/blob/main/LICENSE">MIT License</a>.
+    © 2026 Stefan Richter ·
+    <a href="./">Home</a> ·
+    <a href="https://github.com/brokoskokoli/diskrings/issues">Report an issue</a>
+  </footer>
+</div>
+</body>
+</html>

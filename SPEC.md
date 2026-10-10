@@ -15,7 +15,7 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 **Nicht-Ziele (v1)**
 - Duplikatsuche, Bereinigungs-Assistent, Cache-Reiniger.
 - Netzlaufwerke optimieren (sie funktionieren, aber langsam).
-- Mac App Store (siehe Abschnitt 9: die Sandbox würde den Vollscan stark einschränken).
+- Vollscan im Mac App Store: Die Store-Variante läuft in der Sandbox und liest nur freigegebene Ordner (Abschnitt 11); vollständig bleibt nur die Download-Version.
 
 ---
 
@@ -38,7 +38,7 @@ Ein nativer macOS-Festplatten-Analysator nach dem Vorbild von *Scanner* (Windows
 - Daten über `URLResourceValues`: `volumeTotalCapacity`, `volumeAvailableCapacityForImportantUsage` (enthält den bereinigbaren Speicher) und `volumeAvailableCapacity` (wirklich frei).
 - Button „Ordner wählen…“ (NSOpenPanel), außerdem Drag & Drop eines Ordners aufs Fenster.
 - Hinweis-Banner, wenn kein Festplattenvollzugriff erteilt ist, mit Button, der die Systemeinstellung öffnet:
-  `x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles`.
+  `x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles`. In der App-Store-Variante stattdessen ein Hinweis auf die Ordnerfreigaben (Abschnitt 11).
 
 ### 3.2 Scan
 - Fortschrittsanzeige: Anzahl Dateien, gescannte Bytes, aktueller Pfad, abgelaufene Zeit; Abbrechen-Button.
@@ -240,7 +240,7 @@ Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbin
 - **Festplattenvollzugriff (Full Disk Access)** ist nötig für `~/Library/Mail`, `Messages`, `Safari`, Container anderer Apps usw. Ohne diesen Zugriff funktioniert die App trotzdem, zeigt aber mehr „nicht lesbar“-Ordner und einen größeren Anteil „Nicht lesbare Systemdaten“.
   - Erkennung: einen Lesetest auf `~/Library/Safari` oder `/Library/Application Support/com.apple.TCC/TCC.db` versuchen.
 - Keine Netzwerkzugriffe und keine Telemetrie.
-- Bei der Variante für den App Store wären nur vom Nutzer gewählte Ordner per Security-Scoped Bookmark erlaubt. Das ist bewusst nicht Teil von v1.
+- Zusätzlich gibt es eine Variante für den Mac App Store in der App Sandbox (Abschnitt 11), aus demselben Code.
 
 ---
 
@@ -290,3 +290,25 @@ Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbin
 - **Asset-Kataloge** (`actool`). Diese sind nicht nötig, weil das Icon als `.icns` mit `iconutil` erstellt wird.
 
 Zu prüfen in M1: ob `swift test` mit den Command Line Tools ohne Xcode läuft (Swift Testing beziehungsweise XCTest).
+
+---
+
+## 11. Mac-App-Store-Variante (App Sandbox)
+
+Ein Code, zwei Build-Varianten: die Download-Version (Developer ID, nicht sandboxed, Abschnitt 7) und die Store-Variante in der App Sandbox. Die Bedienung ist gleich; Unterschiede entstehen nur dort, wo die Sandbox es verlangt. Einrichtung und Ablauf: `docs/APPSTORE.md`.
+
+**11.1 Erkennung.** Zur Laufzeit über die Umgebungsvariable `APP_SANDBOX_CONTAINER_ID` (`AppEnvironment.isSandboxed`, für Tests und Vorschaubilder übergebbar), ohne Compiler-Flag. In der Sandbox ist `NSHomeDirectory()` der Container; Schutzliste, „Benutzerordner scannen“ und Hinweise nutzen deshalb den echten Home-Ordner (`getpwuid`).
+
+**11.2 Ordnerfreigaben.**
+- Gescannt wird nur, was der Nutzer freigegeben hat: im Öffnen-Dialog („Ordner auswählen …“) oder per Drag & Drop eines Ordners aufs Fenster (Sandbox-Erweiterung).
+- Klick auf ein Volume des Startbildschirms ohne Freigabe öffnet den Öffnen-Dialog direkt auf der Volume-Wurzel mit kurzer Erklärung und Knopf „Zugriff erlauben“; ebenso „Benutzerordner scannen“, ein kompletter Neuscan oder `--scan` für einen nicht (mehr) freigegebenen Pfad.
+- Freigaben werden als app-bezogene Security-Scoped Bookmarks in den UserDefaults (Container) gespeichert (`FolderAccessStore`): beim Start aufgelöst, veraltete erneuert, unauflösbare verworfen; ein Pfad ist gedeckt, wenn er unter einer Freigabe liegt (an einer Komponentengrenze, ohne Groß-/Kleinschreibung und Unicode-Normalform); eine Freigabe ersetzt die darunter. Einstellungen → „Ordnerzugriff“ listet sie, entfernt einzelne und fügt neue hinzu.
+- Zugriff: `startAccessingSecurityScopedResource` auf der Freigabe, solange ein Scan der Wurzel läuft oder ihr Baum gezeigt wird (gezählte Leases, `stop` beim letzten). Das deckt Teil-Rescans, Papierkorb, ⌘Z, Im Finder zeigen, Öffnen, Quick Look und das Speichern von Snapshots ab.
+
+**11.3 Snapshots** liegen automatisch im Container (`~/Library/Containers/de.stefanrichter.DiskRings/Data/Library/Application Support/DiskRings/Snapshots`, über `FileManager`); die darin gespeicherten Scan-Wurzeln sind echte Pfade.
+
+**11.4 Festplattenvollzugriff und Volumes.** Kein Banner, kein Hinweis vor dem Scan, kein Weg in die Systemeinstellung, kein Festplattenvollzugriff-Zusatz in Tooltips und im Stillstands-Hinweis. Stattdessen „Zugriff auf weitere Ordner erlauben …“ (Startbildschirm, Kontextmenü der Systemdaten, Einstellungen); der Tooltip der nicht lesbaren Systemdaten erwähnt Ordner ohne Zugriff. `diskutil` (Prozess) läuft in der Sandbox nicht; nicht eingehängte Volumes fehlen dann in den Systemdaten. Liefert `getattrlist` für ein eingehängtes Volume nichts, zählt es mit 0 und erscheint nicht (sein Platz landet in „Nicht lesbare Systemdaten“).
+
+**11.5 Papierkorb.** `FileManager.trashItem` innerhalb freigegebener Ordner; Rechtefehler der Sandbox ergeben eine verständliche Meldung. ⌘Z legt nur zurück, wenn der ursprüngliche Elternordner freigegeben ist (oder unter der gehaltenen Scan-Wurzel liegt); sonst und bei einem Rechtefehler der Hinweis, die Freigabe zu erneuern bzw. im Finder „Zurücklegen“ zu wählen.
+
+**11.6 Build.** `scripts/make-app.sh --appstore` baut `build/appstore/DiskRings.app` (universal) mit genau drei Entitlements (`com.apple.security.app-sandbox`, `com.apple.security.files.user-selected.read-write`, `com.apple.security.files.bookmarks.app-scope`; mit Provisioning Profile zusätzlich `application-identifier` und `team-identifier` daraus), `ITSAppUsesNonExemptEncryption = false`, 1024-px-Icon, Signatur „Apple Distribution“ (sonst ad hoc mit Sandbox-Entitlements für lokale Tests) und `build/DiskRings-<version>.pkg` (signiert mit der Installer-Identität, sonst unsigniert). Die CI baut die Variante ad hoc. Datenschutzerklärung für den Store: `docs/privacy.html`.
