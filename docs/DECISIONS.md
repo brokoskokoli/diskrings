@@ -433,6 +433,10 @@ Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4).
 
 ## Dokumentation und Wartung
 
+### Architektur: Aufteilung in Core und App (Abweichung von SPEC 6)
+- SPEC 6 skizzierte eine Ordnerstruktur innerhalb eines einzigen Targets (`Sources/DiskRings/Scanner/`, `History/`, `Actions/`, `HitTester`, `WorkQueue`, `HardlinkSet`, `LargestFilesView`, `Tests/DiskRingsTests/`). Umgesetzt wurde von Anfang an die Aufteilung aus CLAUDE.md: alle Logik in `DiskRingsCore` (ohne SwiftUI, vollständig getestet), eine dünne App in `DiskRings`, ein CLI und ein einziges Testziel `DiskRingsCoreTests`. Es gibt keine eigene `WorkQueue` (die Queue steckt in `ScanEngine`), kein `HardlinkSet` (Hardlinks werden am Ende deterministisch bereinigt, Tabelle im `ScanTree`), keinen eigenen `HitTester` (`SunburstHitTester` in `SunburstGeometry.swift`) und keine `LargestFilesView` (Tab „Größte Dateien“ aus M8 nicht umgesetzt).
+- SPEC 6 beschreibt jetzt nur noch kurz die Targets und verweist auf `docs/ARCHITECTURE.md`, das jede Datei, den Datenfluss und die Invarianten beschreibt. Wer Dateien hinzufügt, verschiebt oder Invarianten ändert, hält `docs/ARCHITECTURE.md` aktuell.
+
 ### Zeitabhängige Tests
 - Die Tests von `ScanController` warteten nach Abbruch bzw. Neustart 100–500 ms und prüften dann, dass nichts mehr ankam. Jetzt wartet `ScanController.drain()` auf das Ende aller Lese-Tasks, auch abgebrochener. Weil nur diese Tasks den Handler aufrufen, ist „danach kommt nichts mehr“ damit bewiesen statt nur wahrscheinlich, und die Tests warten nicht länger als nötig. Das Verhalten der App ändert sich nicht (`drain()` ruft sie nicht auf).
 - Der Test S6 (begrenzter Ereignispuffer) wartete nach dem Beginn des Baumaufbaus fest 0,5 s auf `.finished`. Jetzt meldet der Test-Hook `ScanHooks.streamFinished`, dass `events(_:)` das Endergebnis gepuffert und den Stream beendet hat; erst danach liest der Test.
