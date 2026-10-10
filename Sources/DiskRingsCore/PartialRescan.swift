@@ -6,7 +6,10 @@ import Foundation
 /// - Während ein vollständiger Scan läuft, gibt es keinen Teil-Rescan (der
 ///   Baum ist dann nur ein vorläufiger Snapshot).
 /// - Derselbe Ordner oder ein Ordner, dessen Vorfahr gerade neu eingelesen
-///   wird, startet nicht ein zweites Mal (`alreadyCovered`).
+///   wird, startet nicht ein zweites Mal (`alreadyCovered`); der laufende
+///   Job wird aber als veraltet markiert und nach dem Ende neu gestartet
+///   (`finish` → `.rerun`), ebenso nach einer Baumänderung darunter
+///   (`noteEdit(at:)`, z. B. Papierkorb oder Zurücklegen).
 /// - Ein Vorfahr laufender Rescans ersetzt diese: Sie werden abgebrochen,
 ///   ihre Ergebnisse verworfen (`start(cancelling:)`).
 /// - Unabhängige Ordner laufen parallel. Jedes Ergebnis wird beim Eintreffen
@@ -16,6 +19,19 @@ public struct RescanQueue: Sendable, Equatable {
     public struct Job: Sendable, Equatable {
         public let id: UInt64
         public let path: String
+        /// Seit dem Start kam eine abgedeckte Anfrage oder eine Baumänderung
+        /// darunter: Das Ergebnis ist womöglich veraltet.
+        public internal(set) var dirty = false
+    }
+
+    /// Was mit dem Ergebnis eines fertigen Jobs geschieht.
+    public enum Completion: Sendable, Equatable {
+        /// In den aktuellen Baum einhängen.
+        case apply
+        /// Abgebrochen oder ersetzt: verwerfen.
+        case discard
+        /// Veraltet: verwerfen und denselben Job (gleiche ID) neu starten.
+        case rerun
     }
 
     public enum Decision: Sendable, Equatable {
@@ -36,7 +52,12 @@ public struct RescanQueue: Sendable, Equatable {
 
     public mutating func request(_ path: String, fullScanRunning: Bool) -> Decision {
         if fullScanRunning { return .blockedByFullScan }
-        if let j = jobs.first(where: { Self.covers($0.path, path) }) { return .alreadyCovered(by: j.path) }
+        if let i = jobs.firstIndex(where: { Self.covers($0.path, path) }) {
+            // Der laufende Job hat den Ordner womöglich schon gelesen: Er läuft
+            // nach dem Ende noch einmal, statt die Anfrage zu verschlucken.
+            jobs[i].dirty = true
+            return .alreadyCovered(by: jobs[i].path)
+        }
         let superseded = jobs.filter { Self.covers(path, $0.path) }.map(\.id)
         jobs.removeAll { superseded.contains($0.id) }
         let id = nextID
@@ -45,13 +66,26 @@ public struct RescanQueue: Sendable, Equatable {
         return .start(id: id, cancelling: superseded)
     }
 
-    /// Meldet einen Job als fertig. `false`, wenn er inzwischen abgebrochen
-    /// oder ersetzt wurde: Dann ist sein Ergebnis zu verwerfen.
+    /// Meldet einen Job als fertig. `.discard`, wenn er inzwischen
+    /// abgebrochen oder ersetzt wurde; `.rerun`, wenn er veraltet ist (er
+    /// bleibt dann mit derselben ID eingetragen und ist neu zu starten).
     @discardableResult
-    public mutating func finish(_ id: UInt64) -> Bool {
-        guard let i = jobs.firstIndex(where: { $0.id == id }) else { return false }
+    public mutating func finish(_ id: UInt64) -> Completion {
+        guard let i = jobs.firstIndex(where: { $0.id == id }) else { return .discard }
+        if jobs[i].dirty {
+            jobs[i].dirty = false
+            return .rerun
+        }
         jobs.remove(at: i)
-        return true
+        return .apply
+    }
+
+    /// Meldet eine Änderung des Baums (Papierkorb, Zurücklegen) bei `path`.
+    /// Jobs, die `path` mit einlesen, sind danach veraltet: Ihr Ergebnis würde
+    /// beim Einhängen über die Änderung geschrieben (entfernte Elemente kämen
+    /// zurück, zurückgelegte fehlten). Sie laufen deshalb noch einmal.
+    public mutating func noteEdit(at path: String) {
+        for i in jobs.indices where Self.covers(jobs[i].path, path) { jobs[i].dirty = true }
     }
 
     /// Bricht alle Jobs ab (z. B. beim Start eines vollständigen Scans).
@@ -95,12 +129,15 @@ public struct RescanMerge: Sendable {
 
 public enum PartialRescan {
     /// Liest `path` mit den Optionen des ursprünglichen Scans ein. `nil`, wenn
-    /// der Pfad nicht mehr existiert.
-    public static func scan(_ path: String, options: ScanOptions, cancellation: ScanCancellation = ScanCancellation(),
+    /// der Pfad nicht mehr existiert. Ist `path` inzwischen ein Symlink, wird
+    /// ihm nicht gefolgt (Ergebnis: ein Symlink-Blatt, wie im vollständigen
+    /// Scan); nur für die Scan-Wurzel `followSymlink: true` übergeben.
+    public static func scan(_ path: String, options: ScanOptions, followSymlink: Bool = false,
+                            cancellation: ScanCancellation = ScanCancellation(),
                             onProgress: ((ScanProgress) -> Void)? = nil) throws -> ScanResult? {
         do {
-            return try ScanEngine(options: options).scanBlocking(path, cancellation: cancellation,
-                                                                 onProgress: onProgress)
+            return try ScanEngine(options: options).scanBlocking(path, followRootSymlink: followSymlink,
+                                                                 cancellation: cancellation, onProgress: onProgress)
         } catch ScanError.notFound {
             return nil
         }

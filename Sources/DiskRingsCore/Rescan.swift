@@ -45,7 +45,9 @@ extension ScanEngine {
 
         let sub: ScanResult
         do {
-            sub = try scanBlocking(path, cancellation: cancellation)
+            // Nur der Wurzel folgen; ein inzwischen durch einen Symlink ersetzter
+            // Ordner wird wie im vollständigen Scan ein Symlink-Blatt.
+            sub = try scanBlocking(path, followRootSymlink: index == ScanTree.rootIndex, cancellation: cancellation)
         } catch ScanError.notFound where index != ScanTree.rootIndex {
             let scanTime = seconds(since: start)
             let t = DispatchTime.now().uptimeNanoseconds
