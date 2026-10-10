@@ -1,6 +1,6 @@
 # Architektur von DiskRings
 
-Einstieg für Menschen und KI-Agenten: Wo liegt was, wie fließen die Daten, und welche Regeln dürfen nicht brechen. Anforderungen stehen in `SPEC.md`, Begründungen und Abweichungen in `docs/DECISIONS.md`, Messwerte in `docs/PERFORMANCE.md`. Wer Dateien hinzufügt, verschiebt oder eine Invariante ändert, hält dieses Dokument aktuell.
+Einstieg für Menschen und KI-Agenten: Wo liegt was, wie fließen die Daten, und welche Regeln dürfen nicht brechen. Anforderungen stehen in `SPEC.md`, Begründungen und Abweichungen in `dev/DECISIONS.md`, Messwerte in `dev/PERFORMANCE.md`. Wer Dateien hinzufügt, verschiebt oder eine Invariante ändert, hält dieses Dokument aktuell.
 
 ## Überblick
 
@@ -12,9 +12,9 @@ Swift Package ohne Xcode-Projekt, macOS 14, Swift 6 (Strict Concurrency):
 | `DiskRings` (App) | dünne SwiftUI/AppKit-Oberfläche | **kein Testziel** |
 | `diskrings-cli` | Kommandozeile für Tests, Messungen, Debugging | keine eigenen |
 
-`scripts/check.sh` baut, führt alle Tests aus und danach die Performance-Tests im Release-Build. Die Oberfläche wird visuell über `swift run DiskRings --render-snapshots <ordner>` geprüft (PNGs hell und dunkel, Optionen `--scan <pfad>`, `--compare-demo`, `--language <code>`). App-Store-Screenshots (2880 × 1800, nur Demo-Daten): `--store-screenshots <ordner> [--language <code>] [--appearance light|dark]`, siehe `docs/APPSTORE.md`.
+`scripts/check.sh` baut, führt alle Tests aus und danach die Performance-Tests im Release-Build. Die Oberfläche wird visuell über `swift run DiskRings --render-snapshots <ordner>` geprüft (PNGs hell und dunkel, Optionen `--scan <pfad>`, `--compare-demo`, `--language <code>`). App-Store-Screenshots (2880 × 1800, nur Demo-Daten): `--store-screenshots <ordner> [--language <code>] [--appearance light|dark]`, siehe `dev/APPSTORE.md`.
 
-Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, `build/DiskRings.app`) und `scripts/make-app.sh --appstore` (App Sandbox mit `Resources/DiskRings-AppStore.entitlements`, `build/appstore/DiskRings.app` und `build/DiskRings-<version>.pkg`). Die App erkennt die Sandbox zur Laufzeit (`AppEnvironment`), siehe SPEC 11 und `docs/APPSTORE.md`.
+Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, `build/DiskRings.app`) und `scripts/make-app.sh --appstore` (App Sandbox mit `Resources/DiskRings-AppStore.entitlements`, `build/appstore/DiskRings.app` und `build/DiskRings-<version>.pkg`). Die App erkennt die Sandbox zur Laufzeit (`AppEnvironment`), siehe SPEC 11 und `dev/APPSTORE.md`.
 
 ## Modulkarte
 
@@ -157,7 +157,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 
 1. **Core importiert kein SwiftUI** (auch kein AppKit). Core enthält nur Logik und Texte.
 2. **Die App hat kein Testziel.** Logik in `Sources/DiskRings` ist per Definition ungetestet. Alles, was sich testen lässt (Regeln, Berechnungen, Entscheidungen), gehört nach Core; die App ruft es nur auf.
-3. **`Node` ist genau 40 Byte** (`MemoryLayout<Node>.size == 40` und `.stride == 40`, Test in `ScanTreeTests`). Felder nicht umordnen oder ergänzen, ohne Speicherbudget (SPEC 4.2), Snapshot-Format (40 Byte je Knoten in `.drsnap`) und `docs/PERFORMANCE.md` zu prüfen.
+3. **`Node` ist genau 40 Byte** (`MemoryLayout<Node>.size == 40` und `.stride == 40`, Test in `ScanTreeTests`). Felder nicht umordnen oder ergänzen, ohne Speicherbudget (SPEC 4.2), Snapshot-Format (40 Byte je Knoten in `.drsnap`) und `dev/PERFORMANCE.md` zu prüfen.
 4. **Reihenfolge im Knoten-Array:** `nodes[0]` ist die Wurzel; die Kinder eines Knotens liegen zusammenhängend ab `firstChild` und sind sortiert (belegt absteigend, dann logisch absteigend, dann Name nach UTF-8-Bytes aufsteigend); Eltern stehen immer vor ihren Kindern. Globale **Breitensuche-Reihenfolge gilt nur für frisch gebaute oder kompaktierte Bäume.** Nach `replacingSubtree`/`removingNode` gibt es **tote Knoten** (`.dead`, unerreichbar, `count` zählt sie, `liveCount` nicht) und hinten **angehängte** neue Knoten; Indizes können sich verschieben. Wer `nodes` linear durchläuft, überspringt `.dead`; alte Indizes immer über `TreeEdit.translate` bzw. `TreeEditChain.translate` übersetzen. Snapshots speichern nur kompaktierte Bäume.
 5. **Hardlinks:** Pro `(Gerät, Inode)` zählt genau das lebende Vorkommen mit dem bytewise **kleinsten Pfad** mit echter Größe; alle anderen zählen mit 0 Byte und tragen `.hardlinkDuplicate`. Die Hardlink-Tabelle im `ScanTree` ist **streng aufsteigend nach Knotenindex sortiert** und enthält nur lebende Dateien. Teil-Rescans entfernen Einträge toter Knoten (auch den alten Eintrag des ersetzten Knotens selbst) und bereinigen betroffene Gruppen neu.
 6. **`ScanTree.validate()` muss für jeden in Tests erzeugten Baum leer sein** (Erreichbarkeit, Sortierung, Summen, `deadCount`, Hardlink-Tabelle). Neue Baum-Operationen bekommen Tests, die `validate()` aufrufen.

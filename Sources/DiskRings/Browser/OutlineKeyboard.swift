@@ -5,7 +5,7 @@ import SwiftUI
 /// Veränderungen“). Die Regeln stehen in `OutlineNavigation` (Core, getestet);
 /// hier wird nur die Taste übersetzt und der Befehl an die Liste gegeben.
 ///
-/// Die Listen bleiben `ScrollView` + `LazyVStack` (siehe docs/DECISIONS.md);
+/// Die Listen bleiben `ScrollView` + `LazyVStack` (siehe dev/DECISIONS.md);
 /// sie werden mit `.focusable()` fokussierbar und reagieren per `onKeyPress`.
 /// Leertaste (Übersicht) und die Menükürzel (⌘⌫, ⌘I, ⌘R …) wirken über die
 /// Auswahl, die die Tastatur hier setzt.

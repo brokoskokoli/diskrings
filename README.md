@@ -17,7 +17,7 @@ See at a glance what fills your Mac, compare scans over time, and free up space 
   <a href="https://github.com/brokoskokoli/diskrings/releases/latest"><b>Download</b></a> ·
   <a href="https://brokoskokoli.github.io/diskrings/">Website</a> ·
   <a href="#faq">FAQ</a> ·
-  <a href="docs/README.de.md">Deutsch</a>
+  <a href="README.de.md">Deutsch</a>
 </p>
 
 <picture>
@@ -89,7 +89,7 @@ What makes DiskRings different:
 - **Snapshot compare.** Answer "where did my disk space go since last week?" instead of hunting through the whole disk again.
 - **Honest totals.** The scan sum plus System Data plus Purgeable equals the used space reported by the volume, so other volumes, APFS snapshots and purgeable space don't silently disappear.
 - **Safe by default.** There is no permanent delete. Everything goes to the Trash, with a confirmation and ⌘Z undo, and system paths are protected.
-- **Fast.** On an M3 Pro, a home folder with 2.9 million files and folders is scanned in about 10 seconds (`du -sk` needs 65 s for the same folder). Comparing two snapshots with 2 million entries each takes about 0.3 s. Details are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+- **Fast.** On an M3 Pro, a home folder with 2.9 million files and folders is scanned in about 10 seconds (`du -sk` needs 65 s for the same folder). Comparing two snapshots with 2 million entries each takes about 0.3 s. Details are in [dev/PERFORMANCE.md](dev/PERFORMANCE.md).
 - **Free and open source**, with no in-app purchases, no ads and no data collection.
 
 ## Installation
@@ -161,7 +161,7 @@ git push origin v0.2.0
 3. Approve the run: **Actions → Release → Review deployments → `release` → Approve and deploy** (the `release` environment requires a maintainer's approval).
 4. After about 5–10 minutes the release with DMG, ZIP and `SHA256SUMS` appears under [Releases](https://github.com/brokoskokoli/diskrings/releases), with release notes generated from the commits.
 
-Before a release you can do a dry run that builds, signs and notarizes without publishing: `gh workflow run release.yml -f dry_run=true`. Only repository admins can create `v*` tags. A local release without CI is possible with `scripts/release.sh --publish`. One-time setup, secrets, troubleshooting and security trade-offs: [docs/RELEASING.md](docs/RELEASING.md) (German).
+Before a release you can do a dry run that builds, signs and notarizes without publishing: `gh workflow run release.yml -f dry_run=true`. Only repository admins can create `v*` tags. A local release without CI is possible with `scripts/release.sh --publish`. One-time setup, secrets, troubleshooting and security trade-offs: [dev/RELEASING.md](dev/RELEASING.md) (German).
 
 ## FAQ
 
@@ -197,7 +197,7 @@ Issues and pull requests are welcome, especially translations, bug reports with 
 
 - Run `scripts/check.sh` before submitting. It must pass without warnings.
 - All logic lives in `Sources/DiskRingsCore` and is covered by tests in `Tests/DiskRingsCoreTests`. The SwiftUI app in `Sources/DiskRings` stays thin.
-- The specification is in [SPEC.md](SPEC.md) and design decisions are in [docs/DECISIONS.md](docs/DECISIONS.md) (both in German).
+- The specification is in [SPEC.md](SPEC.md) and design decisions are in [dev/DECISIONS.md](dev/DECISIONS.md) (both in German).
 
 ## Translations
 

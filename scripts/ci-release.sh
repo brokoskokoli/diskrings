@@ -1,6 +1,6 @@
 #!/bin/bash
 # Hilfsschritte für den Release-Workflow (.github/workflows/release.yml).
-# Lokal aufrufbar, um den Workflow nachzustellen (siehe docs/RELEASING.md).
+# Lokal aufrufbar, um den Workflow nachzustellen (siehe dev/RELEASING.md).
 #
 #   scripts/ci-release.sh preflight         # Tag gegen VERSION, Secrets vorhanden?
 #   scripts/ci-release.sh keychain-setup    # .p12 in eine temporäre Keychain importieren
@@ -51,7 +51,7 @@ missing_secrets_help() {
 
  Fehlend: $*
 
- So richtest du sie einmalig ein (Details: docs/RELEASING.md):
+ So richtest du sie einmalig ein (Details: dev/RELEASING.md):
 
  1. App Store Connect → Users and Access → Integrations → App Store Connect API
     → Team Keys: Key mit Rolle "Developer" anlegen, .p8 herunterladen (nur einmal möglich),
@@ -113,7 +113,7 @@ cmd_preflight() {
         if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
             { echo '```'; missing_secrets_help "${missing[*]}"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
         fi
-        die "Secrets fehlen: ${missing[*]} (Anleitung siehe oben bzw. docs/RELEASING.md)"
+        die "Secrets fehlen: ${missing[*]} (Anleitung siehe oben bzw. dev/RELEASING.md)"
     fi
 
     # Format grob prüfen, ohne Werte auszugeben.

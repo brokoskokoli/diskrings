@@ -174,7 +174,7 @@ enum Volumes {
 /// Der Property Wrapper `SwiftUI.State` unter anderem Namen. Im SDK von
 /// macOS 27 ist `@State` zusätzlich ein Makro (`SwiftUIMacros.StateMacro`),
 /// dessen Plugin nur mit Xcode ausgeliefert wird; mit den Command Line Tools
-/// schlägt `@State` deshalb fehl (siehe docs/DECISIONS.md).
+/// schlägt `@State` deshalb fehl (siehe dev/DECISIONS.md).
 typealias ViewState<Value> = SwiftUI.State<Value>
 
 /// Erzwungene Bedienungshilfen für die Vorschaubilder: Die Systemwerte

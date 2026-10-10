@@ -384,7 +384,7 @@ public enum SnapshotFile {
 
     /// Höchstes Verhältnis unkomprimiert/komprimiert, das beim Laden
     /// akzeptiert wird. Echte Snapshots liegen bei etwa 2–5 (gemessen, siehe
-    /// docs/DECISIONS.md); auch ein Baum aus lauter gleich großen Dateien mit
+    /// dev/DECISIONS.md); auch ein Baum aus lauter gleich großen Dateien mit
     /// fortlaufenden Namen bleibt weit darunter. Die Grenze verhindert, dass
     /// eine präparierte Datei mit wenigen Bytes Gigabytes anfordert.
     static let maximumCompressionRatio: UInt64 = 256

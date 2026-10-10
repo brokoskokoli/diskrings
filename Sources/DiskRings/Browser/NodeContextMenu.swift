@@ -15,7 +15,7 @@ import SwiftUI
 //                         perform: { target, state in … })
 //     ]), before: "trash")
 //
-// Siehe docs/DECISIONS.md („Kontextmenü“).
+// Siehe dev/DECISIONS.md („Kontextmenü“).
 
 /// Worauf ein Kontextmenü wirkt.
 struct ContextMenuTarget: Equatable {
@@ -32,7 +32,7 @@ struct ContextMenuTarget: Equatable {
     /// `nodes` über Pfad und Art festgehalten: Wird der Baum ersetzt, während
     /// das Menü offen ist (Teil-Rescan, Kompaktierung), zeigen die Indizes
     /// womöglich auf andere Elemente. Ausgeführt wird deshalb nur auf den
-    /// neu aufgelösten Knoten (docs/DECISIONS.md).
+    /// neu aufgelösten Knoten (dev/DECISIONS.md).
     let snapshot: NodeTargetSnapshot?
     /// Dasselbe für `compareEntries` (der Vergleich wird nach Änderungen neu berechnet).
     let compareSnapshot: CompareTargetSnapshot?

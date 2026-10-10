@@ -5,7 +5,7 @@
 #   DISKRINGS_ADHOC=1 scripts/make-app.sh   # immer ad hoc (z. B. für schnelle lokale Tests)
 #   scripts/make-app.sh --appstore      # Mac-App-Store-Variante (Sandbox) + .pkg
 #
-# --appstore (SPEC 11, docs/APPSTORE.md): baut build/appstore/DiskRings.app
+# --appstore (SPEC 11, dev/APPSTORE.md): baut build/appstore/DiskRings.app
 # (die Developer-ID-App in build/DiskRings.app bleibt unberührt) mit den
 # Entitlements aus Resources/DiskRings-AppStore.entitlements (nur App Sandbox,
 # vom Nutzer gewählte Dateien, app-bezogene Bookmarks) und
@@ -264,7 +264,7 @@ if [ "$APPSTORE" = "1" ]; then
         cat >&2 <<MSG
 warning: Identität "$APPSTORE_IDENTITY" nicht im Schlüsselbund (oder DISKRINGS_ADHOC=1).
          Signiere ad hoc MIT den Sandbox-Entitlements: nur zum lokalen Testen,
-         nicht für App Store Connect (siehe docs/APPSTORE.md).
+         nicht für App Store Connect (siehe dev/APPSTORE.md).
 MSG
         echo "==> codesign (ad hoc, Sandbox-Entitlements)"
         codesign --force --sign - --entitlements "$ENTITLEMENTS" --timestamp=none "$APP"

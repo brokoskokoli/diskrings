@@ -28,7 +28,7 @@ public struct CompareActionContext: Sendable {
 }
 
 /// Kontextmenü, Hauptmenü und Tastenkürzel im Vergleichsmodus
-/// (docs/DECISIONS.md, „Kontextmenü im Vergleichsmodus“).
+/// (dev/DECISIONS.md, „Kontextmenü im Vergleichsmodus“).
 ///
 /// Ziele sind Vergleichseinträge. Für Aktionen auf das Dateisystem werden
 /// sie über den Pfad auf den **aktuellen** Baum (`AppState.tree`) abgebildet;

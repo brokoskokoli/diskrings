@@ -1,7 +1,7 @@
 /// Erkennt Pakete (Ordner, die der Finder als eine Datei zeigt) an der Endung.
 ///
 /// Bewusst eine feste Liste statt LaunchServices/UTType: Das ist schnell,
-/// deterministisch und ohne AppKit testbar (siehe docs/DECISIONS.md).
+/// deterministisch und ohne AppKit testbar (siehe dev/DECISIONS.md).
 public enum PackageDetector {
     public static let extensions: Set<String> = [
         "app", "appex", "bundle", "framework", "plugin", "kext", "xpc", "qlgenerator", "mdimporter",

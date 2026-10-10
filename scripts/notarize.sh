@@ -95,7 +95,7 @@ Sicherheit → App-spezifische Passwörter):
 
     xcrun notarytool store-credentials $PROFILE --apple-id <deine-apple-id> --team-id $TEAM_ID
 
-Weg B: App Store Connect API Key (wie im Release-Workflow), siehe docs/RELEASING.md:
+Weg B: App Store Connect API Key (wie im Release-Workflow), siehe dev/RELEASING.md:
 
     export NOTARY_API_KEY_ID=… NOTARY_API_ISSUER_ID=… NOTARY_API_KEY_PATH=~/…/AuthKey_….p8
 MSG
@@ -106,7 +106,7 @@ help_api_key() {
 
 error: Notarisierung nicht möglich: Apple lehnt den API-Key ab ($METHOD).
 
-Prüfen (siehe docs/RELEASING.md):
+Prüfen (siehe dev/RELEASING.md):
   - Key-ID und Issuer-ID stimmen (App Store Connect → Users and Access →
     Integrations → App Store Connect API → Team Keys; die Issuer-ID steht
     über der Liste).

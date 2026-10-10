@@ -20,7 +20,7 @@
 # NOTARY_API_ISSUER_ID und NOTARY_API_KEY_PATH bzw. NOTARY_API_KEY_P8_BASE64.
 # Signatur: DISKRINGS_IDENTITY, DISKRINGS_KEYCHAIN (siehe make-app.sh).
 # Der Release-Workflow (.github/workflows/release.yml) ruft dieses Skript mit
-# --skip-checks auf. Zugangsdaten liegen nie im Repo. Siehe docs/RELEASING.md.
+# --skip-checks auf. Zugangsdaten liegen nie im Repo. Siehe dev/RELEASING.md.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

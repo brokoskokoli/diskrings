@@ -17,7 +17,7 @@
 #   5. Temporäre Dateien löschen (auch bei Abbruch).
 #
 # Voraussetzungen: gh (angemeldet, Admin-Rechte am Repo), das Zertifikat
-# "Developer ID Application: …" im Anmelde-Schlüsselbund. Siehe docs/RELEASING.md.
+# "Developer ID Application: …" im Anmelde-Schlüsselbund. Siehe dev/RELEASING.md.
 #
 # Nichts davon landet im Repo oder in der Shell-History; Werte werden nie
 # ausgegeben. Kein `set -x`.
@@ -219,7 +219,7 @@ step_protection() {
     uid=$(gh api user --jq .id)
     if ! printf '{"reviewers":[{"type":"User","id":%s}],"prevent_self_review":false,"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}' "$uid" \
         | gh api -X PUT "repos/$REPO/environments/$ENV_NAME" --input - >/dev/null; then
-        say "warning: Konnte den Schutz nicht setzen; bitte von Hand (docs/RELEASING.md)."
+        say "warning: Konnte den Schutz nicht setzen; bitte von Hand (dev/RELEASING.md)."
         return 0
     fi
     local existing
@@ -356,7 +356,7 @@ main() {
     trap cleanup EXIT
     trap 'exit 130' INT TERM
 
-    say "DiskRings: Secrets für den Release-Workflow einrichten (docs/RELEASING.md)"
+    say "DiskRings: Secrets für den Release-Workflow einrichten (dev/RELEASING.md)"
     step_target
     step_certificate
     step_api_key

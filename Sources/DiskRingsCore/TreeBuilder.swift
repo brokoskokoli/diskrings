@@ -148,7 +148,7 @@ enum TreeBuilder {
     /// Speicher neben Knoten-Array und Namen: 16 Byte pro Knoten in
     /// `MappedBuffer`s (Kinderlisten, Reihenfolge, Index-Abbildung). Die
     /// Knoten werden per Zyklen-Permutation an Ort und Stelle umsortiert,
-    /// es entsteht kein zweites Knoten-Array (siehe docs/PERFORMANCE.md).
+    /// es entsteht kein zweites Knoten-Array (siehe dev/PERFORMANCE.md).
     static func buildInPlace(
         nodes: inout [Node],
         names nm: UnsafeBufferPointer<UInt8>,

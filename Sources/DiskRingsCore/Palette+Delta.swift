@@ -33,7 +33,7 @@ public struct DeltaScale: Sendable, Equatable {
 /// eine Markierung), entfernte hellgrau und gestrichelt, unveränderte grau.
 ///
 /// Abweichung von der Spec (dort Rot/Grün): Orange/Blau bleibt auch bei
-/// Rot-Grün-Schwäche unterscheidbar (siehe docs/DECISIONS.md).
+/// Rot-Grün-Schwäche unterscheidbar (siehe dev/DECISIONS.md).
 extension Palette {
     /// Farbton für Zuwachs (Orange) und Rückgang (Blau), in Grad.
     public static let growthHue = 28.0

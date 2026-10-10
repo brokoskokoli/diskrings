@@ -8,7 +8,7 @@ import SwiftUI
 // vor dem entsprechenden eingebauten Abschnitt, die im Vergleich
 // ausgeblendet sind). Ziele sind Vergleichseinträge; die Prüfung macht
 // `CompareActions` (Core), ausgeführt wird auf `state.tree` über den Pfad.
-// Siehe docs/DECISIONS.md („Integration M4/M6“).
+// Siehe dev/DECISIONS.md („Integration M4/M6“).
 
 @MainActor
 enum CompareContextMenuSections {

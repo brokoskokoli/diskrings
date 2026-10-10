@@ -1,4 +1,4 @@
-<p align="center"><img src="images/icon.png" width="128" height="128" alt="DiskRings-Icon"></p>
+<p align="center"><img src="docs/images/icon.png" width="128" height="128" alt="DiskRings-Icon"></p>
 
 <h1 align="center">DiskRings</h1>
 
@@ -9,12 +9,12 @@ Auf einen Blick sehen, was den Mac füllt, Scans über die Zeit vergleichen und 
   <a href="https://github.com/brokoskokoli/diskrings/releases/latest"><b>Download</b></a> ·
   <a href="https://brokoskokoli.github.io/diskrings/">Website</a> ·
   <a href="#häufige-fragen">Häufige Fragen</a> ·
-  <a href="../README.md">English</a>
+  <a href="README.md">English</a>
 </p>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="images/hero-dark.png">
-  <img src="images/hero-light.png" alt="DiskRings mit Sunburst-Diagramm und Ordnerliste (Beispieldaten)">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
+  <img src="docs/images/hero-light.png" alt="DiskRings mit Sunburst-Diagramm und Ordnerliste (Beispieldaten)">
 </picture>
 
 DiskRings scannt ein Volume oder einen Ordner und zeigt die Belegung als Sunburst-Diagramm: Jeder Ring ist eine Ordnerebene, jedes Segment so breit wie sein Anteil am Speicher. Ein Klick zoomt in den Ordner, eine Wischgeste geht zurück, und aufgeräumt wird direkt im Diagramm. DiskRings ist eine native SwiftUI-App für Apple Silicon und Intel, vergleichbar mit WinDirStat, TreeSize, SpaceSniffer oder Scanner unter Windows.
@@ -36,27 +36,27 @@ DiskRings scannt ein Volume oder einen Ordner und zeigt die Belegung als Sunburs
 
 ### Sunburst-Diagramm
 
-<img src="images/sunburst.png" alt="Sunburst-Diagramm, hineingezoomt in Library, mit Ordnerliste (Beispieldaten)" width="900">
+<img src="docs/images/sunburst.png" alt="Sunburst-Diagramm, hineingezoomt in Library, mit Ordnerliste (Beispieldaten)" width="900">
 
 ### Vergleich: Wachstum
 
 Im Wachstumsmodus ist die Segmentgröße der Zuwachs seit dem Snapshot; die Liste zeigt die größten Veränderungen.
 
-<img src="images/compare-growth.png" alt="Wachstumsansicht: Vergleich eines Snapshots mit dem aktuellen Scan" width="900">
+<img src="docs/images/compare-growth.png" alt="Wachstumsansicht: Vergleich eines Snapshots mit dem aktuellen Scan" width="900">
 
 ### Vergleich: Delta-Färbung
 
 Die Delta-Färbung behält das normale Layout und färbt Wachstum orange, Rückgang blau (auch bei Rot-Grün-Schwäche unterscheidbar; mit „Ohne Farbe unterscheiden“ ist Geschrumpftes zusätzlich schraffiert und mit ± markiert). Neue Elemente tragen einen Punkt, entfernte erscheinen gestrichelt.
 
-<img src="images/compare-delta.png" alt="Delta-Färbung im Dunkelmodus" width="900">
+<img src="docs/images/compare-delta.png" alt="Delta-Färbung im Dunkelmodus" width="900">
 
 ### Kontextmenü
 
-<img src="images/context-menu.png" alt="Kontextmenüs für Datei, geschützten Ordner und Mehrfachauswahl" width="900">
+<img src="docs/images/context-menu.png" alt="Kontextmenüs für Datei, geschützten Ordner und Mehrfachauswahl" width="900">
 
 ### Startbildschirm
 
-<img src="images/start.png" alt="Startbildschirm mit Volume-Liste" width="700">
+<img src="docs/images/start.png" alt="Startbildschirm mit Volume-Liste" width="700">
 
 ## Warum DiskRings?
 
@@ -71,7 +71,7 @@ Die Delta-Färbung behält das normale Layout und färbt Wachstum orange, Rückg
 - **Snapshot-Vergleich:** „Wo ist seit letzter Woche mein Speicher hin?“ beantworten, statt die ganze Platte neu zu durchsuchen.
 - **Ehrliche Summen:** Scan-Summe plus Systemdaten plus Löschbar ergibt die Belegung laut Volume.
 - **Sicher:** Kein endgültiges Löschen, alles geht in den Papierkorb, mit Bestätigung und ⌘Z.
-- **Schnell:** Auf einem M3 Pro dauert der Scan eines Home-Ordners mit 2,9 Mio. Dateien und Ordnern rund 10 s (`du -sk`: 65 s). Der Vergleich zweier Snapshots mit je 2 Mio. Einträgen dauert etwa 0,3 s. Details in [PERFORMANCE.md](PERFORMANCE.md).
+- **Schnell:** Auf einem M3 Pro dauert der Scan eines Home-Ordners mit 2,9 Mio. Dateien und Ordnern rund 10 s (`du -sk`: 65 s). Der Vergleich zweier Snapshots mit je 2 Mio. Einträgen dauert etwa 0,3 s. Details in [PERFORMANCE.md](dev/PERFORMANCE.md).
 - **Kostenlos und Open Source**, ohne In-App-Käufe, Werbung oder Datensammlung.
 
 ## Installation
@@ -117,7 +117,7 @@ swift scripts/make-social-preview.swift  # docs/images/social-preview.png
 
 ### Release-Ablauf
 
-Ausführlich, mit einmaliger Einrichtung und Sicherheitsabwägungen: [RELEASING.md](RELEASING.md).
+Ausführlich, mit einmaliger Einrichtung und Sicherheitsabwägungen: [RELEASING.md](dev/RELEASING.md).
 
 **Über GitHub Actions (Standard):**
 
@@ -152,7 +152,7 @@ Keine Netzwerkverbindungen, keine Telemetrie, keine Analyse- oder Absturzbericht
 
 ## Mitmachen
 
-Issues und Pull Requests sind willkommen. Vor dem Einreichen muss `scripts/check.sh` ohne Warnungen durchlaufen. Weitere Dokumente: [SPEC.md](../SPEC.md) (Spezifikation), [DECISIONS.md](DECISIONS.md) (Entscheidungen), [PERFORMANCE.md](PERFORMANCE.md) (Messwerte).
+Issues und Pull Requests sind willkommen. Vor dem Einreichen muss `scripts/check.sh` ohne Warnungen durchlaufen. Weitere Dokumente: [SPEC.md](SPEC.md) (Spezifikation), [DECISIONS.md](dev/DECISIONS.md) (Entscheidungen), [PERFORMANCE.md](dev/PERFORMANCE.md) (Messwerte).
 
 ## Übersetzungen
 
@@ -166,4 +166,4 @@ Die Übersetzungen sind maschinell erstellt und auf Apples macOS-Begriffe geprü
 
 ## Lizenz
 
-[MIT-Lizenz](../LICENSE). Copyright © 2026 Stefan Richter.
+[MIT-Lizenz](LICENSE). Copyright © 2026 Stefan Richter.

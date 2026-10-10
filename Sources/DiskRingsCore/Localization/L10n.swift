@@ -5,7 +5,7 @@ import Foundation
 /// Die Texte stehen in `Resources/<sprache>.lproj/Localizable.strings` (und
 /// `.stringsdict` für Pluralformen) dieses Targets; Schlüssel sind stabile IDs
 /// wie `"menu.chooseFolder"`, Quelle und Rückfall ist Englisch (siehe
-/// docs/DECISIONS.md, „Lokalisierung“).
+/// dev/DECISIONS.md, „Lokalisierung“).
 ///
 /// **Bundle:** In der gebauten App kopiert `scripts/make-app.sh` die
 /// `.lproj`-Ordner nach `Contents/Resources`; dann gilt das Haupt-Bundle (so

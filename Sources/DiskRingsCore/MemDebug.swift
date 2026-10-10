@@ -2,7 +2,7 @@ import Darwin
 
 /// Gibt den aktuellen Speicherbedarf (phys_footprint) auf stderr aus, wenn die
 /// Umgebungsvariable `DISKRINGS_DEBUG_MEM` gesetzt ist. Für Messungen in
-/// docs/PERFORMANCE.md.
+/// dev/PERFORMANCE.md.
 func memDebug(_ label: String) {
     guard getenv("DISKRINGS_DEBUG_MEM") != nil else { return }
     var info = task_vm_info_data_t()

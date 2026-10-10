@@ -3,7 +3,7 @@ import Foundation
 import PackageDescription
 
 // Mit den Command Line Tools (ohne Xcode) findet der Compiler das Makro-Plugin
-// von Swift Testing nicht von selbst (siehe docs/DECISIONS.md). Der Pfad wird
+// von Swift Testing nicht von selbst (siehe dev/DECISIONS.md). Der Pfad wird
 // nur gesetzt, wenn er existiert und die Command Line Tools die aktive
 // Toolchain sind. Auf Rechnern mit Xcode (z. B. GitHub-Runnern, die zusätzlich
 // die CLT installiert haben) bleibt er weg, damit Xcodes Compiler nicht das

@@ -6,7 +6,7 @@
 #   Actions → Release → Run workflow           → Trockenlauf (dry_run): alles außer
 #                                                Veröffentlichen; Artefakte zum Herunterladen
 #
-# Einrichtung, Secrets und Sicherheitsabwägungen: docs/RELEASING.md.
+# Einrichtung, Secrets und Sicherheitsabwägungen: dev/RELEASING.md.
 # Die Logik steckt in den Skripten (scripts/ci-release.sh, scripts/release.sh,
 # scripts/notarize.sh), damit sie lokal nachvollziehbar und testbar bleibt.
 #

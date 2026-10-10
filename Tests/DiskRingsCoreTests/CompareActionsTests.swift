@@ -2,7 +2,7 @@
 import Foundation
 import Testing
 
-/// Kontextmenü und Tastenkürzel im Vergleichsmodus (docs/DECISIONS.md,
+/// Kontextmenü und Tastenkürzel im Vergleichsmodus (dev/DECISIONS.md,
 /// „Kontextmenü im Vergleichsmodus“): Vergleichseinträge werden über den
 /// Pfad auf den aktuellen Baum abgebildet; entfernte Elemente erlauben nur
 /// „Pfad kopieren“ und „Hineinzoomen“.

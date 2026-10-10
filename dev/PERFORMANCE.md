@@ -33,7 +33,7 @@ Stand M1. Die Speicherspitze ist inzwischen deutlich niedriger (bei `~` 239 stat
 | `~` | 158 MB | 160 MB | 183 MB | 311 MB |
 | `/` | 226 MB | 228 MB | 262 MB | 448 MB |
 
-Stand M1 (inzwischen überholt, siehe „Speicherspitze: Baumaufbau an Ort und Stelle“): Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortierte Rohbaum (36 Byte pro Knoten plus Namen), 16 Byte Hilfsdaten pro Knoten und das fertige Knoten-Array (40 Byte). Danach wird alles außer dem Baum sofort an das System zurückgegeben (siehe „mmap-Puffer“ in docs/DECISIONS.md). Mit normalen Swift-Arrays lag die Spitze beim Scan von `~` bei 567 MB, und nach dem Scan eines Projektordners (1,5 Mio. Knoten) blieb der Prozess bei 314 MB statt 93 MB.
+Stand M1 (inzwischen überholt, siehe „Speicherspitze: Baumaufbau an Ort und Stelle“): Die Spitze entsteht beim Baum-Aufbau: Dann existieren gleichzeitig der unsortierte Rohbaum (36 Byte pro Knoten plus Namen), 16 Byte Hilfsdaten pro Knoten und das fertige Knoten-Array (40 Byte). Danach wird alles außer dem Baum sofort an das System zurückgegeben (siehe „mmap-Puffer“ in dev/DECISIONS.md). Mit normalen Swift-Arrays lag die Spitze beim Scan von `~` bei 567 MB, und nach dem Scan eines Projektordners (1,5 Mio. Knoten) blieb der Prozess bei 314 MB statt 93 MB.
 
 ### Abgleich mit `du`
 

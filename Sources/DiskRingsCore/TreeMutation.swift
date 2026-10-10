@@ -2,7 +2,7 @@
 ///
 /// Änderungen erzeugen eine **neue, unveränderliche** `ScanTree`-Version
 /// (copy-on-write); der alte Baum bleibt gültig und unverändert. Siehe
-/// docs/DECISIONS.md („Veränderbarer Baum“).
+/// dev/DECISIONS.md („Veränderbarer Baum“).
 public struct TreeEdit: Sendable {
     /// Die neue Baum-Version.
     public let tree: ScanTree

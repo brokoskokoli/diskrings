@@ -27,7 +27,7 @@ public struct NodeTargetEntry: Sendable, Equatable {
 }
 
 /// Ziele eines Kontextmenüs, über Pfad und Art statt über Knotenindizes
-/// festgehalten (docs/DECISIONS.md, „Kontextmenü: Ziele über Pfade“).
+/// festgehalten (dev/DECISIONS.md, „Kontextmenü: Ziele über Pfade“).
 ///
 /// Ein Menü bleibt offen, während im Hintergrund z. B. ein Teil-Rescan
 /// fertig wird; der Baum wird dann ersetzt und beim Kompaktieren

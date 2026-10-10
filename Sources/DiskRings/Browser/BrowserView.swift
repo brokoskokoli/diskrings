@@ -34,7 +34,7 @@ struct BrowserView: View {
 }
 
 /// Diagramm und Liste (Hauptansicht und Scan-Ansicht). Die Liste ist über
-/// den Teiler in der Breite verstellbar (siehe docs/DECISIONS.md: eigener
+/// den Teiler in der Breite verstellbar (siehe dev/DECISIONS.md: eigener
 /// Teiler statt `HSplitView`, weil dieser die Startbreite nicht übernimmt).
 struct BrowserBody: View {
     let state: AppState

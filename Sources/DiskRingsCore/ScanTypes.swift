@@ -12,12 +12,12 @@ public struct ScanOptions: Sendable, Equatable {
     /// wird, weil seine Inhalte schon über die Firmlinks erscheinen.
     public var crossMountPoints: Bool = false
     /// Anzahl paralleler Worker; `nil` = alle Kerne, höchstens 8 (siehe
-    /// docs/DECISIONS.md). `1` ergibt einen sequenziellen Scan.
+    /// dev/DECISIONS.md). `1` ergibt einen sequenziellen Scan.
     public var workerCount: Int? = nil
     /// Abstand der Fortschrittsmeldungen und Live-Snapshots in Sekunden.
     public var progressInterval: Double = 0.25
     /// Tiefe der vorläufigen Live-Snapshots (Wurzel plus k Ebenen). Standard 6
-    /// wie die Standard-Ringzahl; gemessener Aufwand in docs/PERFORMANCE.md.
+    /// wie die Standard-Ringzahl; gemessener Aufwand in dev/PERFORMANCE.md.
     public var snapshotDepth: Int = 6
     /// Nach so vielen Einträgen gibt ein Worker offene Unterordner an die
     /// gemeinsame Queue ab, auch wenn gerade kein Worker untätig ist.

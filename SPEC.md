@@ -219,7 +219,7 @@ Alternative für maximale Geschwindigkeit (Phase 2): `getattrlistbulk` liefert N
 
 ## 6. Architektur
 
-Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbindliche, aktuelle Beschreibung (jede Datei, Datenfluss, Invarianten) steht in **`docs/ARCHITECTURE.md`**; die ursprünglich hier skizzierte Ordnerstruktur wurde nicht so umgesetzt (siehe docs/DECISIONS.md, „Architektur: Aufteilung in Core und App“).
+Swift Package ohne Xcode-Projekt mit drei Targets und einem Testziel. Die verbindliche, aktuelle Beschreibung (jede Datei, Datenfluss, Invarianten) steht in **`dev/ARCHITECTURE.md`**; die ursprünglich hier skizzierte Ordnerstruktur wurde nicht so umgesetzt (siehe dev/DECISIONS.md, „Architektur: Aufteilung in Core und App“).
 
 - `Sources/DiskRingsCore`: die gesamte Logik ohne UI (Scan-Engine, `ScanTree`, Baum-Änderungen, Sunburst-Layout und Hit-Test, Snapshots und Vergleich, Teil-Rescan, Papierkorb und Schutzliste, Formatierung, Lokalisierung). Kein SwiftUI.
 - `Sources/DiskRings`: dünne SwiftUI/AppKit-App (`AppState` als zentraler Zustand, Views, Menüs, Vorschaubilder mit `--render-snapshots`).
@@ -295,7 +295,7 @@ Zu prüfen in M1: ob `swift test` mit den Command Line Tools ohne Xcode läuft (
 
 ## 11. Mac-App-Store-Variante (App Sandbox)
 
-Ein Code, zwei Build-Varianten: die Download-Version (Developer ID, nicht sandboxed, Abschnitt 7) und die Store-Variante in der App Sandbox. Die Bedienung ist gleich; Unterschiede entstehen nur dort, wo die Sandbox es verlangt. Einrichtung und Ablauf: `docs/APPSTORE.md`.
+Ein Code, zwei Build-Varianten: die Download-Version (Developer ID, nicht sandboxed, Abschnitt 7) und die Store-Variante in der App Sandbox. Die Bedienung ist gleich; Unterschiede entstehen nur dort, wo die Sandbox es verlangt. Einrichtung und Ablauf: `dev/APPSTORE.md`.
 
 **11.1 Erkennung.** Zur Laufzeit über die Umgebungsvariable `APP_SANDBOX_CONTAINER_ID` (`AppEnvironment.isSandboxed`, für Tests und Vorschaubilder übergebbar), ohne Compiler-Flag. In der Sandbox ist `NSHomeDirectory()` der Container; Schutzliste, „Benutzerordner scannen“ und Hinweise nutzen deshalb den echten Home-Ordner (`getpwuid`).
 
