@@ -160,7 +160,7 @@ final class CompareSession {
             case .aggregate, .remainder:
                 let e = displayTree.entry(ofNode: arc.nodeIndex)
                 if arc.nodeIndex != layout.focus { navigate(to: e) }
-            case .unassigned: break
+            case .system, .systemPart, .purgeable, .free: break
             }
         case .none: break
         }
@@ -231,7 +231,7 @@ extension AppState {
     /// Der aktuelle Baum als Snapshot (für „Snapshot ↔ aktueller Scan“).
     func currentSnapshot() -> Snapshot? {
         guard let tree, let summary else { return nil }
-        let meta = SnapshotMetadata.current(for: summary, tree: tree, volume: volume,
+        let meta = SnapshotMetadata.current(for: summary, tree: tree, volume: volume, otherVolumes: otherVolumes,
                                             date: snapshots.currentScanDate ?? Date())
         return Snapshot(metadata: meta, tree: tree)
     }
@@ -264,7 +264,7 @@ extension AppState {
     private func runCompare(oldTitle: String, newTitle: String, comparesSnapshots: Bool, source: CompareSource,
                             makeDiff: @escaping @Sendable () throws -> SnapshotDiff) {
         let mode = prefs.sizeMode
-        let options = prefs.layoutOptions(unassigned: 0)
+        let options = prefs.layoutOptions()
         let token = compareRunGate.begin()
         // Eine laufende Neuberechnung des alten Vergleichs ist damit überholt.
         compareRefreshGate.invalidate()
@@ -301,6 +301,6 @@ extension AppState {
                                    comparesSnapshots: Bool) {
         let model = CompareModel(diff: SnapshotDiff(old: old, new: new), mode: prefs.sizeMode)
         compare = CompareSession(model: model, oldTitle: oldTitle, newTitle: newTitle,
-                                 comparesSnapshots: comparesSnapshots, options: prefs.layoutOptions(unassigned: 0))
+                                 comparesSnapshots: comparesSnapshots, options: prefs.layoutOptions())
     }
 }

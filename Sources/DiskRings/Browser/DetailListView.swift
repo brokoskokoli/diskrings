@@ -22,11 +22,11 @@ struct DetailListView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
-                            let rows = rows(tree, base: layout.totalSize)
+                            let rows = rows(tree, layout: layout, palette: palette)
                             let visible = rows.filter { $0.kind == .node }.map(\.node)
                             let rescanning = state.rescanningNodes
                             ForEach(rows) { row in
-                                DetailRowView(state: state, tree: tree, row: row, swatch: colors[row.node],
+                                DetailRowView(state: state, tree: tree, row: row, swatch: row.swatch ?? colors[row.node],
                                               visibleNodes: visible, rescanProgress: rescanning[row.node])
                                     .id(row.id)
                             }
@@ -83,10 +83,10 @@ struct DetailListView: View {
 
     /// Sichtbare Zeilen: Kinder des Fokus, aufgeklappte Ordner rekursiv.
     /// Alle Anteile beziehen sich auf dieselbe Größe wie das Diagramm
-    /// (`layout.totalSize`: der Fokus, an der Volume-Wurzel samt „Nicht
-    /// zugeordnet“), damit sich die oberste Ebene zu 100 % summiert.
-    private func rows(_ tree: ScanTree, base: UInt64) -> [DetailRow] {
-        let total = Double(max(base, 1))
+    /// (`layout.totalSize`: der Fokus, an der Volume-Wurzel samt Systemdaten,
+    /// löschbar und frei), damit sich die oberste Ebene zu 100 % summiert.
+    private func rows(_ tree: ScanTree, layout: SunburstLayout, palette: Palette) -> [DetailRow] {
+        let total = Double(max(layout.totalSize, 1))
         var out: [DetailRow] = []
         let mode = state.prefs.sizeMode
         func add(_ parent: Int32, level: Int) {
@@ -107,32 +107,56 @@ struct DetailListView: View {
             }
         }
         add(state.focus, level: 0)
-        if state.focus == ScanTree.rootIndex, state.unassigned > 0, mode == .allocated {
-            let row = DetailRow(kind: .unassigned, node: -1, level: 0, size: state.unassigned,
-                                share: Double(state.unassigned) / total)
-            // Nach Größe in die oberste Ebene einsortieren.
-            let pos = out.firstIndex { $0.level == 0 && $0.size < state.unassigned } ?? out.count
-            out.insert(row, at: pos)
+        // Segmente der Volume-Wurzel (Systemdaten mit Teilen, löschbar, frei)
+        // aus dem Layout, nach Größe in die oberste Ebene einsortiert.
+        for (i, arc) in layout.arcs.enumerated() where arc.depth == 1 && arc.kind.isVolumeSegment {
+            var group = [segmentRow(layout, arc, level: 0, total: total, palette: palette)]
+            if arc.kind == .system {
+                for p in layout.arcs(inRing: 2) where p.kind == .systemPart && p.parentArc == Int32(i) {
+                    group.append(segmentRow(layout, p, level: 1, total: total, palette: palette))
+                }
+            }
+            let pos = out.firstIndex { $0.level == 0 && $0.size < arc.size } ?? out.count
+            out.insert(contentsOf: group, at: pos)
         }
         return out
+    }
+
+    private func segmentRow(_ layout: SunburstLayout, _ arc: SunburstArc, level: Int, total: Double,
+                            palette: Palette) -> DetailRow {
+        DetailRow(kind: .segment(arc.kind, part: Int(arc.part), title: layout.volumeSegmentTitle(arc) ?? "",
+                                 help: layout.volumeSegmentDetail(arc, fullDiskAccessDenied: state.fullDiskAccess == .denied) ?? ""),
+                  node: -1, level: level, size: arc.size, share: Double(arc.size) / total,
+                  swatch: Color(palette.volumeSegmentFill(arc)))
     }
 }
 
 struct DetailRow: Identifiable {
-    enum Kind: Equatable { case node, more(parent: Int32, count: Int), unassigned }
-    enum ID: Hashable { case node(Int32), more(Int32), unassigned }
+    enum Kind: Equatable {
+        case node, more(parent: Int32, count: Int)
+        /// Segment der Volume-Wurzel (Systemdaten, ein Teil davon, löschbar, frei).
+        case segment(SunburstArc.Kind, part: Int, title: String, help: String)
+    }
+    enum ID: Hashable { case node(Int32), more(Int32), segment(UInt8, Int) }
 
     let kind: Kind
     let node: Int32
     let level: Int
     let size: UInt64
     let share: Double
+    var swatch: Color?
+
+    /// Erklärung eines Segments der Volume-Wurzel (Tooltip), sonst `nil`.
+    var segmentHelp: String? {
+        if case .segment(_, _, _, let help) = kind { return help }
+        return nil
+    }
 
     var id: ID {
         switch kind {
         case .node: .node(node)
         case .more(let p, _): .more(p)
-        case .unassigned: .unassigned
+        case .segment(let k, let part, _, _): .segment(k.rawValue, part)
         }
     }
 }
@@ -218,8 +242,14 @@ private struct DetailRowView: View {
                 activate()
             }
         }
-        .contextMenu { if row.kind == .node { NodeContextMenu(state: state, node: row.node) } }
-        .help(row.kind == .unassigned ? L("list.unassigned.help") : "")
+        .contextMenu {
+            if row.kind == .node {
+                NodeContextMenu(state: state, node: row.node)
+            } else if case .segment(_, _, let title, let help) = row.kind {
+                VolumeSegmentMenu(state: state, title: title, size: row.size, detail: help)
+            }
+        }
+        .help(row.segmentHelp ?? "")
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(L("list.row.accessibility", title, ByteFormat.string(row.size), ByteFormat.percent(row.share)))
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
@@ -254,8 +284,19 @@ private struct DetailRowView: View {
                 .frame(width: 16)
         case .more:
             Image(systemName: "ellipsis.circle").foregroundStyle(.secondary).frame(width: 16)
-        case .unassigned:
-            Image(systemName: "questionmark.square.dashed").foregroundStyle(.secondary).frame(width: 16)
+        case .segment(let kind, _, _, _):
+            Image(systemName: Self.segmentSymbol(kind)).foregroundStyle(kind == .free ? Color.secondary : (swatch ?? Color.secondary)).frame(width: 16)
+        }
+    }
+
+    /// SF-Symbol eines Segments der Volume-Wurzel.
+    static func segmentSymbol(_ kind: SunburstArc.Kind) -> String {
+        switch kind {
+        case .system: "gearshape.fill"
+        case .systemPart: "internaldrive"
+        case .purgeable: "arrow.3.trianglepath"
+        case .free: "circle.dashed"
+        case .node, .aggregate, .remainder: "questionmark.square.dashed"
         }
     }
 
@@ -263,7 +304,7 @@ private struct DetailRowView: View {
         switch row.kind {
         case .node: tree.name(of: row.node)
         case .more(_, let count): itemsText(count)
-        case .unassigned: L("arc.unassigned.title")
+        case .segment(_, _, let title, _): title
         }
     }
 

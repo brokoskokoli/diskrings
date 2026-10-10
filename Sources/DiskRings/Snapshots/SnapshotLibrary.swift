@@ -78,12 +78,13 @@ final class SnapshotLibrary {
 
     /// Nach jedem vollständigen Scan: Zeitpunkt merken und, falls
     /// eingeschaltet, automatisch speichern und aufräumen.
-    func didFinishScan(_ result: ScanResult, volume: VolumeInfo?, retention: SnapshotRetention) {
+    func didFinishScan(_ result: ScanResult, volume: VolumeInfo?, otherVolumes: [ContainerVolume],
+                       retention: SnapshotRetention) {
         let date = Date()
         markCurrentScan(date)
         guard retention.autoSave else { return }
         let store = store
-        let meta = SnapshotMetadata.current(for: result, volume: volume, date: date)
+        let meta = SnapshotMetadata.current(for: result, volume: volume, otherVolumes: otherVolumes, date: date)
         save(tree: result.tree, metadata: meta, retention: retention, announce: false, store: store)
     }
 
@@ -95,7 +96,7 @@ final class SnapshotLibrary {
     func saveCurrent(state: AppState, name: String?) {
         guard let tree = state.tree, let summary = state.summary else { return }
         // Der Baum kann sich seit dem Scan geändert haben (Papierkorb, Teil-Rescan).
-        let meta = SnapshotMetadata.current(for: summary, tree: tree, volume: state.volume,
+        let meta = SnapshotMetadata.current(for: summary, tree: tree, volume: state.volume, otherVolumes: state.otherVolumes,
                                             name: SnapshotNaming.normalized(name))
         save(tree: tree, metadata: meta, retention: state.prefs.snapshots.retention, announce: true, store: store)
     }

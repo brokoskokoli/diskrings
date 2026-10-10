@@ -196,6 +196,22 @@ struct EditTransitionTests {
         }
     }
 
+    @Test("Segmente der Volume-Wurzel finden ihr Gegenstück (je Teil der Systemdaten eines)")
+    func volumeSegmentsMatched() throws {
+        let tree = smallTree()
+        let movies = try #require(tree.index(ofPath: "Movies"))
+        let chain = tree.removingNodes([movies])
+        let o = SunburstOptions(rootSegments: .full)
+        let old = SunburstLayout(tree: tree, options: o), new = SunburstLayout(tree: chain.tree, options: o)
+        let tr = EditTransition(from: old, to: new, translate: chain.translate)
+        for (j, a) in new.arcs.enumerated() where a.kind.isVolumeSegment {
+            let i = tr.match[j]
+            #expect(i >= 0)
+            #expect(old.arcs[i].kind == a.kind && old.arcs[i].part == a.part)
+        }
+        #expect(!tr.orphans.contains { old.arcs[$0].kind.isVolumeSegment })
+    }
+
     @Test("Neue Arcs wachsen aus ihrer Mitte")
     func growth() throws {
         let tree = smallTree()

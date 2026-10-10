@@ -104,7 +104,7 @@ struct SunburstHitTesterTests {
     @Test("Jeder Arc wird an seiner Mitte getroffen (Demo-Baum)")
     func everyArc() {
         let t = DemoTree.home()
-        let l = SunburstLayout(tree: t, options: SunburstOptions(unassigned: 20_000_000_000))
+        let l = SunburstLayout(tree: t, options: SunburstOptions(rootSegments: .unreadable(20_000_000_000)))
         let g = SunburstGeometry(rings: 6, outerRadius: 400)
         let h = SunburstHitTester(layout: l, geometry: g)
         for (i, arc) in l.arcs.enumerated() where arc.span > 1e-12 {
@@ -114,20 +114,35 @@ struct SunburstHitTesterTests {
         }
     }
 
-    @Test("„Nicht zugeordnet“ ist in allen Ringen treffbar")
-    func unassignedAllRings() {
+    @Test("Frei, löschbar und Teile der Systemdaten sind bis zum Außenrand treffbar")
+    func volumeSegmentsOuterRings() throws {
         let t = sampleTree()
-        let l = SunburstLayout(tree: t, options: SunburstOptions(unassigned: 1000))
+        let l = SunburstLayout(tree: t, options: SunburstOptions(rootSegments: .full))
         let g = SunburstGeometry(rings: 6, outerRadius: 300)
-        let u = l.ringRanges[0].upperBound - 1
-        #expect(l.arcs[u].kind == .unassigned)
-        let angle = l.arcs[u].midAngle
-        for ring in 1 ... 6 {
-            let (x, y) = point(g, ring: ring, angle: angle)
-            #expect(SunburstHitTester(layout: l, geometry: g).hit(dx: x, dy: y) == .arc(u))
+        let h = SunburstHitTester(layout: l, geometry: g)
+        for kind: SunburstArc.Kind in [.free, .purgeable] {
+            let u = try #require(l.arcs.firstIndex { $0.kind == kind })
+            for ring in 1 ... 6 {
+                let (x, y) = point(g, ring: ring, angle: l.arcs[u].midAngle)
+                #expect(h.hit(dx: x, dy: y) == .arc(u))
+            }
         }
-        let (x, y) = point(g, ring: 5, angle: angle)
-        #expect(SunburstHitTester(layout: l, geometry: g, unassignedSpansAllRings: false).hit(dx: x, dy: y) == .none)
+        // Systemdaten: Ring 1 der Sammel-Arc, ab Ring 2 der jeweilige Teil.
+        let sys = try #require(l.arcs.firstIndex { $0.kind == .system })
+        let part = try #require(l.arcs.firstIndex { $0.kind == .systemPart })
+        let a = l.arcs[part].midAngle
+        let (x1, y1) = point(g, ring: 1, angle: a)
+        #expect(h.hit(dx: x1, dy: y1) == .arc(sys))
+        for ring in 2 ... 6 {
+            let (x, y) = point(g, ring: ring, angle: a)
+            #expect(h.hit(dx: x, dy: y) == .arc(part))
+        }
+        // Ordner reichen nicht nach außen: über einer Datei im ersten Ring nichts.
+        let b = try #require(l.arcIndex(ofNode: idx(t, "b")))
+        let (bx, by) = point(g, ring: 4, angle: l.arcs[b].midAngle)
+        #expect(h.hit(dx: bx, dy: by) == .none)
+        let (x, y) = point(g, ring: 5, angle: a)
+        #expect(SunburstHitTester(layout: l, geometry: g, segmentsSpanOuterRings: false).hit(dx: x, dy: y) == .none)
     }
 
     @Test("Ringgrenzen: Radius genau auf der Grenze gehört zum äußeren Ring")
@@ -195,7 +210,7 @@ struct PaletteTests {
     @Test("Farben eines Layouts: Sammelsegment grau, Kinder im Ton des Asts")
     func layoutColors() {
         let t = sampleTree()
-        let l = SunburstLayout(tree: t, options: SunburstOptions(unassigned: 500))
+        let l = SunburstLayout(tree: t, options: SunburstOptions(rootSegments: .full))
         for appearance in PaletteAppearance.allCases {
             let p = Palette(appearance: appearance)
             let colors = p.colors(for: l, tree: t)
@@ -203,7 +218,10 @@ struct PaletteTests {
             for (i, a) in l.arcs.enumerated() {
                 switch a.kind {
                 case .aggregate: #expect(colors[i] == p.aggregateFill)
-                case .unassigned: #expect(colors[i] == p.unassignedFill)
+                case .system: #expect(colors[i] == p.systemFill)
+                case .systemPart: #expect(colors[i] == p.systemPartFill(index: Int(a.part)))
+                case .purgeable: #expect(colors[i] == p.purgeableFill)
+                case .free: #expect(colors[i] == p.freeFill)
                 case .remainder: #expect(colors[i] == p.remainderFill)
                 case .node:
                     #expect(colors[i].hsb.saturation > 0.1)

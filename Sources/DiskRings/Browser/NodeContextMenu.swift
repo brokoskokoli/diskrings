@@ -177,6 +177,26 @@ struct NodeContextMenu: View {
     }
 }
 
+/// Kontextmenü eines Segments der Volume-Wurzel (Systemdaten, löschbar, frei):
+/// nur Informationen, kein Papierkorb und kein Rescan. Bei fehlendem
+/// Festplattenvollzugriff zusätzlich der Weg in die Systemeinstellung.
+struct VolumeSegmentMenu: View {
+    let state: AppState
+    let title: String
+    let size: UInt64
+    let detail: String
+
+    var body: some View {
+        Text(title + " – " + ByteFormat.string(size))
+        Divider()
+        Text(detail)
+        if state.fullDiskAccess == .denied {
+            Divider()
+            Button(L("fda.alert.setUp")) { state.openFullDiskAccessSettings() }
+        }
+    }
+}
+
 /// Einträge eines Kontextmenüs aus der Registry (normale Ansicht und Vergleich).
 struct ContextMenuItems: View {
     let state: AppState

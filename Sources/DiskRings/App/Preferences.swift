@@ -18,6 +18,7 @@ final class Preferences {
         static let skipTrash = "skipTrashConfirmation"
         static let listWidth = "listWidth"
         static let fdaHintDismissed = "fullDiskAccessHintDismissed"
+        static let showFree = "showFreeSpace"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -30,6 +31,8 @@ final class Preferences {
     var crossMountPoints: Bool { didSet { defaults.set(crossMountPoints, forKey: Key.crossMounts) } }
     var excludedPaths: [String] { didSet { defaults.set(excludedPaths, forKey: Key.excluded) } }
     var showLabels: Bool { didSet { defaults.set(showLabels, forKey: Key.labels) } }
+    /// Freien Speicher an der Volume-Wurzel im Ring zeigen (Menü „Darstellung“).
+    var showFreeSpace: Bool { didSet { defaults.set(showFreeSpace, forKey: Key.showFree) } }
     /// „Nicht mehr fragen“ im Papierkorb-Dialog (gilt nur unter 1 GB, SPEC 3.6).
     var skipTrashConfirmation: Bool { didSet { defaults.set(skipTrashConfirmation, forKey: Key.skipTrash) } }
     /// Breite der Detailliste in Punkt (verstellbar über den Teiler).
@@ -55,6 +58,7 @@ final class Preferences {
         crossMountPoints = defaults.object(forKey: Key.crossMounts) as? Bool ?? false
         excludedPaths = defaults.stringArray(forKey: Key.excluded) ?? []
         showLabels = defaults.object(forKey: Key.labels) as? Bool ?? true
+        showFreeSpace = defaults.object(forKey: Key.showFree) as? Bool ?? true
         skipTrashConfirmation = defaults.object(forKey: Key.skipTrash) as? Bool ?? false
         let w = defaults.object(forKey: Key.listWidth) as? Double ?? 400
         listWidth = Self.listWidthRange.contains(w) ? w : 400
@@ -69,11 +73,12 @@ final class Preferences {
         ScanOptions(includeHidden: includeHidden, excludedPaths: excludedPaths, crossMountPoints: crossMountPoints)
     }
 
-    func layoutOptions(unassigned: UInt64) -> SunburstOptions {
+    /// Layout-Optionen; die Segmente der Volume-Wurzel nur im Modus „belegt“.
+    func layoutOptions(segments: RootSegments = .none) -> SunburstOptions {
         SunburstOptions(maxRings: ringCount, minAngleDegrees: minAngleDegrees, sizeMode: sizeMode,
-                        unassigned: sizeMode == .allocated ? unassigned : 0)
+                        rootSegments: sizeMode == .allocated ? segments : .none)
     }
 
     /// Alles, was das Layout beeinflusst (für `onChange`).
-    var layoutKey: String { "\(ringCount)|\(minAngleDegrees)|\(sizeMode.rawValue)" }
+    var layoutKey: String { "\(ringCount)|\(minAngleDegrees)|\(sizeMode.rawValue)|\(showFreeSpace)" }
 }

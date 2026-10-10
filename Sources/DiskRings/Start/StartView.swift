@@ -31,7 +31,9 @@ struct StartView: View {
                 }
                 Text(L("start.volumes")).font(.headline).accessibilityAddTraits(.isHeader)
                 VStack(spacing: 8) {
-                    ForEach(state.volumes) { v in VolumeRow(volume: v) { state.requestScan(v.path) } }
+                    ForEach(state.volumes) { v in
+                        VolumeRow(volume: v, breakdown: state.estimatedBreakdown(for: v)) { state.requestScan(v.path) }
+                    }
                     if state.volumes.isEmpty {
                         Text(L("start.noVolumes")).foregroundStyle(.secondary)
                     }
@@ -89,6 +91,8 @@ struct FullDiskAccessBanner: View {
 
 struct VolumeRow: View {
     let volume: VolumeInfo
+    /// Aufteilung für Balken und Legende (ohne Scan geschätzt).
+    let breakdown: VolumeBreakdown
     let action: () -> Void
     @ViewState private var hovering = false
 
@@ -107,16 +111,10 @@ struct VolumeRow: View {
                         Text(L("start.volume.used", ByteFormat.string(volume.usedCapacity), ByteFormat.string(volume.totalCapacity)))
                             .font(.system(size: 12).monospacedDigit())
                     }
-                    UsageBar(volume: volume).frame(height: 8)
-                    HStack(spacing: 12) {
-                        legend(Color.accentColor, L("start.legend.used", ByteFormat.string(volume.usedCapacity - min(volume.purgeableCapacity, volume.usedCapacity))))
-                        if volume.purgeableCapacity > 0 {
-                            legend(Color.purgeable, L("start.legend.purgeable", ByteFormat.string(volume.purgeableCapacity)))
-                        }
-                        legend(Color.primary.opacity(0.12), L("start.legend.free", ByteFormat.string(volume.availableCapacity)))
-                    }
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    VolumeUsageBar(breakdown: breakdown).frame(height: 8)
+                    VolumeUsageLegend(breakdown: breakdown)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
                 }
                 Image(systemName: "chevron.right").foregroundStyle(.tertiary).accessibilityHidden(true)
             }
@@ -131,34 +129,6 @@ struct VolumeRow: View {
         .onHover { hovering = $0 }
         .accessibilityLabel(L("start.volume.accessibility", volume.name, ByteFormat.string(volume.usedCapacity), ByteFormat.string(volume.totalCapacity), ByteFormat.string(volume.availableCapacity)))
         .accessibilityHint(L("start.volume.hint"))
-    }
-
-    private func legend(_ color: Color, _ text: String) -> some View {
-        HStack(spacing: 4) {
-            Circle().fill(color).frame(width: 7, height: 7)
-            Text(text)
-        }
-    }
-}
-
-/// Belegungsbalken: belegt, davon bereinigbar, frei.
-struct UsageBar: View {
-    let volume: VolumeInfo
-
-    var body: some View {
-        GeometryReader { g in
-            let total = Double(max(volume.totalCapacity, 1))
-            let purge = Double(min(volume.purgeableCapacity, volume.usedCapacity))
-            let used = Double(volume.usedCapacity) - purge
-            HStack(spacing: 0) {
-                Rectangle().fill(Color.accentColor).frame(width: g.size.width * used / total)
-                Rectangle().fill(Color.purgeable).frame(width: g.size.width * purge / total)
-                Spacer(minLength: 0)
-            }
-            .background(Color.primary.opacity(0.12))
-            .clipShape(Capsule())
-        }
-        .accessibilityHidden(true)
     }
 }
 
@@ -294,12 +264,6 @@ struct StallHint: View {
         .background(Color.orange.opacity(0.10))
         .accessibilityElement(children: .combine)
     }
-}
-
-extension Color {
-    /// Farbe für bereinigbaren Speicher im Belegungsbalken und in der Legende;
-    /// heller Ton mit genug Kontrast auf hellem und dunklem Hintergrund.
-    static let purgeable = Color(nsColor: .systemTeal)
 }
 
 /// App-Icon für den Startbildschirm: aus dem Bündel (`NSApp.applicationIconImage`);

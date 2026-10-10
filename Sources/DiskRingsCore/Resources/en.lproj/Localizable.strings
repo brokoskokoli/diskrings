@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "combined, each below the angle threshold";
 "arc.remainder.title" = "Files in This Folder";
 "arc.remainder.detail" = "not yet counted individually";
-"arc.unassigned.title" = "Unassigned";
-"arc.unassigned.detail" = "System, local snapshots, purgeable space";
 "sunburst.accessibility" = "Sunburst chart of %@";
 "sunburst.shareOf" = "%1$@ of %2$@";
 "sunburst.center.hint" = "Click: up one level";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@, current folder";
 
 /* Status bar and scan summary */
-"status.unassigned" = "unassigned %@";
-"status.unassigned.help" = "Space used on the volume that doesn’t show up in any folder: system, local Time Machine snapshots, purgeable space. Clones and snapshots can cause differences.";
 "status.deviation" = "Clones and snapshots can cause differences";
-"status.deviation.help" = "Clones and snapshots can cause differences: APFS clones share blocks but are counted separately; local Time Machine snapshots and purgeable space don’t show up in any folder and appear under “Unassigned”.";
-"status.fda.help" = "Without Full Disk Access, folders such as ~/Library/Mail stay unreadable and end up under “Unassigned”. Click to open System Settings.";
+"status.deviation.help" = "Clones and snapshots can cause differences: APFS clones share blocks but are counted separately; local Time Machine snapshots and purgeable space don’t show up in any folder and appear under “System Data”.";
+"status.fda.help" = "Without Full Disk Access, folders such as ~/Library/Mail stay unreadable and end up under “Unreadable System Data”. Click to open System Settings.";
 "status.scanSummary" = "Scan: %1$@ in %2$@";
 "status.volume" = "%1$@: %2$@ · used %3$@ · free %4$@";
 "status.volume.purgeable" = "(of which %@ purgeable)";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "Contents of %@";
 "list.shareOfRoot" = "%@ of the scan root";
-"list.unassigned.help" = "Unassigned (system, local snapshots, purgeable space): space used on the volume that doesn’t show up in any folder.";
 "list.row.accessibility" = "%1$@, %2$@, %3$@";
 "accessibility.zoomIn" = "Zoom In";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "Volumes";
 "start.noVolumes" = "No volumes found.";
 "start.scanHome" = "Scan Home Folder";
-"start.fda.message" = "Without Full Disk Access, folders such as ~/Library/Mail, Safari or other apps’ containers stay unreadable. They are missing from the chart and end up under “Unassigned”.";
+"start.fda.message" = "Without Full Disk Access, folders such as ~/Library/Mail, Safari or other apps’ containers stay unreadable. They are missing from the chart and end up under “Unreadable System Data”.";
 "start.fda.openSettings" = "Open System Settings…";
 "start.fda.checkAgain" = "Check Again";
 "start.volume.used" = "%1$@ of %2$@ used";
-"start.legend.used" = "Used %@";
 "start.legend.purgeable" = "Purgeable %@";
 "start.legend.free" = "Free %@";
 "start.volume.accessibility" = "%1$@, %2$@ of %3$@ used, %4$@ free";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "Contains another volume (mount point “%@”) and can’t be moved to the Trash";
 "trash.confirm.sizeUncertain" = "The size isn’t fully known (cloud-only, unreadable or not yet scanned items), so this is always confirmed.";
 "reason.targetsChanged" = "The items changed in the meantime (for example by a rescan). Nothing was done – please try again.";
+"arc.system.title" = "System Data";
+"arc.system.detail" = "Other volumes in the same container and areas DiskRings can’t read";
+"arc.unreadableSystem.title" = "Unreadable System Data";
+"arc.unreadableSystem.detail" = "Space that appears in no folder and no other volume: Spotlight index, document versions, fseventsd, /private/var/db, local snapshots, APFS metadata.";
+"arc.unreadableSystem.fdaHint" = "Without Full Disk Access this also includes the folders DiskRings wasn’t allowed to read.";
+"arc.volume.detail" = "Separate APFS volume in the same container; shares the space with this volume";
+"arc.purgeable.title" = "Purgeable";
+"arc.purgeable.detail" = "Space macOS frees automatically when needed (caches, local snapshots, iCloud files)";
+"arc.free.title" = "Free";
+"arc.free.detail" = "Unused space on the volume";
+"volume.role.system" = "macOS System (%@)";
+"volume.role.data" = "Data (%@)";
+"volume.role.preboot" = "Startup Data (Preboot)";
+"volume.role.recovery" = "Recovery";
+"volume.role.vm" = "Swap & Sleep Image (VM)";
+"volume.role.update" = "System Updates (Update)";
+"compare.part.systemData" = "of which system data %@";
+"compare.label.systemData" = "of which system data";
+"menu.showFreeSpace" = "Show Free Space in Ring";
+"legend.yourData" = "Your data %@";
+"legend.systemData" = "System data %@";
+"status.systemData" = "system data %@";
+"status.systemData.help" = "Space used on the volume that doesn’t show up in any folder: other volumes in the same container (Preboot, VM, Recovery …) and system areas DiskRings can’t read. Clones and snapshots can cause differences.";

@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "agrupados, cada uno por debajo del umbral de ángulo";
 "arc.remainder.title" = "Archivos de esta carpeta";
 "arc.remainder.detail" = "aún no contados individualmente";
-"arc.unassigned.title" = "Sin asignar";
-"arc.unassigned.detail" = "Sistema, instantáneas locales, espacio purgable";
 "sunburst.accessibility" = "Gráfico de proyección solar de %@";
 "sunburst.shareOf" = "%1$@ de %2$@";
 "sunburst.center.hint" = "Clic: subir un nivel";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@, carpeta actual";
 
 /* Status bar and scan summary */
-"status.unassigned" = "sin asignar %@";
-"status.unassigned.help" = "Espacio usado en el volumen que no aparece en ninguna carpeta: sistema, instantáneas locales de Time Machine, espacio purgable. Los clones y las instantáneas pueden causar diferencias.";
 "status.deviation" = "Los clones y las instantáneas pueden causar diferencias";
-"status.deviation.help" = "Los clones y las instantáneas pueden causar diferencias: los clones APFS comparten bloques pero se cuentan por separado; las instantáneas locales de Time Machine y el espacio purgable no aparecen en ninguna carpeta y figuran en «Sin asignar».";
-"status.fda.help" = "Sin acceso total al disco, carpetas como ~/Library/Mail siguen siendo ilegibles y acaban en «Sin asignar». Haz clic para abrir Ajustes del Sistema.";
+"status.deviation.help" = "Los clones y las instantáneas pueden causar diferencias: los clones APFS comparten bloques pero se cuentan por separado; las instantáneas locales de Time Machine y el espacio purgable no aparecen en ninguna carpeta y figuran en «Datos del sistema».";
+"status.fda.help" = "Sin acceso total al disco, carpetas como ~/Library/Mail siguen siendo ilegibles y acaban en «Datos del sistema no legibles». Haz clic para abrir Ajustes del Sistema.";
 "status.scanSummary" = "Análisis: %1$@ en %2$@";
 "status.volume" = "%1$@: %2$@ · usado %3$@ · libre %4$@";
 "status.volume.purgeable" = "(de ello, %@ purgable)";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "Contenido de %@";
 "list.shareOfRoot" = "%@ de la raíz del análisis";
-"list.unassigned.help" = "Sin asignar (sistema, instantáneas locales, espacio purgable): espacio usado en el volumen que no aparece en ninguna carpeta.";
 "list.row.accessibility" = "%1$@, %2$@, %3$@";
 "accessibility.zoomIn" = "Ampliar";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "Volúmenes";
 "start.noVolumes" = "No se han encontrado volúmenes.";
 "start.scanHome" = "Analizar carpeta de inicio";
-"start.fda.message" = "Sin acceso total al disco, carpetas como ~/Library/Mail, Safari o los contenedores de otras apps siguen siendo ilegibles. Faltan en el gráfico y acaban en «Sin asignar».";
+"start.fda.message" = "Sin acceso total al disco, carpetas como ~/Library/Mail, Safari o los contenedores de otras apps siguen siendo ilegibles. Faltan en el gráfico y acaban en «Datos del sistema no legibles».";
 "start.fda.openSettings" = "Abrir Ajustes del Sistema…";
 "start.fda.checkAgain" = "Volver a comprobar";
 "start.volume.used" = "%1$@ de %2$@ usados";
-"start.legend.used" = "Usado %@";
 "start.legend.purgeable" = "Purgable %@";
 "start.legend.free" = "Libre %@";
 "start.volume.accessibility" = "%1$@, %2$@ de %3$@ usados, %4$@ libres";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "Contiene otro volumen (punto de montaje “%@”) y no se puede trasladar a la papelera";
 "trash.confirm.sizeUncertain" = "El tamaño no se conoce por completo (ítems solo en la nube, ilegibles o aún no analizados), por lo que siempre se pide confirmación.";
 "reason.targetsChanged" = "Los ítems han cambiado mientras tanto (por ejemplo, por un nuevo análisis). No se ha hecho nada; vuelve a intentarlo.";
+"arc.system.title" = "Datos del sistema";
+"arc.system.detail" = "Otros volúmenes del mismo contenedor y áreas que DiskRings no puede leer";
+"arc.unreadableSystem.title" = "Datos del sistema no legibles";
+"arc.unreadableSystem.detail" = "Espacio que no aparece en ninguna carpeta ni en otro volumen: índice de Spotlight, versiones de documentos, fseventsd, /private/var/db, instantáneas locales, metadatos APFS.";
+"arc.unreadableSystem.fdaHint" = "Sin acceso total al disco, también incluye las carpetas que DiskRings no pudo leer.";
+"arc.volume.detail" = "Volumen APFS independiente en el mismo contenedor; comparte el espacio con este volumen";
+"arc.purgeable.title" = "Purgable";
+"arc.purgeable.detail" = "Espacio que macOS libera automáticamente cuando hace falta (cachés, instantáneas locales, archivos de iCloud)";
+"arc.free.title" = "Libre";
+"arc.free.detail" = "Espacio sin usar del volumen";
+"volume.role.system" = "Sistema macOS (%@)";
+"volume.role.data" = "Datos (%@)";
+"volume.role.preboot" = "Datos de arranque (Preboot)";
+"volume.role.recovery" = "Recuperación (Recovery)";
+"volume.role.vm" = "Intercambio y reposo (VM)";
+"volume.role.update" = "Actualizaciones del sistema (Update)";
+"compare.part.systemData" = "de ello datos del sistema %@";
+"compare.label.systemData" = "de ello datos del sistema";
+"menu.showFreeSpace" = "Mostrar espacio libre en el anillo";
+"legend.yourData" = "Tus datos %@";
+"legend.systemData" = "Datos del sistema %@";
+"status.systemData" = "datos del sistema %@";
+"status.systemData.help" = "Espacio usado en el volumen que no aparece en ninguna carpeta: otros volúmenes del mismo contenedor (Preboot, VM, Recovery…) y áreas del sistema que DiskRings no puede leer. Los clones y las instantáneas pueden causar diferencias.";

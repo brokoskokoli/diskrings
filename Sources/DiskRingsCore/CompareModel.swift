@@ -135,11 +135,11 @@ public final class CompareModel: Sendable {
         return ScanTree.rootIndex
     }
 
-    /// Sunburst-Layout ab dem Fokus-Eintrag. „Nicht zugeordnet“ gibt es im
-    /// Vergleichsmodus nicht (es ist ein Wert des Volumes, kein Teilbaum).
+    /// Sunburst-Layout ab dem Fokus-Eintrag. Systemdaten, löschbar und frei
+    /// gibt es im Vergleichsmodus nicht (es sind Werte des Volumes, keine Teilbäume).
     public func layout(_ view: CompareViewMode, focusEntry: Int32, options: SunburstOptions) -> SunburstLayout {
         var o = options
-        o.unassigned = 0
+        o.rootSegments = .none
         o.sizeMode = mode
         return SunburstLayout(tree: displayTree(view).tree, focus: displayFocus(forEntry: focusEntry, in: view), options: o)
     }
@@ -186,7 +186,7 @@ public final class CompareModel: Sendable {
                 return palette.deltaColor(status: diff.status(e, mode), intensity: scale.intensity(diff.delta(e, mode)))
             case .aggregate: return palette.aggregateFill
             case .remainder: return palette.remainderFill
-            case .unassigned: return palette.unassignedFill
+            case .system, .systemPart, .purgeable, .free: return palette.volumeSegmentFill(arc)
             }
         }
     }
@@ -296,7 +296,8 @@ public final class CompareModel: Sendable {
 /// Kopfzeile des Vergleichsmodus (SPEC 3.9), z. B. „Since 10/02, 9:14 AM:
 /// used +38.2 GB · free −38.2 GB · of which unassigned +4.1 GB“.
 ///
-/// - Volume-Wurzel auf beiden Seiten: belegt, frei, davon nicht zugeordnet.
+/// - Volume-Wurzel auf beiden Seiten: belegt, frei, davon Systemdaten (ältere
+///   Snapshots ohne Aufteilung: davon nicht zugeordnet).
 /// - Ordner-Scan: zuerst die Änderung des Ordners (Scan-Summe), dann belegt
 ///   und frei des Volumes, weil „belegt“ dort das ganze Volume meint.
 /// - Ohne Volume-Kennzahlen nur die Scan-Summe.
@@ -335,7 +336,8 @@ public struct CompareHeadline: Sendable, Equatable {
         if let u = s.unassignedDelta, let used = s.usedDelta, let free = s.freeDelta {
             p = [Part("compare.part.used", label: L("compare.label.used"), delta: used),
                  Part("compare.part.free", label: L("compare.label.free"), delta: free),
-                 Part("compare.part.unassigned", label: L("compare.label.unassigned"), delta: u)]
+                 s.systemDataDelta.map { Part("compare.part.systemData", label: L("compare.label.systemData"), delta: $0) }
+                     ?? Part("compare.part.unassigned", label: L("compare.label.unassigned"), delta: u)]
         } else {
             p.append(Part("compare.part.folder", label: diff.name(of: 0), delta: s.scanDelta))
             if let used = s.usedDelta {

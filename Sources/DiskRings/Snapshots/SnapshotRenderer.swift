@@ -21,14 +21,22 @@ enum SnapshotRenderer {
         let demoVolume = VolumeInfo(name: "Macintosh HD", path: "/Users/demo", totalCapacity: 494_000_000_000,
                                     availableCapacity: 182_000_000_000,
                                     availableForImportantUsage: 196_000_000_000, isRootFileSystem: true)
-        let demoUnassigned = demoVolume.unassigned(scanTotal: demo.root.allocatedSize)
+        // Erfundene andere Volumes im Container (Systemdaten im Diagramm).
+        let demoOthers = [
+            ContainerVolume(name: "Preboot", device: "disk3s2", mountPoint: "/System/Volumes/Preboot",
+                            roles: ["Preboot"], used: 10_900_000_000),
+            ContainerVolume(name: "VM", device: "disk3s6", mountPoint: "/System/Volumes/VM", roles: ["VM"],
+                            used: 8_600_000_000),
+            ContainerVolume(name: "Recovery", device: "disk3s3", mountPoint: nil, roles: ["Recovery"],
+                            used: 1_500_000_000),
+        ]
         var failures = 0
 
         for scheme in [ColorScheme.light, .dark] {
             let suffix = scheme == .dark ? "dark" : "light"
 
             // 1. Diagramm allein, Fixture-Baum, Hover auf dem größten Ordner.
-            let s1 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s1 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             if let i = s1.layout?.arcs.firstIndex(where: { $0.kind == .node && $0.depth == 2 }) {
                 let arc = s1.layout!.arcs[i]
                 let g = SunburstView.geometry(for: CGSize(width: 720, height: 720), rings: 6)
@@ -39,8 +47,28 @@ enum SnapshotRenderer {
             failures += render(SunburstView(state: s1, interactive: false, frozenTime: .distantPast)
                 .frame(width: 720, height: 720), scheme: scheme, to: dir, name: "sunburst-demo-\(suffix)")
 
+            // 1b. Hover auf den nicht lesbaren Systemdaten (Tooltip mit Erklärung).
+            let s1b = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
+            if let l = s1b.layout,
+               let i = l.arcs.firstIndex(where: { l.systemPart(of: $0)?.kind == .unreadable }) {
+                let arc = l.arcs[i]
+                let g = SunburstView.geometry(for: CGSize(width: 720, height: 720), rings: 6)
+                let r = (g.innerRadius(ofRing: 3) + g.outerRadius(ofRing: 3)) / 2
+                let p = CGPoint(x: 360 + r * sin(arc.midAngle), y: 360 - r * cos(arc.midAngle))
+                s1b.hoverDiagram(.arc(i), at: p)
+            }
+            failures += render(SunburstView(state: s1b, interactive: false, frozenTime: .distantPast)
+                .frame(width: 720, height: 720), scheme: scheme, to: dir, name: "sunburst-system-\(suffix)")
+
+            // 1c. Ohne freien Speicher im Ring (Menü „Darstellung“).
+            let s1c = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
+            s1c.prefs.showFreeSpace = false
+            s1c.relayout(animated: false)
+            failures += render(SunburstView(state: s1c, interactive: false, frozenTime: .distantPast)
+                .frame(width: 720, height: 720), scheme: scheme, to: dir, name: "sunburst-nofree-\(suffix)")
+
             // 2. Hauptansicht, Fixture-Baum, Fokus auf Library, eine Zeile ausgewählt.
-            let s2 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s2 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             s2.showSummary = false
             if let lib = demo.index(ofPath: "Library") {
                 s2.navigate(to: lib)
@@ -55,13 +83,13 @@ enum SnapshotRenderer {
                                scheme: scheme, to: dir, name: "main-demo-\(suffix)")
 
             // 3. Hauptansicht an der Wurzel mit „Nicht zugeordnet“ und Farbschema Dateityp.
-            let s3 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s3 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             s3.prefs.paletteScheme = .fileType
             failures += renderWindow(BrowserView(state: s3, frozenTime: .distantPast).frame(width: 1180, height: 760),
                                scheme: scheme, to: dir, name: "main-demo-filetype-\(suffix)")
 
             // 4. Zoom-Animation in der Mitte des Übergangs.
-            let s4 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s4 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             if let movies = demo.index(ofPath: "Library") {
                 s4.navigate(to: movies)
             }
@@ -72,7 +100,7 @@ enum SnapshotRenderer {
             }
 
             // 5. Startbildschirm mit echten Volumes und Hinweis-Banner.
-            let s5 = makeState(tree: nil, volume: nil, unassigned: 0)
+            let s5 = makeState(tree: nil, volume: nil, otherVolumes: [])
             s5.volumes = VolumeInfo.mountedVolumes()
             s5.fullDiskAccess = .denied
             failures += renderWindow(StartView(state: s5).frame(width: 900, height: 640), scheme: scheme, to: dir,
@@ -80,18 +108,19 @@ enum SnapshotRenderer {
 
             // 5b. Startbildschirm mit erfundenem Volume (für README und Website:
             // keine echten Datenträgernamen).
-            let s5b = makeState(tree: nil, volume: nil, unassigned: 0)
+            let s5b = makeState(tree: nil, volume: nil, otherVolumes: [])
             let GB: UInt64 = 1_000_000_000
             s5b.volumes = [
                 VolumeInfo(name: "Macintosh HD", path: "/", totalCapacity: 994 * GB, availableCapacity: 212 * GB,
                            availableForImportantUsage: 251 * GB, isRootFileSystem: true, isInternal: true),
             ]
+            s5b.containerVolumes = ["/": demoOthers]
             s5b.fullDiskAccess = .granted
             failures += renderWindow(StartView(state: s5b).frame(width: 900, height: 470), scheme: scheme, to: dir,
                                      name: "start-demo-\(suffix)")
 
             // 6. Einstellungen.
-            let s6 = makeState(tree: nil, volume: nil, unassigned: 0)
+            let s6 = makeState(tree: nil, volume: nil, otherVolumes: [])
             s6.prefs.paletteScheme = .fileType
             s6.prefs.excludedPaths = ["/Users/demo/Library/Caches", "/Volumes/Backup"]
             failures += renderWindow(SettingsView(prefs: s6.prefs), scheme: scheme, to: dir, name: "settings-\(suffix)")
@@ -99,13 +128,13 @@ enum SnapshotRenderer {
             // 9. Kontextmenü (nachgebildet, siehe `ContextMenuPreview`): Datei,
             //    geschützter Ordner (~/Library) und Mehrfachauswahl.
             let demoProtection = ProtectedPaths(home: "/Users/demo", appBundlePath: nil, volumeRoots: ["/"])
-            let s9 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s9 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             s9.protection = demoProtection
             if let file = demo.index(ofPath: "Documents/Invoice 1.pdf"), let lib = demo.index(ofPath: "Library"),
                let d1 = demo.index(ofPath: "Downloads/Installer 1.dmg"),
                let d2 = demo.index(ofPath: "Downloads/Installer 2.dmg"),
                let d3 = demo.index(ofPath: "Downloads/File 1.zip") {
-                let s9b = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+                let s9b = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
                 s9b.protection = demoProtection
                 s9b.selection = NodeSelection([d1, d2, d3])
                 failures += renderWindow(
@@ -144,7 +173,7 @@ enum SnapshotRenderer {
 
             // 12. Teil-Rescan läuft (Library: bestimmter Fortschritt, Movies:
             //     unbestimmt), dazu der Hinweis eines fertigen Teil-Rescans.
-            let s12 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s12 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             s12.showSummary = false
             s12.simulateRescan(path: "/Users/demo/Library", fraction: 0.6)
             s12.simulateRescan(path: "/Users/demo/Movies", fraction: -1)
@@ -154,14 +183,14 @@ enum SnapshotRenderer {
                                      scheme: scheme, to: dir, name: "main-rescan-\(suffix)")
 
             // 13. Suche mit Trefferliste.
-            let s13 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s13 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             s13.showSummary = false
             s13.simulateSearch("cache")
             failures += renderWindow(BrowserView(state: s13, frozenTime: .distantPast).frame(width: 1180, height: 760),
                                      scheme: scheme, to: dir, name: "main-search-\(suffix)")
 
             // 14. Animation nach dem Papierkorb (Mitte des Übergangs): Movies entfernt.
-            let s14 = makeState(tree: demo, volume: demoVolume, unassigned: demoUnassigned)
+            let s14 = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
             if let movies = demo.index(ofPath: "Movies") {
                 let chain = demo.removingNodes([movies])
                 s14.applyEdit(chain.tree, translate: chain.translate)
@@ -178,8 +207,11 @@ enum SnapshotRenderer {
                     let result = try ScanEngine(options: ScanOptions()).scanBlocking(scanPath)
                     let vol = VolumeInfo.forPath(result.tree.rootPath)
                     let isRoot = vol?.path == result.tree.rootPath
-                    let s7 = makeState(tree: result.tree, volume: vol,
-                                       unassigned: isRoot ? vol!.unassigned(scanTotal: result.allocatedSize) : 0)
+                    let others = isRoot
+                        ? ContainerVolumes.others(forVolumeAt: vol!.path, scanRoot: result.tree.rootPath,
+                                                  crossesMountPoints: false, lister: DiskutilAPFSListing())
+                        : []
+                    let s7 = makeState(tree: result.tree, volume: vol, otherVolumes: others)
                     s7.setResultForSnapshot(result)
                     let slug = scanPath.split(separator: "/").joined(separator: "-")
                     failures += renderWindow(BrowserView(state: s7, frozenTime: .distantPast).frame(width: 1180, height: 760),
@@ -188,7 +220,7 @@ enum SnapshotRenderer {
                         .frame(width: 720, height: 720), scheme: scheme, to: dir,
                         name: "sunburst-\(slug.isEmpty ? "root" : slug)-\(suffix)")
                     // Scan-Ansicht mit einem Live-Snapshot (nur Ordner, vorläufige Größen).
-                    let s8 = makeState(tree: nil, volume: nil, unassigned: 0)
+                    let s8 = makeState(tree: nil, volume: nil, otherVolumes: [])
                     var snapshot: ScanTree?
                     _ = try ScanEngine(options: ScanOptions(progressInterval: 0.001)).scanBlocking(
                         scanPath, onSnapshot: { if snapshot == nil { snapshot = $0 } })
@@ -217,10 +249,10 @@ enum SnapshotRenderer {
         return failures == 0 ? 0 : 1
     }
 
-    static func makeState(tree: ScanTree?, volume: VolumeInfo?, unassigned: UInt64) -> AppState {
+    static func makeState(tree: ScanTree?, volume: VolumeInfo?, otherVolumes: [ContainerVolume]) -> AppState {
         let defaults = UserDefaults(suiteName: "DiskRingsSnapshots-\(UUID().uuidString)")!
         let state = AppState(prefs: Preferences(defaults: defaults))
-        state.setTree(tree, unassigned: unassigned, volume: .some(volume))
+        state.setTree(tree, volume: .some(volume), otherVolumes: otherVolumes)
         state.phase = tree == nil ? .start : .browsing
         return state
     }

@@ -78,7 +78,14 @@ final class AppState {
     private(set) var tree: ScanTree?
     private(set) var history = FocusHistory()
     private(set) var volume: VolumeInfo?
-    private(set) var unassigned: UInt64 = 0
+    /// Andere APFS-Volumes im Container des gescannten Volumes (für „Systemdaten“).
+    private(set) var otherVolumes: [ContainerVolume] = []
+    /// Aufteilung der Belegung, wenn die Scan-Wurzel die Volume-Wurzel ist (SPEC 4.1 Punkt 4).
+    private(set) var breakdown: VolumeBreakdown?
+    /// Andere Volumes je Volume-Pfad für die Balken auf dem Startbildschirm
+    /// (von `refreshVolumes` im Hintergrund gelesen; Vorschaubilder setzen sie direkt).
+    var containerVolumes: [String: [ContainerVolume]] = [:]
+    @ObservationIgnored private var containerGate = GenerationGate()
     private(set) var layout: SunburstLayout?
     private(set) var transition: ActiveTransition?
 
@@ -173,6 +180,21 @@ final class AppState {
     func refreshVolumes() {
         volumes = VolumeInfo.mountedVolumes()
         fullDiskAccess = FullDiskAccess.status()
+        // Andere Volumes je Container (für die Systemdaten im Balken) im Hintergrund.
+        let paths = volumes.map(\.path)
+        Task.detached(priority: .utility) {
+            var result: [String: [ContainerVolume]] = [:]
+            for p in paths {
+                result[p] = ContainerVolumes.others(forVolumeAt: p, scanRoot: p, crossesMountPoints: false,
+                                                    lister: DiskutilAPFSListing())
+            }
+            await MainActor.run { [weak self] in self?.containerVolumes = result }
+        }
+    }
+
+    /// Aufteilung für den Balken eines Volumes auf dem Startbildschirm (ohne Scan geschätzt).
+    func estimatedBreakdown(for v: VolumeInfo) -> VolumeBreakdown {
+        VolumeBreakdown.estimate(volume: v, otherVolumes: containerVolumes[v.path] ?? [])
     }
 
     func openFullDiskAccessSettings() {
@@ -288,21 +310,61 @@ final class AppState {
         summary = ScanSummary(r)
         let v = VolumeInfo.forPath(r.tree.rootPath)
         volume = v
-        unassigned = (v.map { $0.path == r.tree.rootPath } ?? false) ? v!.unassigned(scanTotal: r.allocatedSize) : 0
+        // Eingehängte andere Volumes sofort (schnell); `diskutil` ergänzt im Hintergrund.
+        otherVolumes = v.map { ContainerVolumes.others(forVolumeAt: $0.path, scanRoot: r.tree.rootPath,
+                                                       crossesMountPoints: r.options.crossMountPoints, lister: nil) }
+            ?? []
         setTree(r.tree)
+        updateBreakdown()
         if let p = pendingFocusPath, let i = r.tree.index(ofPath: p) { history = FocusHistory(root: i) }
         pendingFocusPath = nil
         phase = .browsing
         showSummary = true
-        snapshots.didFinishScan(r, volume: v, retention: prefs.snapshots.retention)
+        snapshots.didFinishScan(r, volume: v, otherVolumes: otherVolumes, retention: prefs.snapshots.retention)
         relayout(animated: false)
+        loadOtherVolumes()
+    }
+
+    /// Liest die anderen Volumes des Containers samt nicht eingehängten
+    /// (`diskutil`) im Hintergrund und aktualisiert die Systemdaten.
+    func loadOtherVolumes() {
+        guard let tree, let v = volume, isVolumeRoot else { return }
+        let token = containerGate.begin()
+        let root = tree.rootPath, path = v.path, cross = scanOptionsUsed.crossMountPoints
+        Task.detached(priority: .utility) {
+            let others = ContainerVolumes.others(forVolumeAt: path, scanRoot: root, crossesMountPoints: cross,
+                                                 lister: DiskutilAPFSListing())
+            await MainActor.run { [weak self] in
+                guard let self, self.containerGate.isCurrent(token), self.tree?.rootPath == root,
+                      others != self.otherVolumes else { return }
+                self.otherVolumes = others
+                self.updateBreakdown()
+                self.relayout(animated: false)
+            }
+        }
+    }
+
+    /// Aufteilung der Belegung aus Volume, Baum und anderen Volumes neu berechnen.
+    private func updateBreakdown() {
+        guard let tree, let v = volume, isVolumeRoot else {
+            breakdown = nil
+            return
+        }
+        breakdown = VolumeBreakdown(volume: v, scanned: tree.root.allocatedSize, otherVolumes: otherVolumes)
+    }
+
+    /// Zusätzliche Segmente der Volume-Wurzel im Diagramm (nur im Modus „belegt“).
+    var rootSegments: RootSegments {
+        guard prefs.sizeMode == .allocated, let b = breakdown else { return .none }
+        return b.rootSegments(showFree: prefs.showFreeSpace)
     }
 
     /// Setzt einen neuen Baum (Snapshot, Endergebnis, Fixture) und überträgt
-    /// Fokus und Auswahl über die Pfade.
-    func setTree(_ new: ScanTree?, unassigned: UInt64? = nil, volume: VolumeInfo?? = nil) {
-        if let u = unassigned { self.unassigned = u }
+    /// Fokus und Auswahl über die Pfade. Mit `volume` (Vorschaubilder) wird
+    /// auch die Aufteilung der Belegung berechnet.
+    func setTree(_ new: ScanTree?, volume: VolumeInfo?? = nil, otherVolumes: [ContainerVolume]? = nil) {
         if let v = volume { self.volume = v }
+        if let o = otherVolumes { self.otherVolumes = o }
         let old = tree
         tree = new
         transition = nil
@@ -323,8 +385,12 @@ final class AppState {
             infoNode = nil
         }
         if new == nil {
-            self.unassigned = 0
-            if unassigned == nil { self.volume = nil }
+            breakdown = nil
+            self.otherVolumes = []
+            containerGate.invalidate()
+            if volume == nil { self.volume = nil }
+        } else if volume != nil {
+            updateBreakdown()
         }
         relayout(animated: false)
     }
@@ -332,7 +398,7 @@ final class AppState {
     /// Übernimmt eine neue Baum-Version nach einer Änderung (Papierkorb,
     /// Teil-Rescan, Undo): Fokus, Auswahl, Historie und aufgeklappte Ordner
     /// werden per Index-Übersetzung nachgeführt, das Diagramm animiert die
-    /// Änderung, „Nicht zugeordnet“ wird neu berechnet.
+    /// Änderung, die Aufteilung der Belegung wird neu berechnet.
     func applyEdit(_ new: ScanTree, translate: (Int32) -> Int32?) {
         guard let old = tree else { return }
         let oldLayout = layout
@@ -347,8 +413,8 @@ final class AppState {
         hoverArc = nil
         hoverNode = nil
         hoverCenter = false
-        refreshUnassigned()
-        let newLayout = SunburstLayout(tree: new, focus: focus, options: prefs.layoutOptions(unassigned: unassigned))
+        refreshVolumeBreakdown()
+        let newLayout = SunburstLayout(tree: new, focus: focus, options: prefs.layoutOptions(segments: rootSegments))
         if let oldLayout, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
             startTransition(EditTransition(from: oldLayout, to: newLayout, translate: translate), fromTree: old,
                             duration: ActiveTransition.editDuration)
@@ -360,11 +426,11 @@ final class AppState {
         scheduleCompareRefresh()
     }
 
-    /// Volume-Kennzahlen neu lesen und „Nicht zugeordnet“ neu berechnen.
-    func refreshUnassigned() {
+    /// Volume-Kennzahlen neu lesen und die Aufteilung der Belegung neu berechnen.
+    func refreshVolumeBreakdown() {
         guard let tree, let v = VolumeInfo.forPath(tree.rootPath) else { return }
         volume = v
-        unassigned = v.path == tree.rootPath ? v.unassigned(scanTotal: tree.root.allocatedSize) : 0
+        updateBreakdown()
     }
 
     // MARK: Layout
@@ -374,7 +440,7 @@ final class AppState {
             layout = nil
             return
         }
-        let new = SunburstLayout(tree: tree, focus: focus, options: prefs.layoutOptions(unassigned: unassigned))
+        let new = SunburstLayout(tree: tree, focus: focus, options: prefs.layoutOptions(segments: rootSegments))
         if animated, let old = layout, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
             startTransition(ZoomTransition(from: old, to: new, tree: tree), fromTree: tree,
                             duration: ActiveTransition.zoomDuration)
@@ -444,7 +510,7 @@ final class AppState {
             case .aggregate, .remainder:
                 // In den Elternordner zoomen, damit die kleinen Elemente Platz bekommen.
                 if arc.nodeIndex != focus { navigate(to: arc.nodeIndex) }
-            case .unassigned:
+            case .system, .systemPart, .purgeable, .free:
                 break
             }
         case .none:

@@ -132,7 +132,33 @@ struct ScanJSON: Encodable {
     let skippedMountPoints: [String]
     let volume: VolumeJSON?
     let unassigned: UInt64?
+    let breakdown: BreakdownJSON?
     let top: [TopEntry]
+}
+
+/// Aufteilung von „unassigned“ beim Scan einer Volume-Wurzel (SPEC 4.1 Punkt 4).
+struct BreakdownJSON: Codable {
+    struct Volume: Codable {
+        let name: String
+        let device: String
+        let roles: [String]
+        let used: UInt64
+    }
+    let yourData: UInt64
+    let systemData: UInt64
+    let otherVolumes: [Volume]
+    let unreadable: UInt64
+    let purgeable: UInt64
+    let free: UInt64
+}
+
+func breakdownJSON(_ b: VolumeBreakdown) -> BreakdownJSON {
+    let vols: [BreakdownJSON.Volume] = b.systemParts.compactMap { p in
+        guard case .volume(let v) = p.kind else { return nil }
+        return BreakdownJSON.Volume(name: v.name, device: v.device, roles: v.roles, used: p.size)
+    }
+    return BreakdownJSON(yourData: b.yourData, systemData: b.systemData, otherVolumes: vols,
+                         unreadable: b.unreadable, purgeable: b.purgeable, free: b.free)
 }
 
 func flagNames(_ f: NodeFlags) -> [String] {
@@ -212,7 +238,13 @@ func runScan(_ a: ScanArgs) -> Int32 {
     let tree = result.tree
     let volume = VolumeInfo.forPath(tree.rootPath)
     let isVolumeRoot = volume.map { $0.path == tree.rootPath } ?? false
-    let unassigned = isVolumeRoot ? volume.map { $0.unassigned(scanTotal: result.allocatedSize) } : nil
+    let breakdown: VolumeBreakdown? = isVolumeRoot ? volume.map { v in
+        let others = ContainerVolumes.others(forVolumeAt: v.path, scanRoot: tree.rootPath,
+                                             crossesMountPoints: a.options.crossMountPoints,
+                                             lister: DiskutilAPFSListing())
+        return VolumeBreakdown(volume: v, scanned: result.allocatedSize, otherVolumes: others)
+    } : nil
+    let unassigned = breakdown?.unassigned
     let top = topEntries(tree.root, top: a.top, depth: a.depth, mode: mode)
 
     if a.json {
@@ -223,7 +255,7 @@ func runScan(_ a: ScanArgs) -> Int32 {
             nodeCount: tree.count, treeBytes: tree.memoryFootprint,
             hardlinkDuplicates: result.hardlinkDuplicates, unreadablePaths: result.unreadablePaths,
             skippedMountPoints: result.skippedMountPoints, volume: volume.map(volumeJSON),
-            unassigned: unassigned, top: top)
+            unassigned: unassigned, breakdown: breakdown.map(breakdownJSON), top: top)
         return printJSON(out)
     }
 
@@ -250,8 +282,26 @@ func runScan(_ a: ScanArgs) -> Int32 {
     }
     if let v = volume {
         print("Volume:        \(v.name) · \(ByteFormat.string(v.totalCapacity)) · used \(ByteFormat.string(v.usedCapacity)) · free \(ByteFormat.string(v.availableCapacity))")
-        if let u = unassigned {
-            print("Unassigned (system, snapshots, purgeable): \(ByteFormat.string(u))")
+        if let b = breakdown {
+            func line(_ label: String, _ value: UInt64, indent: Int = 2) {
+                let l = String(repeating: " ", count: indent) + label + ":"
+                let padded = l.count >= 44 ? l + " " : l.padding(toLength: 44, withPad: " ", startingAt: 0)
+                print(padded + ByteFormat.string(value))
+            }
+            line("Your data (scan)", b.yourData)
+            line("System data", b.systemData)
+            for p in b.systemParts {
+                switch p.kind {
+                case .volume(let v):
+                    let mount = v.mountPoint.map { " at \($0)" } ?? " (not mounted)"
+                    line("Volume \(v.name)\(v.roles.isEmpty ? "" : " [\(v.roles.joined(separator: ", "))]")\(mount)",
+                         p.size, indent: 4)
+                case .unreadable:
+                    line("Unreadable system data", p.size, indent: 4)
+                }
+            }
+            line("Purgeable", b.purgeable)
+            line("Free", b.free)
         }
     }
     print("")

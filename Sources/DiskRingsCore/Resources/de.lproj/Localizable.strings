@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "zusammengefasst, jeweils unter der Winkelschwelle";
 "arc.remainder.title" = "Dateien in diesem Ordner";
 "arc.remainder.detail" = "noch nicht einzeln erfasst";
-"arc.unassigned.title" = "Nicht zugeordnet";
-"arc.unassigned.detail" = "System, lokale Snapshots, löschbarer Speicher";
 "sunburst.accessibility" = "Sunburst-Diagramm von %@";
 "sunburst.shareOf" = "%1$@ von %2$@";
 "sunburst.center.hint" = "Klick: eine Ebene nach oben";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@, aktueller Ordner";
 
 /* Status bar and scan summary */
-"status.unassigned" = "nicht zugeordnet %@";
-"status.unassigned.help" = "Belegung des Volumes, die in keinem Ordner auftaucht: System, lokale Time-Machine-Snapshots, löschbarer Speicher. Klone und Snapshots können Abweichungen verursachen.";
 "status.deviation" = "Klone und Snapshots können Abweichungen verursachen";
-"status.deviation.help" = "Klone und Snapshots können Abweichungen verursachen: APFS-Klone teilen sich Blöcke, werden aber einzeln gezählt; lokale Time-Machine-Snapshots und löschbarer Speicher tauchen in keinem Ordner auf und stehen unter „Nicht zugeordnet“.";
-"status.fda.help" = "Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail unlesbar und landen unter „Nicht zugeordnet“. Klick öffnet die Systemeinstellung.";
+"status.deviation.help" = "Klone und Snapshots können Abweichungen verursachen: APFS-Klone teilen sich Blöcke, werden aber einzeln gezählt; lokale Time-Machine-Snapshots und löschbarer Speicher tauchen in keinem Ordner auf und stehen unter „Systemdaten“.";
+"status.fda.help" = "Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail unlesbar und landen unter „Nicht lesbare Systemdaten“. Klick öffnet die Systemeinstellung.";
 "status.scanSummary" = "Scan: %1$@ in %2$@";
 "status.volume" = "%1$@: %2$@ · belegt %3$@ · frei %4$@";
 "status.volume.purgeable" = "(davon %@ löschbar)";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "Inhalt von %@";
 "list.shareOfRoot" = "%@ der Scan-Wurzel";
-"list.unassigned.help" = "Nicht zugeordnet (System, lokale Snapshots, löschbarer Speicher): Belegung des Volumes, die in keinem Ordner auftaucht.";
 "list.row.accessibility" = "%1$@, %2$@, %3$@";
 "accessibility.zoomIn" = "Hineinzoomen";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "Volumes";
 "start.noVolumes" = "Keine Volumes gefunden.";
 "start.scanHome" = "Benutzerordner scannen";
-"start.fda.message" = "Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail, Safari oder die Container anderer Apps unlesbar. Sie fehlen im Diagramm und landen unter „Nicht zugeordnet“.";
+"start.fda.message" = "Ohne Festplattenvollzugriff bleiben Ordner wie ~/Library/Mail, Safari oder die Container anderer Apps unlesbar. Sie fehlen im Diagramm und landen unter „Nicht lesbare Systemdaten“.";
 "start.fda.openSettings" = "Systemeinstellungen öffnen …";
 "start.fda.checkAgain" = "Erneut prüfen";
 "start.volume.used" = "%1$@ von %2$@ belegt";
-"start.legend.used" = "Belegt %@";
 "start.legend.purgeable" = "Löschbar %@";
 "start.legend.free" = "Frei %@";
 "start.volume.accessibility" = "%1$@, %2$@ von %3$@ belegt, %4$@ frei";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "Enthält ein anderes Volume (Einhängepunkt „%@“) und kann nicht in den Papierkorb gelegt werden";
 "trash.confirm.sizeUncertain" = "Die Größe ist nicht vollständig bekannt (nur in der Cloud, nicht lesbar oder noch nicht eingelesen), deshalb wird immer nachgefragt.";
 "reason.targetsChanged" = "Die Elemente haben sich inzwischen geändert (z. B. durch einen Rescan). Es wurde nichts ausgeführt – bitte erneut versuchen.";
+"arc.system.title" = "Systemdaten";
+"arc.system.detail" = "Andere Volumes im selben Container und Bereiche, die DiskRings nicht lesen kann";
+"arc.unreadableSystem.title" = "Nicht lesbare Systemdaten";
+"arc.unreadableSystem.detail" = "Belegung, die in keinem Ordner und keinem anderen Volume auftaucht: Spotlight-Index, Dokumentversionen, fseventsd, /private/var/db, lokale Snapshots, APFS-Metadaten.";
+"arc.unreadableSystem.fdaHint" = "Ohne Festplattenvollzugriff gehören dazu auch die Ordner, die DiskRings nicht lesen durfte.";
+"arc.volume.detail" = "Eigenes APFS-Volume im selben Container; teilt sich den Platz mit diesem Volume";
+"arc.purgeable.title" = "Löschbar";
+"arc.purgeable.detail" = "Speicher, den macOS bei Bedarf selbst freigibt (Caches, lokale Snapshots, iCloud-Dateien)";
+"arc.free.title" = "Frei";
+"arc.free.detail" = "Ungenutzter Speicher des Volumes";
+"volume.role.system" = "macOS-System (%@)";
+"volume.role.data" = "Daten (%@)";
+"volume.role.preboot" = "Startdaten (Preboot)";
+"volume.role.recovery" = "Wiederherstellung (Recovery)";
+"volume.role.vm" = "Auslagerung & Ruhezustand (VM)";
+"volume.role.update" = "Systemupdates (Update)";
+"compare.part.systemData" = "davon Systemdaten %@";
+"compare.label.systemData" = "davon Systemdaten";
+"menu.showFreeSpace" = "Freien Speicher im Ring zeigen";
+"legend.yourData" = "Ihre Daten %@";
+"legend.systemData" = "Systemdaten %@";
+"status.systemData" = "Systemdaten %@";
+"status.systemData.help" = "Belegung des Volumes, die in keinem Ordner auftaucht: andere Volumes im selben Container (Preboot, VM, Recovery …) und Systembereiche, die DiskRings nicht lesen kann. Klone und Snapshots können Abweichungen verursachen.";

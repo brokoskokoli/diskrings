@@ -108,7 +108,7 @@ struct RootView: View {
             // Festplattenvollzugriff kann in den Systemeinstellungen erteilt worden sein.
             state.fullDiskAccess = FullDiskAccess.status()
             // Belegung kann sich außerhalb der App geändert haben.
-            if state.phase == .browsing { state.refreshUnassigned() }
+            if state.phase == .browsing { state.refreshVolumeBreakdown() }
         }
         // Volume-Liste aktuell halten, wenn Volumes ein- oder ausgehängt werden.
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in
@@ -174,6 +174,12 @@ struct AppCommands: Commands {
             Button(L("menu.find")) { if !state.searchVisible { state.toggleSearch() } }
                 .keyboardShortcut("f", modifiers: .command)
                 .disabled(state.tree == nil)
+        }
+        // Menü „Darstellung“: freien Speicher an der Volume-Wurzel zeigen (SPEC 4.1 Punkt 4).
+        CommandGroup(before: .toolbar) {
+            Toggle(L("menu.showFreeSpace"), isOn: Binding(get: { state.prefs.showFreeSpace },
+                                                          set: { state.prefs.showFreeSpace = $0 }))
+            Divider()
         }
         CommandMenu(L("menu.item")) {
             ForEach(NodeAction.allCases) { action in

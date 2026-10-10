@@ -56,6 +56,9 @@ public struct DiffSummary: Sendable, Equatable {
     /// Änderung von „nicht zugeordnet“ (nur, wenn beide Seiten die
     /// Volume-Wurzel gescannt haben).
     public let unassignedDelta: Int64?
+    /// Änderung der Systemdaten (andere Volumes + nicht lesbar); nur, wenn
+    /// beide Snapshots die Aufteilung enthalten.
+    public var systemDataDelta: Int64? = nil
 
     /// Kurze Kopfzeile (CLI), z. B. „Since 10/02, 9:14 AM: used +38.2 GB · free −38.2 GB · of which unassigned +4.1 GB“.
     public var headline: String {
@@ -64,7 +67,11 @@ public struct DiffSummary: Sendable, Equatable {
             parts.append(L("compare.part.scan", ByteFormat.signed(scanDelta)))
         }
         if let fr = freeDelta { parts.append(L("compare.part.free", ByteFormat.signed(fr))) }
-        if let n = unassignedDelta { parts.append(L("compare.part.unassigned", ByteFormat.signed(n))) }
+        if let n = systemDataDelta {
+            parts.append(L("compare.part.systemData", ByteFormat.signed(n)))
+        } else if let n = unassignedDelta {
+            parts.append(L("compare.part.unassigned", ByteFormat.signed(n)))
+        }
         return L("compare.since", CompareHeadline.shortDate(oldDate)) + ": " + parts.joined(separator: " · ")
     }
 }
@@ -146,7 +153,8 @@ public final class SnapshotDiff: Sendable {
             scanDelta: Int64(bitPattern: new.tree.root.allocatedSize &- old.tree.root.allocatedSize),
             usedDelta: d(om.volume?.used, nm.volume?.used),
             freeDelta: d(om.volume?.available, nm.volume?.available),
-            unassignedDelta: d(om.volume?.unassigned, nm.volume?.unassigned))
+            unassignedDelta: d(om.volume?.unassigned, nm.volume?.unassigned),
+            systemDataDelta: d(om.volume?.breakdown?.systemData, nm.volume?.breakdown?.systemData))
 
         var w: [DiffWarning] = []
         if om.options != nm.options { w.append(.differentOptions(old: om.options, new: nm.options)) }

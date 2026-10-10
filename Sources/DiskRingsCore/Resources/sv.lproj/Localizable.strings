@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "sammanslagna, var och en under vinkelgränsen";
 "arc.remainder.title" = "Filer i den här mappen";
 "arc.remainder.detail" = "ännu inte räknade var för sig";
-"arc.unassigned.title" = "Ej tilldelat";
-"arc.unassigned.detail" = "System, lokala ögonblicksbilder, rensningsbart utrymme";
 "sunburst.accessibility" = "Solstrålediagram över %@";
 "sunburst.shareOf" = "%1$@ av %2$@";
 "sunburst.center.hint" = "Klicka: en nivå upp";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@, aktuell mapp";
 
 /* Status bar and scan summary */
-"status.unassigned" = "ej tilldelat %@";
-"status.unassigned.help" = "Använt utrymme på volymen som inte syns i någon mapp: system, lokala ögonblicksbilder från Time Machine, rensningsbart utrymme. Kloner och ögonblicksbilder kan orsaka avvikelser.";
 "status.deviation" = "Kloner och ögonblicksbilder kan orsaka avvikelser";
-"status.deviation.help" = "Kloner och ögonblicksbilder kan orsaka avvikelser: APFS-kloner delar block men räknas separat; lokala ögonblicksbilder från Time Machine och rensningsbart utrymme syns inte i någon mapp och visas under ”Ej tilldelat”.";
-"status.fda.help" = "Utan fullständig skivåtkomst förblir mappar som ~/Library/Mail oläsbara och hamnar under ”Ej tilldelat”. Klicka för att öppna Systeminställningar.";
+"status.deviation.help" = "Kloner och ögonblicksbilder kan orsaka avvikelser: APFS-kloner delar block men räknas separat; lokala ögonblicksbilder från Time Machine och rensningsbart utrymme syns inte i någon mapp och visas under ”Systemdata”.";
+"status.fda.help" = "Utan fullständig skivåtkomst förblir mappar som ~/Library/Mail oläsbara och hamnar under ”Oläsbar systemdata”. Klicka för att öppna Systeminställningar.";
 "status.scanSummary" = "Skanning: %1$@ på %2$@";
 "status.volume" = "%1$@: %2$@ · använt %3$@ · ledigt %4$@";
 "status.volume.purgeable" = "(varav %@ rensningsbart)";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "Innehåll i %@";
 "list.shareOfRoot" = "%@ av skanningsroten";
-"list.unassigned.help" = "Ej tilldelat (system, lokala ögonblicksbilder, rensningsbart utrymme): använt utrymme på volymen som inte syns i någon mapp.";
 "list.row.accessibility" = "%1$@, %2$@, %3$@";
 "accessibility.zoomIn" = "Zooma in";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "Volymer";
 "start.noVolumes" = "Inga volymer hittades.";
 "start.scanHome" = "Skanna hemmappen";
-"start.fda.message" = "Utan fullständig skivåtkomst förblir mappar som ~/Library/Mail, Safari eller andra appars behållare oläsbara. De saknas i diagrammet och hamnar under ”Ej tilldelat”.";
+"start.fda.message" = "Utan fullständig skivåtkomst förblir mappar som ~/Library/Mail, Safari eller andra appars behållare oläsbara. De saknas i diagrammet och hamnar under ”Oläsbar systemdata”.";
 "start.fda.openSettings" = "Öppna Systeminställningar…";
 "start.fda.checkAgain" = "Kontrollera igen";
 "start.volume.used" = "%1$@ av %2$@ används";
-"start.legend.used" = "Använt %@";
 "start.legend.purgeable" = "Rensningsbart %@";
 "start.legend.free" = "Ledigt %@";
 "start.volume.accessibility" = "%1$@, %2$@ av %3$@ används, %4$@ ledigt";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "Innehåller en annan volym (monteringspunkt ”%@”) och kan inte flyttas till papperskorgen";
 "trash.confirm.sizeUncertain" = "Storleken är inte helt känd (objekt som bara finns i molnet, är oläsbara eller inte skannats ännu), därför bekräftas detta alltid.";
 "reason.targetsChanged" = "Objekten har ändrats under tiden (till exempel av en ny skanning). Ingenting utfördes – försök igen.";
+"arc.system.title" = "Systemdata";
+"arc.system.detail" = "Andra volymer i samma behållare och områden som DiskRings inte kan läsa";
+"arc.unreadableSystem.title" = "Oläsbar systemdata";
+"arc.unreadableSystem.detail" = "Utrymme som inte finns i någon mapp eller annan volym: Spotlight-index, dokumentversioner, fseventsd, /private/var/db, lokala ögonblicksbilder, APFS-metadata.";
+"arc.unreadableSystem.fdaHint" = "Utan fullständig skivåtkomst ingår även mapparna som DiskRings inte fick läsa.";
+"arc.volume.detail" = "Separat APFS-volym i samma behållare; delar utrymmet med den här volymen";
+"arc.purgeable.title" = "Rensningsbart";
+"arc.purgeable.detail" = "Utrymme som macOS frigör automatiskt vid behov (cachar, lokala ögonblicksbilder, iCloud-filer)";
+"arc.free.title" = "Ledigt";
+"arc.free.detail" = "Oanvänt utrymme på volymen";
+"volume.role.system" = "macOS-system (%@)";
+"volume.role.data" = "Data (%@)";
+"volume.role.preboot" = "Startdata (Preboot)";
+"volume.role.recovery" = "Återställning (Recovery)";
+"volume.role.vm" = "Växling och vila (VM)";
+"volume.role.update" = "Systemuppdateringar (Update)";
+"compare.part.systemData" = "varav systemdata %@";
+"compare.label.systemData" = "varav systemdata";
+"menu.showFreeSpace" = "Visa ledigt utrymme i ringen";
+"legend.yourData" = "Dina data %@";
+"legend.systemData" = "Systemdata %@";
+"status.systemData" = "systemdata %@";
+"status.systemData.help" = "Använt utrymme på volymen som inte finns i någon mapp: andra volymer i samma behållare (Preboot, VM, Recovery …) och systemområden som DiskRings inte kan läsa. Kloner och ögonblicksbilder kan orsaka avvikelser.";

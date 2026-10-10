@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "birleştirildi, her biri açı eşiğinin altında";
 "arc.remainder.title" = "Bu Klasördeki Dosyalar";
 "arc.remainder.detail" = "henüz tek tek sayılmadı";
-"arc.unassigned.title" = "Atanmamış";
-"arc.unassigned.detail" = "Sistem, yerel anlık görüntüler, temizlenebilir alan";
 "sunburst.accessibility" = "%@ için güneş patlaması grafiği";
 "sunburst.shareOf" = "%1$@ / %2$@";
 "sunburst.center.hint" = "Tıklama: bir düzey yukarı";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@, geçerli klasör";
 
 /* Status bar and scan summary */
-"status.unassigned" = "atanmamış %@";
-"status.unassigned.help" = "Bölümde kullanılan ancak hiçbir klasörde görünmeyen alan: sistem, yerel Time Machine anlık görüntüleri, temizlenebilir alan. Klonlar ve anlık görüntüler farklılıklara neden olabilir.";
 "status.deviation" = "Klonlar ve anlık görüntüler farklılıklara neden olabilir";
-"status.deviation.help" = "Klonlar ve anlık görüntüler farklılıklara neden olabilir: APFS klonları blokları paylaşır ancak ayrı ayrı sayılır; yerel Time Machine anlık görüntüleri ve temizlenebilir alan hiçbir klasörde görünmez ve “Atanmamış” altında yer alır.";
-"status.fda.help" = "Tam Disk Erişimi olmadan ~/Library/Mail gibi klasörler okunamaz kalır ve “Atanmamış” altında yer alır. Sistem Ayarları’nı açmak için tıklayın.";
+"status.deviation.help" = "Klonlar ve anlık görüntüler farklılıklara neden olabilir: APFS klonları blokları paylaşır ancak ayrı ayrı sayılır; yerel Time Machine anlık görüntüleri ve temizlenebilir alan hiçbir klasörde görünmez ve “Sistem Verileri” altında yer alır.";
+"status.fda.help" = "Tam Disk Erişimi olmadan ~/Library/Mail gibi klasörler okunamaz kalır ve “Okunamayan Sistem Verileri” altında yer alır. Sistem Ayarları’nı açmak için tıklayın.";
 "status.scanSummary" = "Tarama: %1$@, süre: %2$@";
 "status.volume" = "%1$@: %2$@ · kullanılan %3$@ · boş %4$@";
 "status.volume.purgeable" = "(bunun %@ kadarı temizlenebilir)";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "%@ içeriği";
 "list.shareOfRoot" = "Tarama kökünün %@ kadarı";
-"list.unassigned.help" = "Atanmamış (sistem, yerel anlık görüntüler, temizlenebilir alan): bölümde kullanılan ancak hiçbir klasörde görünmeyen alan.";
 "list.row.accessibility" = "%1$@, %2$@, %3$@";
 "accessibility.zoomIn" = "Yakınlaştır";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "Bölümler";
 "start.noVolumes" = "Bölüm bulunamadı.";
 "start.scanHome" = "Ana Klasörü Tara";
-"start.fda.message" = "Tam Disk Erişimi olmadan ~/Library/Mail, Safari veya diğer uygulamaların kapsayıcıları gibi klasörler okunamaz kalır. Bunlar grafikte yer almaz ve “Atanmamış” altında görünür.";
+"start.fda.message" = "Tam Disk Erişimi olmadan ~/Library/Mail, Safari veya diğer uygulamaların kapsayıcıları gibi klasörler okunamaz kalır. Bunlar grafikte yer almaz ve “Okunamayan Sistem Verileri” altında görünür.";
 "start.fda.openSettings" = "Sistem Ayarları’nı Aç…";
 "start.fda.checkAgain" = "Yeniden Denetle";
 "start.volume.used" = "%2$@ alanın %1$@ kadarı kullanılıyor";
-"start.legend.used" = "Kullanılan %@";
 "start.legend.purgeable" = "Temizlenebilir %@";
 "start.legend.free" = "Boş %@";
 "start.volume.accessibility" = "%1$@, %3$@ alanın %2$@ kadarı kullanılıyor, %4$@ boş";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "Başka bir birim içeriyor (bağlama noktası “%@”), Çöp Sepeti’ne taşınamaz";
 "trash.confirm.sizeUncertain" = "Boyut tam olarak bilinmiyor (yalnızca bulutta olan, okunamayan veya henüz taranmamış öğeler), bu nedenle her zaman onay istenir.";
 "reason.targetsChanged" = "Öğeler bu arada değişti (örneğin yeniden tarama nedeniyle). Hiçbir işlem yapılmadı, lütfen yeniden deneyin.";
+"arc.system.title" = "Sistem Verileri";
+"arc.system.detail" = "Aynı kapsayıcıdaki diğer birimler ve DiskRings’in okuyamadığı alanlar";
+"arc.unreadableSystem.title" = "Okunamayan Sistem Verileri";
+"arc.unreadableSystem.detail" = "Hiçbir klasörde ve başka hiçbir birimde görünmeyen alan: Spotlight dizini, belge sürümleri, fseventsd, /private/var/db, yerel anlık görüntüler, APFS meta verileri.";
+"arc.unreadableSystem.fdaHint" = "Tam Disk Erişimi olmadan buna DiskRings’in okuyamadığı klasörler de dahildir.";
+"arc.volume.detail" = "Aynı kapsayıcıdaki ayrı APFS birimi; alanı bu birimle paylaşır";
+"arc.purgeable.title" = "Temizlenebilir";
+"arc.purgeable.detail" = "macOS’in gerektiğinde kendiliğinden boşalttığı alan (önbellekler, yerel anlık görüntüler, iCloud dosyaları)";
+"arc.free.title" = "Boş";
+"arc.free.detail" = "Birimdeki kullanılmayan alan";
+"volume.role.system" = "macOS Sistemi (%@)";
+"volume.role.data" = "Veriler (%@)";
+"volume.role.preboot" = "Başlangıç Verileri (Preboot)";
+"volume.role.recovery" = "Kurtarma (Recovery)";
+"volume.role.vm" = "Takas ve Uyku Görüntüsü (VM)";
+"volume.role.update" = "Sistem Güncellemeleri (Update)";
+"compare.part.systemData" = "bunun sistem verileri %@";
+"compare.label.systemData" = "bunun sistem verileri";
+"menu.showFreeSpace" = "Halkada Boş Alanı Göster";
+"legend.yourData" = "Verileriniz %@";
+"legend.systemData" = "Sistem verileri %@";
+"status.systemData" = "sistem verileri %@";
+"status.systemData.help" = "Birimde kullanılan ama hiçbir klasörde görünmeyen alan: aynı kapsayıcıdaki diğer birimler (Preboot, VM, Recovery…) ve DiskRings’in okuyamadığı sistem alanları. Klonlar ve anlık görüntüler farklılıklara neden olabilir.";

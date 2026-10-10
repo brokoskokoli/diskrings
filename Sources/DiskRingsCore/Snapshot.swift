@@ -33,23 +33,58 @@ public struct VolumeMetrics: Codable, Sendable, Equatable {
     /// „Nicht zugeordnet“ = belegt − Scan-Summe; nur wenn die Scan-Wurzel die
     /// Wurzel des Volumes ist, sonst `nil`.
     public var unassigned: UInt64?
+    /// Aufteilung von `unassigned` (nur bei Scan der Volume-Wurzel; optional im
+    /// JSON-Kopf, ältere Snapshots laden ohne sie).
+    public var breakdown: VolumeBreakdownMetrics?
 
     public init(name: String, total: UInt64, available: UInt64, availableForImportantUsage: UInt64, used: UInt64,
-                unassigned: UInt64?) {
+                unassigned: UInt64?, breakdown: VolumeBreakdownMetrics? = nil) {
         self.name = name
         self.total = total
         self.available = available
         self.availableForImportantUsage = availableForImportantUsage
         self.used = used
         self.unassigned = unassigned
+        self.breakdown = breakdown
     }
 
-    /// Kennzahlen aus `VolumeInfo`; „Nicht zugeordnet“ nur bei Scan der Volume-Wurzel.
-    public init(_ v: VolumeInfo, scanRoot: String, scanTotal: UInt64) {
+    /// Kennzahlen aus `VolumeInfo`; „Nicht zugeordnet“ und seine Aufteilung nur
+    /// bei Scan der Volume-Wurzel. `otherVolumes` sind die anderen Volumes des
+    /// Containers (siehe `ContainerVolumes.others`).
+    public init(_ v: VolumeInfo, scanRoot: String, scanTotal: UInt64, otherVolumes: [ContainerVolume] = []) {
+        let isRoot = v.path == scanRoot
+        let b = VolumeBreakdown(volume: v, scanned: scanTotal, otherVolumes: otherVolumes)
         self.init(name: v.name, total: v.totalCapacity, available: v.availableCapacity,
                   availableForImportantUsage: v.availableForImportantUsage, used: v.usedCapacity,
-                  unassigned: v.path == scanRoot ? v.unassigned(scanTotal: scanTotal) : nil)
+                  unassigned: isRoot ? b.unassigned : nil, breakdown: isRoot ? VolumeBreakdownMetrics(b) : nil)
     }
+}
+
+/// Aufteilung von „Nicht zugeordnet“ beim Scan einer Volume-Wurzel (SPEC 4.1
+/// Punkt 4, siehe `VolumeBreakdown`). Ältere Snapshots haben sie nicht.
+public struct VolumeBreakdownMetrics: Codable, Sendable, Equatable {
+    /// Andere APFS-Volumes im selben Container (Summe, geklemmt).
+    public var otherVolumes: UInt64
+    /// Nicht lesbare Systemdaten.
+    public var unreadable: UInt64
+    /// Löschbar (geklemmt).
+    public var purgeable: UInt64
+    /// Wirklich frei.
+    public var free: UInt64
+
+    public init(otherVolumes: UInt64, unreadable: UInt64, purgeable: UInt64, free: UInt64) {
+        self.otherVolumes = otherVolumes
+        self.unreadable = unreadable
+        self.purgeable = purgeable
+        self.free = free
+    }
+
+    public init(_ b: VolumeBreakdown) {
+        self.init(otherVolumes: b.otherVolumes, unreadable: b.unreadable, purgeable: b.purgeable, free: b.free)
+    }
+
+    /// Systemdaten = andere Volumes + nicht lesbar.
+    public var systemData: UInt64 { otherVolumes &+ unreadable }
 }
 
 /// Beschreibung eines Snapshots (Kopf der `.drsnap`-Datei).
@@ -91,17 +126,29 @@ public struct SnapshotMetadata: Codable, Sendable, Equatable {
     }
 
     /// Metadaten für einen frischen Scan. Ohne `volume` wird das Volume der
-    /// Scan-Wurzel abgefragt.
-    public static func current(for result: ScanResult, volume: VolumeInfo? = nil, name: String? = nil,
+    /// Scan-Wurzel abgefragt, ohne `otherVolumes` die eingehängten anderen
+    /// Volumes des Containers (nur beim Scan einer Volume-Wurzel).
+    public static func current(for result: ScanResult, volume: VolumeInfo? = nil,
+                               otherVolumes: [ContainerVolume]? = nil, name: String? = nil,
                                date: Date = Date()) -> SnapshotMetadata {
         let tree = result.tree
         let v = volume ?? VolumeInfo.forPath(tree.rootPath)
+        let others = otherVolumes ?? defaultOtherVolumes(v, scanRoot: tree.rootPath, options: result.options)
         return SnapshotMetadata(
             name: name, date: date, rootPath: tree.rootPath, volumeUUID: v?.uuid,
-            volume: v.map { VolumeMetrics($0, scanRoot: tree.rootPath, scanTotal: result.allocatedSize) },
+            volume: v.map { VolumeMetrics($0, scanRoot: tree.rootPath, scanTotal: result.allocatedSize,
+                                          otherVolumes: others) },
             options: SnapshotScanOptions(result.options), minimumFileSize: 0,
             allocatedSize: tree.root.allocatedSize, logicalSize: tree.root.logicalSize,
             fileCount: UInt64(tree.root.fileCount), nodeCount: tree.liveCount)
+    }
+
+    /// Eingehängte andere Volumes des Containers, wenn die Scan-Wurzel die
+    /// Volume-Wurzel ist (ohne `diskutil`), sonst leer.
+    static func defaultOtherVolumes(_ v: VolumeInfo?, scanRoot: String, options: ScanOptions) -> [ContainerVolume] {
+        guard let v, v.path == scanRoot else { return [] }
+        return ContainerVolumes.others(forVolumeAt: v.path, scanRoot: scanRoot,
+                                       crossesMountPoints: options.crossMountPoints, lister: nil)
     }
 }
 

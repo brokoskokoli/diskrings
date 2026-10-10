@@ -41,7 +41,7 @@ enum SunburstRenderer {
                 let colors = d.isFromTarget ? input.colors : (input.fromColors ?? input.colors)
                 guard d.arcIndex < colors.count else { continue }
                 var inner = g.radius(atBoundary: d.innerBoundary)
-                let outer = arc.kind == .unassigned && d.outerBoundary >= 1
+                let outer = arc.kind.spansOuterRings && d.outerBoundary >= 1
                     ? g.radius(atBoundary: Double(g.rings)) : g.radius(atBoundary: d.outerBoundary)
                 if d.innerBoundary <= 0 { inner = g.centerRadius * max(0, d.outerBoundary) }
                 let path = segment(center: center, inner: inner, outer: outer, start: d.startAngle, end: d.endAngle)
@@ -60,7 +60,7 @@ enum SunburstRenderer {
         var hoverPath: Path?
         for (i, arc) in arcs.enumerated() {
             let inner = g.innerRadius(ofRing: Int(arc.depth))
-            let outer = arc.kind == .unassigned ? g.outerRadius : g.outerRadius(ofRing: Int(arc.depth))
+            let outer = arc.kind.spansOuterRings ? g.outerRadius : g.outerRadius(ofRing: Int(arc.depth))
             let path = segment(center: center, inner: inner, outer: outer, start: arc.startAngle, end: arc.endAngle)
             var color = input.colors[i]
             if highlighted.contains(i) {
@@ -69,7 +69,7 @@ enum SunburstRenderer {
                 color = color.mixed(with: palette.background, 0.25)
             }
             gc.fill(path, with: .color(Color(color)))
-            if arc.kind == .unassigned { drawHatching(path, color: color, palette: palette, in: &gc, size: size) }
+            if arc.kind.isVolumeSegment { drawHatching(path, color: color, palette: palette, in: &gc, size: size) }
             if arc.span * outer > 1.2 { gc.stroke(path, with: .color(separator), lineWidth: 0.75) }
             if i == input.hoverArc || (arc.kind == .node && arc.nodeIndex == input.hoverNode) { hoverPath = path }
             if arc.kind == .node, input.selected.contains(arc.nodeIndex) { selectedPaths.append(path) }
@@ -244,7 +244,7 @@ enum SunburstRenderer {
         let g = input.geometry
         let layout = input.layout
         var drawn = 0
-        for (i, arc) in layout.arcs.enumerated() where arc.kind == .node || arc.kind == .unassigned {
+        for (i, arc) in layout.arcs.enumerated() where arc.kind == .node || arc.kind.isVolumeSegment {
             if drawn >= 160 { break }
             let ring = Int(arc.depth)
             let inner = g.innerRadius(ofRing: ring), outer = g.outerRadius(ofRing: ring)
@@ -252,7 +252,7 @@ enum SunburstRenderer {
             if arc.span * outer < 22 || outer - inner < 11 { continue }
             let fontSize: Double = ring == 1 ? 12 : (ring == 2 ? 11 : 10)
             let font = Font.system(size: fontSize, weight: ring == 1 ? .medium : .regular)
-            let name = arc.kind == .unassigned ? L("arc.unassigned.title") : input.tree.name(of: arc.nodeIndex)
+            let name = layout.volumeSegmentTitle(arc) ?? input.tree.name(of: arc.nodeIndex)
             let textColor = Color(input.palette.label(on: input.colors[i]))
             let full = gc.resolve(Text(name).font(font).foregroundColor(textColor))
             let m = full.measure(in: CGSize(width: 10_000, height: 100))

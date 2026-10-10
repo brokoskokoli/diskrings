@@ -77,14 +77,15 @@ public enum SunburstHit: Sendable, Equatable {
 public struct SunburstHitTester: Sendable {
     public let layout: SunburstLayout
     public let geometry: SunburstGeometry
-    /// Das Segment „Nicht zugeordnet“ wird von Ring 1 bis zum Außenrand
-    /// gezeichnet und ist daher in allen Ringen treffbar.
-    public var unassignedSpansAllRings: Bool
+    /// Segmente der Volume-Wurzel ohne Kinder (Teile der Systemdaten,
+    /// löschbar, frei) werden bis zum Außenrand gezeichnet und sind daher
+    /// auch in den äußeren Ringen treffbar (`SunburstArc.Kind.spansOuterRings`).
+    public var segmentsSpanOuterRings: Bool
 
-    public init(layout: SunburstLayout, geometry: SunburstGeometry, unassignedSpansAllRings: Bool = true) {
+    public init(layout: SunburstLayout, geometry: SunburstGeometry, segmentsSpanOuterRings: Bool = true) {
         self.layout = layout
         self.geometry = geometry
-        self.unassignedSpansAllRings = unassignedSpansAllRings
+        self.segmentsSpanOuterRings = segmentsSpanOuterRings
     }
 
     /// Winkel eines Punkts relativ zur Mitte in Bildschirmkoordinaten
@@ -104,9 +105,13 @@ public struct SunburstHitTester: Sendable {
         if ring == 0 { return .center }
         let a = Self.angle(dx: dx, dy: dy)
         let h = hit(ring: ring, angle: a)
-        if h == .none, ring > 1, unassignedSpansAllRings, case .arc(let i) = hit(ring: 1, angle: a),
-           layout.arcs[i].kind == .unassigned {
-            return .arc(i)
+        guard h == .none, ring > 1, segmentsSpanOuterRings else { return h }
+        // Nach innen das erste Segment an diesem Winkel suchen; es zählt nur,
+        // wenn es bis zum Außenrand reicht.
+        for inner in stride(from: ring - 1, through: 1, by: -1) {
+            if case .arc(let i) = hit(ring: inner, angle: a) {
+                return layout.arcs[i].kind.spansOuterRings ? .arc(i) : .none
+            }
         }
         return h
     }

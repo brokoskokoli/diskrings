@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "samengevoegd, elk onder de hoekdrempel";
 "arc.remainder.title" = "Bestanden in deze map";
 "arc.remainder.detail" = "nog niet afzonderlijk geteld";
-"arc.unassigned.title" = "Niet toegewezen";
-"arc.unassigned.detail" = "Systeem, lokale momentopnamen, opschoonbare ruimte";
 "sunburst.accessibility" = "Zonnestraaldiagram van %@";
 "sunburst.shareOf" = "%1$@ van %2$@";
 "sunburst.center.hint" = "Klik: één niveau omhoog";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@, huidige map";
 
 /* Status bar and scan summary */
-"status.unassigned" = "niet toegewezen %@";
-"status.unassigned.help" = "Gebruikte ruimte op het volume die in geen enkele map verschijnt: systeem, lokale Time Machine-momentopnamen, opschoonbare ruimte. Klonen en momentopnamen kunnen afwijkingen veroorzaken.";
 "status.deviation" = "Klonen en momentopnamen kunnen afwijkingen veroorzaken";
-"status.deviation.help" = "Klonen en momentopnamen kunnen afwijkingen veroorzaken: APFS-klonen delen blokken, maar worden apart geteld; lokale Time Machine-momentopnamen en opschoonbare ruimte verschijnen in geen enkele map en staan onder ‘Niet toegewezen’.";
-"status.fda.help" = "Zonder volledige schijftoegang blijven mappen zoals ~/Library/Mail onleesbaar en komen ze onder ‘Niet toegewezen’ terecht. Klik om Systeeminstellingen te openen.";
+"status.deviation.help" = "Klonen en momentopnamen kunnen afwijkingen veroorzaken: APFS-klonen delen blokken, maar worden apart geteld; lokale Time Machine-momentopnamen en opschoonbare ruimte verschijnen in geen enkele map en staan onder ‘Systeemgegevens’.";
+"status.fda.help" = "Zonder volledige schijftoegang blijven mappen zoals ~/Library/Mail onleesbaar en komen ze onder ‘Onleesbare systeemgegevens’ terecht. Klik om Systeeminstellingen te openen.";
 "status.scanSummary" = "Scan: %1$@ in %2$@";
 "status.volume" = "%1$@: %2$@ · gebruikt %3$@ · vrij %4$@";
 "status.volume.purgeable" = "(waarvan %@ opschoonbaar)";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "Inhoud van %@";
 "list.shareOfRoot" = "%@ van de basismap van de scan";
-"list.unassigned.help" = "Niet toegewezen (systeem, lokale momentopnamen, opschoonbare ruimte): gebruikte ruimte op het volume die in geen enkele map verschijnt.";
 "list.row.accessibility" = "%1$@, %2$@, %3$@";
 "accessibility.zoomIn" = "Zoom in";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "Volumes";
 "start.noVolumes" = "Geen volumes gevonden.";
 "start.scanHome" = "Scan thuismap";
-"start.fda.message" = "Zonder volledige schijftoegang blijven mappen zoals ~/Library/Mail, Safari of containers van andere apps onleesbaar. Ze ontbreken in het diagram en komen onder ‘Niet toegewezen’ terecht.";
+"start.fda.message" = "Zonder volledige schijftoegang blijven mappen zoals ~/Library/Mail, Safari of containers van andere apps onleesbaar. Ze ontbreken in het diagram en komen onder ‘Onleesbare systeemgegevens’ terecht.";
 "start.fda.openSettings" = "Open Systeeminstellingen…";
 "start.fda.checkAgain" = "Controleer opnieuw";
 "start.volume.used" = "%1$@ van %2$@ gebruikt";
-"start.legend.used" = "Gebruikt %@";
 "start.legend.purgeable" = "Opschoonbaar %@";
 "start.legend.free" = "Vrij %@";
 "start.volume.accessibility" = "%1$@, %2$@ van %3$@ gebruikt, %4$@ vrij";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "Bevat een ander volume (koppelpunt ‘%@’) en kan niet naar de prullenmand worden verplaatst";
 "trash.confirm.sizeUncertain" = "De grootte is niet volledig bekend (onderdelen alleen in de cloud, onleesbaar of nog niet gescand), daarom wordt altijd om bevestiging gevraagd.";
 "reason.targetsChanged" = "De onderdelen zijn inmiddels gewijzigd (bijvoorbeeld door een nieuwe scan). Er is niets uitgevoerd – probeer het opnieuw.";
+"arc.system.title" = "Systeemgegevens";
+"arc.system.detail" = "Andere volumes in dezelfde container en gebieden die DiskRings niet kan lezen";
+"arc.unreadableSystem.title" = "Onleesbare systeemgegevens";
+"arc.unreadableSystem.detail" = "Ruimte die in geen enkele map en geen ander volume voorkomt: Spotlight-index, documentversies, fseventsd, /private/var/db, lokale snapshots, APFS-metadata.";
+"arc.unreadableSystem.fdaHint" = "Zonder volledige schijftoegang horen hier ook de mappen bij die DiskRings niet mocht lezen.";
+"arc.volume.detail" = "Apart APFS-volume in dezelfde container; deelt de ruimte met dit volume";
+"arc.purgeable.title" = "Opschoonbaar";
+"arc.purgeable.detail" = "Ruimte die macOS indien nodig zelf vrijmaakt (caches, lokale snapshots, iCloud-bestanden)";
+"arc.free.title" = "Vrij";
+"arc.free.detail" = "Ongebruikte ruimte op het volume";
+"volume.role.system" = "macOS-systeem (%@)";
+"volume.role.data" = "Gegevens (%@)";
+"volume.role.preboot" = "Opstartgegevens (Preboot)";
+"volume.role.recovery" = "Herstel (Recovery)";
+"volume.role.vm" = "Swap en sluimer (VM)";
+"volume.role.update" = "Systeemupdates (Update)";
+"compare.part.systemData" = "waarvan systeemgegevens %@";
+"compare.label.systemData" = "waarvan systeemgegevens";
+"menu.showFreeSpace" = "Toon vrije ruimte in ring";
+"legend.yourData" = "Jouw gegevens %@";
+"legend.systemData" = "Systeemgegevens %@";
+"status.systemData" = "systeemgegevens %@";
+"status.systemData.help" = "Gebruikte ruimte op het volume die in geen enkele map voorkomt: andere volumes in dezelfde container (Preboot, VM, Recovery …) en systeemgebieden die DiskRings niet kan lezen. Klonen en snapshots kunnen afwijkingen veroorzaken.";

@@ -78,9 +78,73 @@ func describe(_ arc: SunburstArc, tree: ScanTree, layout: SunburstLayout) -> Arc
     case .remainder:
         return ArcDescription(title: L("arc.remainder.title"), path: tree.path(of: arc.nodeIndex), size: arc.size,
                               share: share, detail: L("arc.remainder.detail"))
-    case .unassigned:
-        return ArcDescription(title: L("arc.unassigned.title"), path: nil, size: arc.size, share: share,
-                              detail: L("arc.unassigned.detail"))
+    case .system, .systemPart, .purgeable, .free:
+        let denied = FullDiskAccess.status() == .denied
+        return ArcDescription(title: layout.volumeSegmentTitle(arc) ?? "", path: nil, size: arc.size, share: share,
+                              detail: layout.volumeSegmentDetail(arc, fullDiskAccessDenied: denied) ?? "")
+    }
+}
+
+extension VolumeBreakdown {
+    /// Legende des Belegungsbalkens („Ihre Daten 412 GB · Systemdaten 62 GB · …“).
+    var legendText: String {
+        [L("legend.yourData", ByteFormat.string(yourData)), L("legend.systemData", ByteFormat.string(systemData)),
+         L("start.legend.purgeable", ByteFormat.string(purgeable)), L("start.legend.free", ByteFormat.string(free))]
+            .joined(separator: " · ")
+    }
+}
+
+/// Gestapelter Belegungsbalken: Ihre Daten, Systemdaten, löschbar, frei
+/// (Farben wie die Segmente im Diagramm; SPEC 3.1/3.3).
+struct VolumeUsageBar: View {
+    let breakdown: VolumeBreakdown
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        GeometryReader { g in
+            let b = breakdown
+            let total = Double(max(b.yourData + b.systemData + b.purgeable + b.free, 1))
+            let palette = Palette(appearance: PaletteAppearance(colorScheme))
+            HStack(spacing: 0) {
+                Rectangle().fill(Color.accentColor).frame(width: g.size.width * Double(b.yourData) / total)
+                Rectangle().fill(Color(palette.systemFill)).frame(width: g.size.width * Double(b.systemData) / total)
+                Rectangle().fill(Color(palette.purgeableFill)).frame(width: g.size.width * Double(b.purgeable) / total)
+                Spacer(minLength: 0)
+            }
+            .background(Color(palette.freeFill))
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
+            .clipShape(Capsule())
+        }
+        .help(breakdown.legendText)
+        .accessibilityElement()
+        .accessibilityLabel(breakdown.legendText)
+    }
+}
+
+/// Legende zum Belegungsbalken mit farbigen Punkten.
+struct VolumeUsageLegend: View {
+    let breakdown: VolumeBreakdown
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        let b = breakdown
+        let palette = Palette(appearance: PaletteAppearance(colorScheme))
+        HStack(spacing: 12) {
+            item(Color.accentColor, L("legend.yourData", ByteFormat.string(b.yourData)))
+            if b.systemData > 0 { item(Color(palette.systemFill), L("legend.systemData", ByteFormat.string(b.systemData))) }
+            if b.purgeable > 0 {
+                item(Color(palette.purgeableFill), L("start.legend.purgeable", ByteFormat.string(b.purgeable)))
+            }
+            item(Color(palette.freeFill), L("start.legend.free", ByteFormat.string(b.free)))
+        }
+    }
+
+    private func item(_ color: Color, _ text: String) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(color).overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5))
+                .frame(width: 7, height: 7)
+            Text(text)
+        }
     }
 }
 

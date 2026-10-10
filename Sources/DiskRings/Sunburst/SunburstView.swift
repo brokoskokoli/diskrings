@@ -95,7 +95,13 @@ private struct SunburstInteraction: ViewModifier {
                     state.click(hit(p), clickCount: NSApp.currentEvent?.clickCount ?? 1)
                 }
                 .contextMenu {
-                    if let target = contextTarget { NodeContextMenu(state: state, node: target) }
+                    if let target = contextTarget {
+                        NodeContextMenu(state: state, node: target)
+                    } else if let tree = state.tree, let layout = state.layout, let i = state.hoverArc,
+                              i < layout.arcs.count, layout.arcs[i].kind.isVolumeSegment {
+                        let d = describe(layout.arcs[i], tree: tree, layout: layout)
+                        VolumeSegmentMenu(state: state, title: d.title, size: d.size, detail: d.detail)
+                    }
                 }
         } else {
             content
@@ -151,7 +157,8 @@ private struct SunburstTooltip: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                Text(content.detail).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                Text(content.detail).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(7)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)

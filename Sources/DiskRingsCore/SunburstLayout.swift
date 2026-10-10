@@ -19,22 +19,23 @@ public struct SunburstOptions: Sendable, Hashable {
     /// entfällt ganz (der erste Ring wird stattdessen gekürzt).
     public var maxArcs: Int
     public var sizeMode: SizeMode
-    /// Nicht zugeordneter Platz des Volumes (SPEC 4.1 Punkt 4). Erscheint nur,
-    /// wenn der Fokus die Wurzel ist, als eigenes Segment im ersten Ring.
-    public var unassigned: UInt64
+    /// Segmente der Volume-Wurzel (Systemdaten, löschbar, frei; SPEC 4.1
+    /// Punkt 4). Erscheinen nur, wenn der Fokus die Wurzel ist, im ersten Ring
+    /// hinter den Ordnern, die Teile der Systemdaten im zweiten Ring.
+    public var rootSegments: RootSegments
 
     public init(
         maxRings: Int = SunburstOptions.defaultRings,
         minAngleDegrees: Double = SunburstOptions.defaultMinAngleDegrees,
         maxArcs: Int = SunburstOptions.defaultMaxArcs,
         sizeMode: SizeMode = .allocated,
-        unassigned: UInt64 = 0
+        rootSegments: RootSegments = .none
     ) {
         self.maxRings = Self.ringRange.clamp(maxRings)
         self.minAngleDegrees = max(0, minAngleDegrees)
         self.maxArcs = max(1, maxArcs)
         self.sizeMode = sizeMode
-        self.unassigned = unassigned
+        self.rootSegments = rootSegments
     }
 
     var minAngle: Double { minAngleDegrees * .pi / 180 }
@@ -55,8 +56,31 @@ public struct SunburstArc: Sendable, Equatable {
         /// Größe des Elternknotens, die keinem Kind zugeordnet ist (in den
         /// Live-Snapshots: Dateien, die noch nicht als Knoten vorliegen).
         case remainder
-        /// „Nicht zugeordnet (System, Snapshots, Purgeable)“ an der Volume-Wurzel.
-        case unassigned
+        /// „Systemdaten“ an der Volume-Wurzel (andere Volumes, nicht lesbar).
+        case system
+        /// Ein Teil der Systemdaten im zweiten Ring; `part` ist der Index in
+        /// `SunburstOptions.rootSegments.systemParts`.
+        case systemPart
+        /// „Löschbar“ (purgeable) an der Volume-Wurzel.
+        case purgeable
+        /// Freier Speicher an der Volume-Wurzel.
+        case free
+
+        /// Segment der Volume-Wurzel, das keinem Knoten entspricht.
+        public var isVolumeSegment: Bool {
+            switch self {
+            case .system, .systemPart, .purgeable, .free: true
+            case .node, .aggregate, .remainder: false
+            }
+        }
+
+        /// Wird von seinem Ring bis zum Außenrand gezeichnet (und ist dort treffbar).
+        public var spansOuterRings: Bool {
+            switch self {
+            case .systemPart, .purgeable, .free: true
+            case .node, .aggregate, .remainder, .system: false
+            }
+        }
     }
 
     public var kind: Kind
@@ -74,6 +98,8 @@ public struct SunburstArc: Sendable, Equatable {
     /// Index des Arcs im ersten Ring, zu dessen Ast dieser Arc gehört.
     public var branch: Int32
     public var isDirectory: Bool
+    /// Index in `SunburstOptions.rootSegments.systemParts` bei `.systemPart`, sonst -1.
+    public var part: Int32 = -1
 
     public var span: Double { endAngle - startAngle }
     public var midAngle: Double { (startAngle + endAngle) / 2 }
@@ -90,9 +116,10 @@ public struct SunburstLayout: Sendable {
     public let arcs: [SunburstArc]
     /// Bereich in `arcs` je Ring; `ringRanges[0]` ist Ring 1.
     public let ringRanges: [Range<Int>]
-    /// Größe des Fokusknotens (ohne „Nicht zugeordnet“).
+    /// Größe des Fokusknotens (ohne Segmente der Volume-Wurzel).
     public let focusSize: UInt64
-    /// Größe, die dem vollen Kreis entspricht (mit „Nicht zugeordnet“).
+    /// Größe, die dem vollen Kreis entspricht (mit Systemdaten, löschbar und
+    /// frei, falls gezeigt).
     public let totalSize: UInt64
 
     /// Anzahl der tatsächlich belegten Ringe.
@@ -114,8 +141,8 @@ public struct SunburstLayout: Sendable {
         self.options = options
         let mode = options.sizeMode
         let focusSize = tree.node(focus).size(mode)
-        let unassigned = focus == ScanTree.rootIndex ? options.unassigned : 0
-        let (total, overflow) = focusSize.addingReportingOverflow(unassigned)
+        let segments = focus == ScanTree.rootIndex ? options.rootSegments : .none
+        let (total, overflow) = focusSize.addingReportingOverflow(segments.total)
         self.focusSize = focusSize
         self.totalSize = overflow ? UInt64.max : total
         guard totalSize > 0 else {
@@ -127,16 +154,25 @@ public struct SunburstLayout: Sendable {
         var builder = LayoutBuilder(tree: tree, options: options)
         let focusSpan = 2 * Double.pi * Double(focusSize) / Double(totalSize)
 
-        // Ring 1: Kinder des Fokus, dahinter „Nicht zugeordnet“.
+        // Ring 1: Kinder des Fokus, dahinter Systemdaten, löschbar und frei.
+        let extras: [(SunburstArc.Kind, UInt64)] = [(.system, segments.system), (.purgeable, segments.purgeable),
+                                                    (.free, segments.free)].filter { $0.1 > 0 }
         var ring1: [SunburstArc] = []
         if focusSize > 0, tree.node(focus).isDirectory {
             builder.expand(parent: focus, parentArc: -1, start: 0, span: focusSpan, depth: 1,
-                           branch: nil, budget: options.maxArcs - (unassigned > 0 ? 1 : 0), into: &ring1)
+                           branch: nil, budget: options.maxArcs - extras.count, into: &ring1)
         }
-        if unassigned > 0 {
-            ring1.append(SunburstArc(kind: .unassigned, nodeIndex: focus, depth: 1, startAngle: focusSpan,
-                                     endAngle: 2 * .pi, size: unassigned, itemCount: 1, parentArc: -1,
-                                     branch: Int32(ring1.count), isDirectory: false))
+        var cum = focusSize
+        var systemArc: Int?
+        // Bei einer winzigen Arc-Obergrenze (nur in Tests) entfallen hintere Segmente.
+        for (n, (kind, size)) in extras.enumerated() where n < options.maxArcs {
+            let a0 = 2 * Double.pi * Double(cum) / Double(totalSize)
+            cum = cum.addingReportingOverflow(size).overflow ? .max : cum + size
+            let a1 = n == extras.count - 1 ? 2 * .pi : min(2 * .pi, 2 * Double.pi * Double(cum) / Double(totalSize))
+            if kind == .system { systemArc = ring1.count }
+            ring1.append(SunburstArc(kind: kind, nodeIndex: focus, depth: 1, startAngle: a0, endAngle: a1,
+                                     size: size, itemCount: 1, parentArc: -1, branch: Int32(ring1.count),
+                                     isDirectory: false))
         }
         var arcs = ring1
         var ranges: [Range<Int>] = ring1.isEmpty ? [] : [0 ..< ring1.count]
@@ -152,6 +188,11 @@ public struct SunburstLayout: Sendable {
                 builder.expand(parent: p.nodeIndex, parentArc: Int32(pi), start: p.startAngle, span: p.span,
                                depth: depth, branch: p.branch, budget: .max, into: &ring)
             }
+            // Teile der Systemdaten im zweiten Ring (der Systemdaten-Arc liegt
+            // hinter allen Ordnern, die Reihenfolge nach Winkel bleibt erhalten).
+            if depth == 2, let si = systemArc {
+                Self.appendSystemParts(segments.systemParts, parent: arcs[si], parentArc: si, into: &ring)
+            }
             if ring.isEmpty || arcs.count + ring.count > options.maxArcs { break }
             ranges.append(arcs.count ..< arcs.count + ring.count)
             arcs.append(contentsOf: ring)
@@ -159,6 +200,51 @@ public struct SunburstLayout: Sendable {
         }
         self.arcs = arcs
         self.ringRanges = ranges
+    }
+
+    private static func appendSystemParts(_ parts: [VolumeBreakdown.SystemPart], parent: SunburstArc, parentArc: Int,
+                                          into ring: inout [SunburstArc]) {
+        guard parent.size > 0 else { return }
+        let scale = parent.span / Double(parent.size)
+        var cum: UInt64 = 0
+        for (i, p) in parts.enumerated() where p.size > 0 {
+            let a0 = parent.startAngle + Double(cum) * scale
+            cum = min(parent.size, cum + min(p.size, parent.size - cum))
+            let a1 = cum == parent.size ? parent.endAngle : min(parent.endAngle, parent.startAngle + Double(cum) * scale)
+            guard a1 > a0 else { continue }
+            ring.append(SunburstArc(kind: .systemPart, nodeIndex: parent.nodeIndex, depth: 2, startAngle: a0,
+                                    endAngle: a1, size: p.size, itemCount: 1, parentArc: Int32(parentArc),
+                                    branch: parent.branch, isDirectory: false, part: Int32(i)))
+        }
+    }
+
+    /// Teil der Systemdaten hinter einem `.systemPart`-Arc.
+    public func systemPart(of arc: SunburstArc) -> VolumeBreakdown.SystemPart? {
+        guard arc.kind == .systemPart, arc.part >= 0, Int(arc.part) < options.rootSegments.systemParts.count
+        else { return nil }
+        return options.rootSegments.systemParts[Int(arc.part)]
+    }
+
+    /// Titel eines Segments der Volume-Wurzel („Systemdaten“, „Löschbar“ …), sonst `nil`.
+    public func volumeSegmentTitle(_ arc: SunburstArc) -> String? {
+        switch arc.kind {
+        case .system: L("arc.system.title")
+        case .systemPart: systemPart(of: arc)?.title
+        case .purgeable: L("arc.purgeable.title")
+        case .free: L("arc.free.title")
+        case .node, .aggregate, .remainder: nil
+        }
+    }
+
+    /// Erklärung eines Segments der Volume-Wurzel, sonst `nil`.
+    public func volumeSegmentDetail(_ arc: SunburstArc, fullDiskAccessDenied: Bool = false) -> String? {
+        switch arc.kind {
+        case .system: L("arc.system.detail")
+        case .systemPart: systemPart(of: arc)?.detail(fullDiskAccessDenied: fullDiskAccessDenied)
+        case .purgeable: L("arc.purgeable.detail")
+        case .free: L("arc.free.detail")
+        case .node, .aggregate, .remainder: nil
+        }
     }
 }
 
@@ -276,8 +362,8 @@ extension SunburstLayout {
         }
         let mode = options.sizeMode
         let asize = nodes[Int(ancestor)].size(mode)
-        let unassigned = ancestor == ScanTree.rootIndex ? options.unassigned : 0
-        let total = Double(asize) + Double(unassigned)
+        let extra = ancestor == ScanTree.rootIndex ? options.rootSegments.total : 0
+        let total = Double(asize) + Double(extra)
         guard total > 0 else { return (0, 0, chain.count) }
         var start = 0.0
         var span = 2 * Double.pi * Double(asize) / total

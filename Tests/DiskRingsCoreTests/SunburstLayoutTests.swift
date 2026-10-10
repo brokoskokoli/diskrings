@@ -171,30 +171,67 @@ struct SunburstLayoutTests {
         #expect(l.arcs(inRing: 1).map { t.name(of: $0.nodeIndex) } == ["a1", "a2"])
         #expect(l.arcs(inRing: 2).map { t.name(of: $0.nodeIndex) } == ["x", "y"])
         #expect(abs(l.arcs[0].span - twoPi * 400 / 600) < eps)
-        // Unterhalb der Wurzel kein „Nicht zugeordnet“, auch wenn gesetzt.
-        let u = SunburstLayout(tree: t, focus: idx(t, "a"), options: SunburstOptions(unassigned: 5000))
-        #expect(!u.arcs.contains { $0.kind == .unassigned })
+        // Unterhalb der Wurzel keine Volume-Segmente, auch wenn gesetzt.
+        let u = SunburstLayout(tree: t, focus: idx(t, "a"), options: SunburstOptions(rootSegments: .unreadable(5000)))
+        #expect(!u.arcs.contains { $0.kind.isVolumeSegment })
         #expect(u.totalSize == 600)
     }
 
-    @Test("„Nicht zugeordnet“ an der Volume-Wurzel")
-    func unassigned() {
+    @Test("Systemdaten an der Volume-Wurzel, Teile im zweiten Ring")
+    func systemSegment() {
         let t = sampleTree()
-        let l = SunburstLayout(tree: t, options: SunburstOptions(unassigned: 1000))
+        let l = SunburstLayout(tree: t, options: SunburstOptions(rootSegments: .unreadable(1000)))
         expectConsistent(l, t)
         #expect(l.totalSize == 2000)
         let ring1 = Array(l.arcs(inRing: 1))
-        #expect(ring1.last?.kind == .unassigned)
+        #expect(ring1.last?.kind == .system)
         #expect(ring1.last?.size == 1000)
         #expect(abs(ring1.last!.startAngle - .pi) < eps)
         #expect(abs(ring1.last!.endAngle - twoPi) < eps)
         // Die Kinder teilen sich die erste Hälfte.
         #expect(abs(ring1.dropLast().reduce(0) { $0 + $1.span } - .pi) < eps)
-        // Auch eine leere Wurzel zeigt dann nur „Nicht zugeordnet“.
+        // Der Teil liegt als letzter Arc im zweiten Ring.
+        let part = l.arcs(inRing: 2).last!
+        #expect(part.kind == .systemPart && part.part == 0 && part.size == 1000)
+        #expect(l.systemPart(of: part)?.kind == .unreadable)
+        // Auch eine leere Wurzel zeigt dann nur die Systemdaten.
         let e = ScanTreeBuilder(rootName: "e").build(rootPath: "/e")
-        let le = SunburstLayout(tree: e, options: SunburstOptions(unassigned: 10))
-        #expect(le.arcs.map(\.kind) == [.unassigned])
+        let le = SunburstLayout(tree: e, options: SunburstOptions(rootSegments: .unreadable(10)))
+        #expect(le.arcs.map(\.kind) == [.system, .systemPart])
         #expect(abs(le.arcs[0].span - twoPi) < eps)
+    }
+
+    @Test("Systemdaten, löschbar und frei: Reihenfolge, Winkel, Prozent des ganzen Volumes")
+    func allVolumeSegments() {
+        let t = sampleTree() // 1000 Byte
+        let s = RootSegments.full // System 300 + 200, löschbar 100, frei 400
+        let l = SunburstLayout(tree: t, options: SunburstOptions(rootSegments: s))
+        expectConsistent(l, t)
+        #expect(l.totalSize == 2000)
+        #expect(l.focusSize == 1000)
+        let ring1 = Array(l.arcs(inRing: 1))
+        #expect(ring1.suffix(3).map(\.kind) == [.system, .purgeable, .free])
+        #expect(ring1.suffix(3).map(\.size) == [500, 100, 400])
+        let free = ring1.last!
+        #expect(abs(free.span - twoPi * 0.2) < eps)
+        #expect(abs(free.endAngle - twoPi) < eps)
+        let parts = l.arcs(inRing: 2).filter { $0.kind == .systemPart }
+        #expect(parts.map(\.size) == [300, 200])
+        #expect(parts.map { l.volumeSegmentTitle($0) } == ["V", L("arc.unreadableSystem.title")])
+        #expect(l.volumeSegmentTitle(free) == L("arc.free.title"))
+        #expect(l.volumeSegmentTitle(ring1[0]) == nil)
+        #expect(l.volumeSegmentDetail(parts[1], fullDiskAccessDenied: true)!.count
+            > l.volumeSegmentDetail(parts[1], fullDiskAccessDenied: false)!.count)
+        // Ohne Teile im zweiten Ring bleiben die Ordner unverändert nach Winkel sortiert.
+        let without = SunburstLayout(tree: t, options: SunburstOptions(rootSegments: RootSegments(free: 1000)))
+        expectConsistent(without, t)
+        #expect(without.arcs(inRing: 1).last?.kind == .free)
+        #expect(!without.arcs.contains { $0.kind == .system || $0.kind == .systemPart })
+        // Logischer Modus und unter der Wurzel: keine Segmente (App setzt sie nur im Modus „belegt“).
+        let sub = SunburstLayout(tree: t, focus: idx(t, "a"), options: SunburstOptions(rootSegments: s))
+        #expect(!sub.arcs.contains { $0.kind.isVolumeSegment })
+        #expect(abs(SunburstLayout.angularSpan(of: idx(t, "a"), under: 0, tree: t,
+                                               options: SunburstOptions(rootSegments: s))!.end - twoPi * 0.3) < eps)
     }
 
     @Test("Restgröße eines Ordners (Live-Snapshot) wird als eigenes Segment gezeigt")
@@ -269,7 +306,7 @@ struct SunburstLayoutTests {
         for maxArcs in 1 ... 40 {
             for unassigned: UInt64 in [0, 300] {
                 let l = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: maxArcs,
-                                                                         unassigned: unassigned))
+                                                                         rootSegments: .unreadable(unassigned)))
                 #expect(l.arcs.count <= maxArcs, "maxArcs \(maxArcs), unassigned \(unassigned): \(l.arcs.count)")
                 expectConsistent(l, t)
             }
@@ -277,7 +314,7 @@ struct SunburstLayoutTests {
         let demo = DemoTree.home()
         for maxArcs in [1, 2, 5, 50, 500] {
             #expect(SunburstLayout(tree: demo, options: SunburstOptions(minAngleDegrees: 0, maxArcs: maxArcs,
-                                                                        unassigned: 1)).arcs.count <= maxArcs)
+                                                                        rootSegments: .full)).arcs.count <= maxArcs)
         }
     }
 
@@ -332,10 +369,10 @@ struct SunburstLayoutTests {
         expectConsistent(tiny, t)
         // Grenze 1 mit „Nicht zugeordnet“: nur das Sammelsegment und das Spezialsegment passen nicht beide;
         // das Spezialsegment bleibt immer erhalten.
-        let two = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: 2, unassigned: 100))
-        #expect(two.arcs.map(\.kind) == [.aggregate, .unassigned])
-        let one = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: 1, unassigned: 100))
-        #expect(one.arcs.map(\.kind) == [.unassigned])
+        let two = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: 2, rootSegments: .unreadable(100)))
+        #expect(two.arcs.map(\.kind) == [.aggregate, .system])
+        let one = SunburstLayout(tree: t, options: SunburstOptions(minAngleDegrees: 0, maxArcs: 1, rootSegments: .unreadable(100)))
+        #expect(one.arcs.map(\.kind) == [.system])
     }
 
     @Test("Logische Größe: eigene Reihenfolge und Winkel")
@@ -358,7 +395,7 @@ struct SunburstLayoutTests {
     func demoInvariants() {
         let t = DemoTree.home()
         for rings in [3, 6, 10] {
-            let l = SunburstLayout(tree: t, options: SunburstOptions(maxRings: rings, unassigned: 30_000_000_000))
+            let l = SunburstLayout(tree: t, options: SunburstOptions(maxRings: rings, rootSegments: .unreadable(30_000_000_000)))
             expectConsistent(l, t)
             #expect(l.ringCount <= rings)
         }
@@ -390,7 +427,7 @@ struct SunburstLayoutTests {
         #expect(selfSpan.depth == 0 && abs(selfSpan.end - twoPi) < eps)
         // Mit „Nicht zugeordnet“ schrumpft der Bereich entsprechend.
         let u = try #require(SunburstLayout.angularSpan(of: idx(t, "b"), under: 0, tree: t,
-                                                        options: SunburstOptions(unassigned: 1000)))
+                                                        options: SunburstOptions(rootSegments: .unreadable(1000))))
         #expect(abs(u.start - twoPi * 600 / 2000) < eps)
         #expect(abs(u.end - twoPi * 900 / 2000) < eps)
     }

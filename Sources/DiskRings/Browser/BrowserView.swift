@@ -247,9 +247,12 @@ struct StatusBar: View {
             if let v = state.volume {
                 Image(systemName: "internaldrive").foregroundStyle(.secondary).accessibilityHidden(true)
                 Text(volumeText(v))
-                if state.unassigned > 0 {
-                    Text("· " + L("status.unassigned", ByteFormat.string(state.unassigned)))
-                        .help(L("status.unassigned.help"))
+                if let b = state.breakdown {
+                    if b.systemData > 0 {
+                        Text("· " + L("status.systemData", ByteFormat.string(b.systemData)))
+                            .help(L("status.systemData.help"))
+                    }
+                    VolumeUsageBar(breakdown: b).frame(width: 90, height: 6)
                 }
             } else if let p = state.progress {
                 Text(filesText(p.filesScanned) + " · " + ByteFormat.string(p.allocatedBytes))

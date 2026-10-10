@@ -53,11 +53,14 @@ extension SnapshotMetadata {
     /// Metadaten für den aktuellen Baum eines Scans (der sich seit dem Scan
     /// durch Papierkorb oder Teil-Rescan geändert haben kann).
     public static func current(for summary: ScanSummary, tree: ScanTree, volume: VolumeInfo? = nil,
-                               name: String? = nil, date: Date = Date()) -> SnapshotMetadata {
+                               otherVolumes: [ContainerVolume]? = nil, name: String? = nil,
+                               date: Date = Date()) -> SnapshotMetadata {
         let v = volume ?? VolumeInfo.forPath(tree.rootPath)
+        let others = otherVolumes ?? defaultOtherVolumes(v, scanRoot: tree.rootPath, options: summary.options)
         return SnapshotMetadata(
             name: name, date: date, rootPath: tree.rootPath, volumeUUID: v?.uuid,
-            volume: v.map { VolumeMetrics($0, scanRoot: tree.rootPath, scanTotal: tree.root.allocatedSize) },
+            volume: v.map { VolumeMetrics($0, scanRoot: tree.rootPath, scanTotal: tree.root.allocatedSize,
+                                          otherVolumes: others) },
             options: SnapshotScanOptions(summary.options), minimumFileSize: 0,
             allocatedSize: tree.root.allocatedSize, logicalSize: tree.root.logicalSize,
             fileCount: UInt64(tree.root.fileCount), nodeCount: tree.liveCount)

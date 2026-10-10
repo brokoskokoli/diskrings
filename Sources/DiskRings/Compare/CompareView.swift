@@ -65,7 +65,7 @@ struct CompareView: View {
             Divider()
             StatusBar(state: state)
         }
-        .onChange(of: state.prefs.layoutKey) { _, _ in session.setOptions(state.prefs.layoutOptions(unassigned: 0)) }
+        .onChange(of: state.prefs.layoutKey) { _, _ in session.setOptions(state.prefs.layoutOptions()) }
     }
 }
 

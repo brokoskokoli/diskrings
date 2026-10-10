@@ -150,7 +150,7 @@ public enum FileTypeCategory: String, Sendable, CaseIterable {
 /// festen Folge gut unterscheidbarer Töne; seine Nachfahren behalten den Ton
 /// (mit kleiner Verschiebung je nach Lage im Ast) und werden nach außen heller
 /// und weniger gesättigt. Dateien sind gedämpfter als Ordner, Sammelsegmente
-/// grau, „Nicht zugeordnet“ ein dunkleres Neutralgrau.
+/// grau; Segmente der Volume-Wurzel siehe `Palette+Volume.swift`.
 public struct Palette: Sendable, Equatable {
     public var scheme: PaletteScheme
     public var appearance: PaletteAppearance
@@ -176,7 +176,6 @@ public struct Palette: Sendable, Equatable {
     public var secondaryText: RGBColor { isDark ? RGBColor(white: 0.64) : RGBColor(white: 0.42) }
     public var aggregateFill: RGBColor { isDark ? RGBColor(white: 0.32) : RGBColor(white: 0.80) }
     public var remainderFill: RGBColor { isDark ? RGBColor(white: 0.28) : RGBColor(white: 0.88) }
-    public var unassignedFill: RGBColor { isDark ? RGBColor(white: 0.40) : RGBColor(white: 0.66) }
 
     /// Textfarbe mit dem besseren Kontrast auf `fill` (Schwarz oder Weiß; damit
     /// ist das Kontrastverhältnis auf jeder Fläche mindestens 4,58 : 1).
@@ -259,8 +258,8 @@ public struct Palette: Sendable, Equatable {
                 out.append(aggregateFill)
             case .remainder:
                 out.append(remainderFill)
-            case .unassigned:
-                out.append(unassignedFill)
+            case .system, .systemPart, .purgeable, .free:
+                out.append(volumeSegmentFill(arc))
             case .node:
                 switch scheme {
                 case .branch:

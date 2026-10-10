@@ -64,8 +64,7 @@ enum CompareDemoRenderer {
         let laterInfo = try store.save(after, volume: v2, name: "after Xcode update", date: scanDate)
 
         func makeState() -> AppState {
-            let s = SnapshotRenderer.makeState(tree: after.tree, volume: v2,
-                                               unassigned: v2.unassigned(scanTotal: after.allocatedSize))
+            let s = SnapshotRenderer.makeState(tree: after.tree, volume: v2, otherVolumes: [])
             s.setResultForSnapshot(after)
             s.showSummary = false
             s.snapshots = SnapshotLibrary(store: store)

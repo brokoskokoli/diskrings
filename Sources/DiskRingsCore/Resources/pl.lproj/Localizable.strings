@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "połączone, każde poniżej progu kąta";
 "arc.remainder.title" = "Pliki w tym folderze";
 "arc.remainder.detail" = "jeszcze nie policzone osobno";
-"arc.unassigned.title" = "Nieprzypisane";
-"arc.unassigned.detail" = "System, lokalne migawki, miejsce do zwolnienia";
 "sunburst.accessibility" = "Wykres pierścieniowy: %@";
 "sunburst.shareOf" = "%1$@ z %2$@";
 "sunburst.center.hint" = "Kliknij: poziom wyżej";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@, bieżący folder";
 
 /* Status bar and scan summary */
-"status.unassigned" = "nieprzypisane %@";
-"status.unassigned.help" = "Miejsce zajęte na woluminie, które nie pojawia się w żadnym folderze: system, lokalne migawki Time Machine, miejsce do zwolnienia. Klony i migawki mogą powodować różnice.";
 "status.deviation" = "Klony i migawki mogą powodować różnice";
-"status.deviation.help" = "Klony i migawki mogą powodować różnice: klony APFS współdzielą bloki, ale są liczone osobno; lokalne migawki Time Machine i miejsce do zwolnienia nie pojawiają się w żadnym folderze i trafiają do kategorii „Nieprzypisane”.";
-"status.fda.help" = "Bez pełnego dostępu do dysku foldery takie jak ~/Library/Mail pozostają nieczytelne i trafiają do kategorii „Nieprzypisane”. Kliknij, aby otworzyć Ustawienia systemowe.";
+"status.deviation.help" = "Klony i migawki mogą powodować różnice: klony APFS współdzielą bloki, ale są liczone osobno; lokalne migawki Time Machine i miejsce do zwolnienia nie pojawiają się w żadnym folderze i trafiają do kategorii „Dane systemowe”.";
+"status.fda.help" = "Bez pełnego dostępu do dysku foldery takie jak ~/Library/Mail pozostają nieczytelne i trafiają do kategorii „Nieczytelne dane systemowe”. Kliknij, aby otworzyć Ustawienia systemowe.";
 "status.scanSummary" = "Skanowanie: %1$@ w %2$@";
 "status.volume" = "%1$@: %2$@ · zajęte %3$@ · wolne %4$@";
 "status.volume.purgeable" = "(w tym %@ do zwolnienia)";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "Zawartość: %@";
 "list.shareOfRoot" = "%@ katalogu głównego skanowania";
-"list.unassigned.help" = "Nieprzypisane (system, lokalne migawki, miejsce do zwolnienia): miejsce zajęte na woluminie, które nie pojawia się w żadnym folderze.";
 "list.row.accessibility" = "%1$@, %2$@, %3$@";
 "accessibility.zoomIn" = "Powiększ";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "Woluminy";
 "start.noVolumes" = "Nie znaleziono woluminów.";
 "start.scanHome" = "Skanuj folder domowy";
-"start.fda.message" = "Bez pełnego dostępu do dysku foldery takie jak ~/Library/Mail, Safari czy kontenery innych aplikacji pozostają nieczytelne. Brakuje ich na wykresie i trafiają do kategorii „Nieprzypisane”.";
+"start.fda.message" = "Bez pełnego dostępu do dysku foldery takie jak ~/Library/Mail, Safari czy kontenery innych aplikacji pozostają nieczytelne. Brakuje ich na wykresie i trafiają do kategorii „Nieczytelne dane systemowe”.";
 "start.fda.openSettings" = "Otwórz Ustawienia systemowe…";
 "start.fda.checkAgain" = "Sprawdź ponownie";
 "start.volume.used" = "Zajęte %1$@ z %2$@";
-"start.legend.used" = "Zajęte %@";
 "start.legend.purgeable" = "Do zwolnienia %@";
 "start.legend.free" = "Wolne %@";
 "start.volume.accessibility" = "%1$@, zajęte %2$@ z %3$@, wolne %4$@";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "Zawiera inny wolumin (punkt montowania „%@”) i nie można go przenieść do kosza";
 "trash.confirm.sizeUncertain" = "Rozmiar nie jest w pełni znany (elementy tylko w chmurze, nieczytelne lub jeszcze niezeskanowane), dlatego zawsze wymagane jest potwierdzenie.";
 "reason.targetsChanged" = "Elementy zmieniły się w międzyczasie (np. po ponownym skanowaniu). Nic nie zostało wykonane – spróbuj ponownie.";
+"arc.system.title" = "Dane systemowe";
+"arc.system.detail" = "Inne woluminy w tym samym kontenerze i obszary, których DiskRings nie może odczytać";
+"arc.unreadableSystem.title" = "Nieczytelne dane systemowe";
+"arc.unreadableSystem.detail" = "Miejsce, które nie występuje w żadnym folderze ani innym woluminie: indeks Spotlight, wersje dokumentów, fseventsd, /private/var/db, lokalne migawki, metadane APFS.";
+"arc.unreadableSystem.fdaHint" = "Bez pełnego dostępu do dysku obejmuje to także foldery, których DiskRings nie mógł odczytać.";
+"arc.volume.detail" = "Osobny wolumin APFS w tym samym kontenerze; dzieli miejsce z tym woluminem";
+"arc.purgeable.title" = "Do zwolnienia";
+"arc.purgeable.detail" = "Miejsce, które macOS w razie potrzeby zwalnia sam (pamięci podręczne, lokalne migawki, pliki iCloud)";
+"arc.free.title" = "Wolne";
+"arc.free.detail" = "Niewykorzystane miejsce na woluminie";
+"volume.role.system" = "System macOS (%@)";
+"volume.role.data" = "Dane (%@)";
+"volume.role.preboot" = "Dane startowe (Preboot)";
+"volume.role.recovery" = "Odzyskiwanie (Recovery)";
+"volume.role.vm" = "Swap i hibernacja (VM)";
+"volume.role.update" = "Uaktualnienia systemu (Update)";
+"compare.part.systemData" = "w tym dane systemowe %@";
+"compare.label.systemData" = "w tym dane systemowe";
+"menu.showFreeSpace" = "Pokaż wolne miejsce w pierścieniu";
+"legend.yourData" = "Twoje dane %@";
+"legend.systemData" = "Dane systemowe %@";
+"status.systemData" = "dane systemowe %@";
+"status.systemData.help" = "Zajęte miejsce na woluminie, które nie występuje w żadnym folderze: inne woluminy w tym samym kontenerze (Preboot, VM, Recovery…) i obszary systemowe, których DiskRings nie może odczytać. Klony i migawki mogą powodować rozbieżności.";

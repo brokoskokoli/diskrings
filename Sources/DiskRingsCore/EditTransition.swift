@@ -26,12 +26,12 @@ public struct EditTransition: Sendable {
         self.to = to
         var byKey: [Key: Int] = [:]
         for (i, a) in to.arcs.enumerated() {
-            byKey[Key(kind: a.kind.rawValue, node: a.kind == .unassigned ? -1 : a.nodeIndex)] = i
+            byKey[Key(kind: a.kind.rawValue, node: a.kind.isVolumeSegment ? -1 - a.part : a.nodeIndex)] = i
         }
         var match = [Int](repeating: -1, count: to.arcs.count)
         var orphans: [Int] = []
         for (i, a) in from.arcs.enumerated() {
-            let node: Int32? = a.kind == .unassigned ? -1 : translate(a.nodeIndex)
+            let node: Int32? = a.kind.isVolumeSegment ? -1 - a.part : translate(a.nodeIndex)
             if let node, let j = byKey[Key(kind: a.kind.rawValue, node: node)], match[j] < 0 {
                 match[j] = i
             } else {

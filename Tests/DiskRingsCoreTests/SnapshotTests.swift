@@ -43,6 +43,40 @@ struct SnapshotTests {
         #expect(info.url.pathExtension == "drsnap")
     }
 
+    @Test("Aufteilung der Volume-Belegung im Kopf: gespeichert, alte Köpfe laden ohne, Format bleibt 1")
+    func volumeBreakdownHeader() throws {
+        let fx = try Fixture()
+        let r = try sampleScan(fx)
+        let v = VolumeInfo(name: "HD", path: fx.root, totalCapacity: 1_000_000_000, availableCapacity: 200_000_000,
+                           availableForImportantUsage: 250_000_000)
+        let vm = ContainerVolume(name: "VM", device: "disk3s6", mountPoint: nil, roles: ["VM"], used: 100_000_000)
+        let meta = SnapshotMetadata.current(for: r, volume: v, otherVolumes: [vm])
+        let b = try #require(meta.volume?.breakdown)
+        #expect(b.otherVolumes == 100_000_000)
+        #expect(b.purgeable == 50_000_000)
+        #expect(b.free == 200_000_000)
+        #expect(b.systemData + b.purgeable == meta.volume?.unassigned)
+        #expect(meta.volume!.unassigned! + r.allocatedSize == 800_000_000)
+        // Roundtrip über das Dateiformat.
+        let data = try SnapshotFile.encode(Snapshot(metadata: meta, tree: r.tree))
+        #expect(data[8] == 1 && data[9] == 0) // Formatversion unverändert
+        let loaded = try SnapshotFile.decode(data)
+        #expect(loaded.metadata.volume?.breakdown == b)
+        // Kopf eines älteren Snapshots (ohne „breakdown“) lädt, die Aufteilung fehlt.
+        let old = #"{"name":"HD","total":10,"available":2,"availableForImportantUsage":3,"used":8,"unassigned":4}"#
+        let decoded = try JSONDecoder().decode(VolumeMetrics.self, from: Data(old.utf8))
+        #expect(decoded.unassigned == 4)
+        #expect(decoded.breakdown == nil)
+        // Eine ältere App ignoriert das neue Feld (unbekannte Schlüssel stören JSONDecoder nicht).
+        struct OldVolumeMetrics: Codable { var name: String; var used: UInt64; var unassigned: UInt64? }
+        let newJSON = try JSONEncoder().encode(meta.volume!)
+        #expect(try JSONDecoder().decode(OldVolumeMetrics.self, from: newJSON).unassigned == meta.volume?.unassigned)
+        // Keine Volume-Wurzel: weder nicht zugeordnet noch Aufteilung.
+        let sub = SnapshotMetadata.current(for: r, volume: VolumeInfo(name: "HD", path: "/anderswo", totalCapacity: 1,
+                                                                      availableCapacity: 0, availableForImportantUsage: 0))
+        #expect(sub.volume?.unassigned == nil && sub.volume?.breakdown == nil)
+    }
+
     @Test("Roundtrip mit 1 MB Mindestgröße: kleine Dateien nur in der Ordnersumme")
     func roundtripCondensed() throws {
         let fx = try Fixture()

@@ -216,8 +216,6 @@
 "arc.aggregate.detail" = "已合并，各自低于角度阈值";
 "arc.remainder.title" = "此文件夹中的文件";
 "arc.remainder.detail" = "尚未逐个统计";
-"arc.unassigned.title" = "未分配";
-"arc.unassigned.detail" = "系统、本地快照、可清除空间";
 "sunburst.accessibility" = "%@ 的旭日图";
 "sunburst.shareOf" = "%1$@，共 %2$@";
 "sunburst.center.hint" = "点按：上移一层";
@@ -294,11 +292,9 @@
 "browser.breadcrumb.current" = "%@，当前文件夹";
 
 /* Status bar and scan summary */
-"status.unassigned" = "未分配 %@";
-"status.unassigned.help" = "宗卷上已使用但未显示在任何文件夹中的空间：系统、本地 Time Machine 快照、可清除空间。克隆和快照可能导致差异。";
 "status.deviation" = "克隆和快照可能导致差异";
-"status.deviation.help" = "克隆和快照可能导致差异：APFS 克隆共享数据块，但会被分别统计；本地 Time Machine 快照和可清除空间不会显示在任何文件夹中，而是显示在“未分配”下。";
-"status.fda.help" = "如果没有完全磁盘访问权限，~/Library/Mail 等文件夹将无法读取，并归入“未分配”。点按以打开系统设置。";
+"status.deviation.help" = "克隆和快照可能导致差异：APFS 克隆共享数据块，但会被分别统计；本地 Time Machine 快照和可清除空间不会显示在任何文件夹中，而是显示在“系统数据”下。";
+"status.fda.help" = "如果没有完全磁盘访问权限，~/Library/Mail 等文件夹将无法读取，并归入“无法读取的系统数据”。点按以打开系统设置。";
 "status.scanSummary" = "扫描：%1$@，用时 %2$@";
 "status.volume" = "%1$@：%2$@ · 已用 %3$@ · 可用 %4$@";
 "status.volume.purgeable" = "（其中 %@ 可清除）";
@@ -310,7 +306,6 @@
 /* Detail list */
 "list.accessibility" = "%@ 的内容";
 "list.shareOfRoot" = "占扫描根目录的 %@";
-"list.unassigned.help" = "未分配（系统、本地快照、可清除空间）：宗卷上已使用但未显示在任何文件夹中的空间。";
 "list.row.accessibility" = "%1$@，%2$@，%3$@";
 "accessibility.zoomIn" = "放大";
 
@@ -319,11 +314,10 @@
 "start.volumes" = "宗卷";
 "start.noVolumes" = "未找到宗卷。";
 "start.scanHome" = "扫描个人文件夹";
-"start.fda.message" = "如果没有完全磁盘访问权限，~/Library/Mail、Safari或其他 App 的容器等文件夹将无法读取。它们不会出现在图表中，而是归入“未分配”。";
+"start.fda.message" = "如果没有完全磁盘访问权限，~/Library/Mail、Safari或其他 App 的容器等文件夹将无法读取。它们不会出现在图表中，而是归入“无法读取的系统数据”。";
 "start.fda.openSettings" = "打开系统设置…";
 "start.fda.checkAgain" = "重新检查";
 "start.volume.used" = "已使用 %1$@，共 %2$@";
-"start.legend.used" = "已用 %@";
 "start.legend.purgeable" = "可清除 %@";
 "start.legend.free" = "可用 %@";
 "start.volume.accessibility" = "%1$@，已使用 %2$@，共 %3$@，可用 %4$@";
@@ -408,3 +402,26 @@
 "trash.error.containsMountPoint" = "包含另一个宗卷（挂载点“%@”），无法移到废纸篓";
 "trash.confirm.sizeUncertain" = "大小未完全确定（仅存储在云端、无法读取或尚未扫描的项目），因此始终需要确认。";
 "reason.targetsChanged" = "项目在此期间已更改（例如因重新扫描）。未执行任何操作，请重试。";
+"arc.system.title" = "系统数据";
+"arc.system.detail" = "同一容器中的其他宗卷以及 DiskRings 无法读取的区域";
+"arc.unreadableSystem.title" = "无法读取的系统数据";
+"arc.unreadableSystem.detail" = "未出现在任何文件夹或其他宗卷中的空间：聚焦索引、文稿版本、fseventsd、/private/var/db、本地快照、APFS 元数据。";
+"arc.unreadableSystem.fdaHint" = "如果没有完全磁盘访问权限，这里还包括 DiskRings 无法读取的文件夹。";
+"arc.volume.detail" = "同一容器中的独立 APFS 宗卷；与此宗卷共享空间";
+"arc.purgeable.title" = "可清除";
+"arc.purgeable.detail" = "macOS 在需要时自动释放的空间（缓存、本地快照、iCloud 文件）";
+"arc.free.title" = "可用";
+"arc.free.detail" = "宗卷上未使用的空间";
+"volume.role.system" = "macOS 系统（%@）";
+"volume.role.data" = "数据（%@）";
+"volume.role.preboot" = "启动数据（Preboot）";
+"volume.role.recovery" = "恢复（Recovery）";
+"volume.role.vm" = "交换和睡眠映像（VM）";
+"volume.role.update" = "系统更新（Update）";
+"compare.part.systemData" = "其中系统数据 %@";
+"compare.label.systemData" = "其中系统数据";
+"menu.showFreeSpace" = "在圆环中显示可用空间";
+"legend.yourData" = "你的数据 %@";
+"legend.systemData" = "系统数据 %@";
+"status.systemData" = "系统数据 %@";
+"status.systemData.help" = "宗卷上已使用但未出现在任何文件夹中的空间：同一容器中的其他宗卷（Preboot、VM、Recovery 等）以及 DiskRings 无法读取的系统区域。克隆和快照可能导致偏差。";

@@ -322,6 +322,26 @@ struct CompareHeadlineTests {
         #expect(h.parts.map(\.label) == ["belegt", "frei", "davon nicht zugeordnet"])
     }
 
+    @Test("Mit Aufteilung auf beiden Seiten: davon Systemdaten statt nicht zugeordnet; gemischt: alter Wert")
+    func systemData() {
+        var o = CompareFixture.volume(used: 400 * MB, unassigned: 10 * MB)
+        var n = CompareFixture.volume(used: 438_200_000, unassigned: 14_100_000)
+        o.breakdown = VolumeBreakdownMetrics(otherVolumes: 6 * MB, unreadable: 3 * MB, purgeable: 1 * MB, free: 0)
+        n.breakdown = VolumeBreakdownMetrics(otherVolumes: 6 * MB, unreadable: 5 * MB, purgeable: 3_100_000, free: 0)
+        let h = CompareHeadline(diff: CompareFixture.diff(oldVolume: o, newVolume: n), comparesSnapshots: false,
+                                timeZone: berlin)
+        #expect(h.parts.map(\.label) == ["belegt", "frei", "davon Systemdaten"])
+        #expect(h.parts.map(\.delta) == [38_200_000, -38_200_000, 2_000_000])
+        // Alter Snapshot ohne Aufteilung: weiter „nicht zugeordnet“.
+        var old = o
+        old.breakdown = nil
+        let mixed = CompareHeadline(diff: CompareFixture.diff(oldVolume: old, newVolume: n), comparesSnapshots: false,
+                                    timeZone: berlin)
+        #expect(mixed.parts.map(\.label) == ["belegt", "frei", "davon nicht zugeordnet"])
+        #expect(CompareFixture.diff(oldVolume: old, newVolume: n).summary.systemDataDelta == nil)
+        #expect(CompareFixture.diff(oldVolume: o, newVolume: n).summary.headline.contains("davon Systemdaten +2"))
+    }
+
     @Test("Ordner-Scan: Scan-Summe des Ordners, dazu belegt und frei des Volumes")
     func folder() {
         let o = CompareFixture.volume(used: 400 * MB)
