@@ -17,3 +17,18 @@ Die Spezifikation steht in `SPEC.md` und ist verbindlich. Wenn du von ihr abweic
 - Kleine, thematische Commits auf `main`; Commit-Nachrichten auf Deutsch, mit den Attribution-Zeilen aus dem System-Hinweis.
 - Keine Zugangsdaten, Zertifikate oder Passwörter im Repo.
 - Niemals echte Nutzerdaten löschen: Tests für Papierkorb und Löschen laufen ausschließlich in temporären Verzeichnissen.
+
+## Ablauf mit Agenten (Coder und Verifier)
+- Größere Aufgaben in thematische Pakete teilen (z. B. Scanner, Layout, Snapshots, UI, Lokalisierung). Jedes Paket setzt ein Coder-Subagent um, testgetrieben und bis `scripts/check.sh` grün ist. Unabhängige Pakete laufen parallel, wenn nötig in eigenen Worktrees.
+- Danach prüft ein **eigener Verifier-Subagent** das Ergebnis, nicht derselbe Agent, der es gebaut hat. Er prüft gegen `SPEC.md`, sucht gezielt Fehlerfälle (Rennbedingungen, Pfad-Präfixe, Hardlinks, Mounts, Abbruch, Speicher) und meldet nur Funde mit konkretem Szenario.
+- Jeder bestätigte Fund wird zuerst als Regressionstest geschrieben und dann behoben. Erst danach wird committet.
+- Der Haupt-Agent koordiniert, führt die Ergebnisse zusammen, prüft selbst nach (Tests, gerenderte PNGs, CLI-Läufe auf echten Ordnern, nur lesend) und hält Abweichungen in `docs/DECISIONS.md` fest.
+- Agenten exportieren keine Zertifikate, lesen keine Secrets, führen `scripts/setup-release-secrets.sh` nicht aus und setzen keine Secrets.
+- GitHub-Actions nur auf geprüfte, mindestens zwei Wochen alte Versionen per Commit-SHA pinnen; keine Updates auf ganz frische Versionen.
+
+## Releases
+- Ablauf und Einrichtung: `docs/RELEASING.md`; Kurzfassung in `README.md` („Publishing a new version“).
+- Version steht in `VERSION` (SemVer), der Tag `v<VERSION>` muss dazu passen. Die Build-Nummer ergibt sich aus der Zahl der Commits.
+- Standardweg: `VERSION` erhöhen, committen, pushen, CI grün abwarten, annotierten Tag pushen. `release.yml` baut, signiert, notarisiert und veröffentlicht nach Freigabe im Environment `release`. Vorher ggf. Trockenlauf (`gh workflow run release.yml -f dry_run=true`).
+- **Tags setzen, Releases veröffentlichen und Deployments freigeben nur auf ausdrückliche Anweisung des Maintainers**, jedes Mal neu.
+- Lokal: `scripts/release.sh` nutzt das Schlüsselbund-Profil `diskrings` (notarytool) und die Developer ID im Anmelde-Schlüsselbund; `--publish` legt zusätzlich das GitHub-Release an.

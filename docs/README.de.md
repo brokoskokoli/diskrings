@@ -118,7 +118,14 @@ swift scripts/make-social-preview.swift  # docs/images/social-preview.png
 
 Ausführlich, mit einmaliger Einrichtung und Sicherheitsabwägungen: [RELEASING.md](RELEASING.md).
 
-**Über GitHub Actions:** `VERSION` erhöhen und committen, dann `git tag v<version> && git push origin v<version>`. Der Workflow `release.yml` baut, signiert, notarisiert und veröffentlicht das Release. Ein Trockenlauf ohne Veröffentlichung geht über Actions → Release → Run workflow.
+**Über GitHub Actions (Standard):**
+
+```sh
+echo 0.2.0 > VERSION && git commit -am "Version 0.2.0" && git push origin main
+git tag -a v0.2.0 -m "DiskRings 0.2.0" && git push origin v0.2.0
+```
+
+Danach den Lauf freigeben (Actions → Release → **Review deployments** → `release` → **Approve and deploy**). Der Workflow `release.yml` baut, signiert, notarisiert und veröffentlicht das Release in etwa 5–10 Minuten. Ein Trockenlauf ohne Veröffentlichung: `gh workflow run release.yml -f dry_run=true`.
 
 **Lokal:** Einmalig das Notarisierungs-Profil anlegen (mit einem app-spezifischen Passwort der Apple-ID; alternativ API-Key-Variablen, siehe RELEASING.md):
 

@@ -136,7 +136,25 @@ swift run -c release diskrings-cli scan / --json
 swift run -c release diskrings-cli volumes
 ```
 
-Release builds (Developer ID signing and notarization) are made by the GitHub Actions workflow `release.yml` when a `v*` tag is pushed, or locally with `scripts/release.sh`. Setup, secrets and security trade-offs: [docs/RELEASING.md](docs/RELEASING.md) (German). The version lives in [`VERSION`](VERSION).
+## Publishing a new version
+
+Releases are built, signed with the Developer ID, notarized by Apple and published by the GitHub Actions workflow [`release.yml`](.github/workflows/release.yml) when a `v*` tag is pushed. The version lives in [`VERSION`](VERSION) and uses [semantic versioning](https://semver.org).
+
+```sh
+# 1. Bump the version on main (CI must be green)
+echo 0.2.0 > VERSION
+git commit -am "Version 0.2.0"
+git push origin main
+
+# 2. Tag it; the tag must match VERSION
+git tag -a v0.2.0 -m "DiskRings 0.2.0"
+git push origin v0.2.0
+```
+
+3. Approve the run: **Actions → Release → Review deployments → `release` → Approve and deploy** (the `release` environment requires a maintainer's approval).
+4. After about 5–10 minutes the release with DMG, ZIP and `SHA256SUMS` appears under [Releases](https://github.com/brokoskokoli/diskrings/releases), with release notes generated from the commits.
+
+Before a release you can do a dry run that builds, signs and notarizes without publishing: `gh workflow run release.yml -f dry_run=true`. Only repository admins can create `v*` tags. A local release without CI is possible with `scripts/release.sh --publish`. One-time setup, secrets, troubleshooting and security trade-offs: [docs/RELEASING.md](docs/RELEASING.md) (German).
 
 ## FAQ
 

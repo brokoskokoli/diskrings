@@ -106,9 +106,9 @@ Nur nötig, wenn du das Skript nicht nutzen willst.
 gh workflow run release.yml -f dry_run=true
 ```
 
-GitHub → **Actions** → Lauf „Release“ öffnen → gelbes Banner **Review deployments** → `release` anhaken → **Approve and deploy**. Nach 15–25 Minuten liegen ZIP und DMG als Artefakt am Lauf, notarisiert, aber nicht veröffentlicht. Schlägt etwas fehl, steht die Ursache samt Anleitung in der Zusammenfassung des Laufs (siehe auch „Fehlersuche“ unten).
+GitHub → **Actions** → Lauf „Release“ öffnen → gelbes Banner **Review deployments** → `release` anhaken → **Approve and deploy**. Nach 5–10 Minuten liegen ZIP und DMG als Artefakt am Lauf, notarisiert, aber nicht veröffentlicht. Schlägt etwas fehl, steht die Ursache samt Anleitung in der Zusammenfassung des Laufs (siehe auch „Fehlersuche“ unten).
 
-### Schritt 5: Erstes Release
+### Schritt 5: Erstes Release (erledigt: v0.1.0 am 10.10.2026)
 
 ```sh
 git tag v0.1.0 && git push origin v0.1.0
@@ -137,7 +137,7 @@ Der Workflow „Release“ startet, wartet ggf. auf deine Freigabe (Actions → 
 5. löscht die Keychain (immer, auch bei Fehlern) und lädt die Dateien als Artefakt hoch,
 6. legt im getrennten Job `publish` (nur dieser darf schreiben, er sieht keine Signier-Secrets) das Release `v<version>` mit generierten Release-Notes an.
 
-Dauer: meist 15–25 Minuten, den größten Teil davon wartet `notarytool` auf Apple.
+Dauer: meist 5–10 Minuten (v0.1.0: knapp 5 Minuten, die Notarisierung selbst unter einer Minute). Die allererste Notarisierung eines Teams kann deutlich länger dauern; deshalb wurde sie für v0.1.0 einmal lokal mit `scripts/release.sh` gemacht.
 
 ## Trockenlauf
 
