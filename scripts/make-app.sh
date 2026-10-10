@@ -211,6 +211,15 @@ strip_xattrs() {
 }
 strip_xattrs
 
+# Rechte vereinheitlichen: Der Installer legt die Dateien als root ab. Eine
+# Datei nur mit Besitzer-Leserecht (z. B. das Profil aus einer umask-077-Datei
+# im Workflow) wäre dann für Nutzer unlesbar, die Signaturprüfung schlägt fehl,
+# und App Store Connect lehnt das Paket ab (Fehler 90255).
+normalize_permissions() {
+    chmod -R u+rwX,go+rX,go-w "$APP"
+}
+normalize_permissions
+
 SIGNED_WITH=
 if [ "$APPSTORE" = "1" ]; then
     APPSTORE_IDENTITY=${DISKRINGS_APPSTORE_IDENTITY:-"Apple Distribution: Stefan Richter (AGRWTKQZ8C)"}
@@ -230,6 +239,7 @@ if [ "$APPSTORE" = "1" ]; then
         echo "==> Provisioning Profile einbetten"
         cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
         strip_xattrs
+        normalize_permissions
     fi
     if [ "${DISKRINGS_ADHOC:-0}" != "1" ] && grep -qF "\"$APPSTORE_IDENTITY\"" <<<"$IDENTITIES"; then
         if [ -n "$PROFILE" ]; then
@@ -356,6 +366,13 @@ if [ "$APPSTORE" = "1" ]; then
     mkbom "$PKG_WORK/root" "$PKG_WORK/user.bom"
     lsbom "$PKG_WORK/user.bom" | awk -F'\t' 'BEGIN { OFS = "\t" } { $3 = "0/0"; print }' > "$PKG_WORK/bom.txt"
     rm -f "$COMPONENT/Bom"
+    # Jede Nutzlast-Datei muss für alle lesbar sein (sonst Fehler 90255).
+    UNREADABLE=$(awk -F'\t' '{ m = substr($2, length($2), 1) + 0; if (m < 4) print $1 }' "$PKG_WORK/bom.txt")
+    if [ -n "$UNREADABLE" ]; then
+        echo "error: Nicht für alle lesbar im .pkg:" >&2
+        echo "$UNREADABLE" >&2
+        exit 1
+    fi
     mkbom -i "$PKG_WORK/bom.txt" "$COMPONENT/Bom"
     sed -i '' 's/preserve-xattr="true"/preserve-xattr="false"/' "$COMPONENT/PackageInfo"
     rm -f "$UNSIGNED_PKG"
