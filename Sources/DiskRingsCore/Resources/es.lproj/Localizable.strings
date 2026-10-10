@@ -402,3 +402,8 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
+"trash.undo.parentChanged" = "La carpeta original se ha reemplazado o movido (por ejemplo, por un enlace simbólico)";
+"trash.error.mountPoint" = "“%@” es otro volumen (punto de montaje) y no se puede trasladar a la papelera";
+"trash.error.containsMountPoint" = "Contiene otro volumen (punto de montaje “%@”) y no se puede trasladar a la papelera";
+"trash.confirm.sizeUncertain" = "El tamaño no se conoce por completo (ítems solo en la nube, ilegibles o aún no analizados), por lo que siempre se pide confirmación.";
+"reason.targetsChanged" = "Los ítems han cambiado mientras tanto (por ejemplo, por un nuevo análisis). No se ha hecho nada; vuelve a intentarlo.";

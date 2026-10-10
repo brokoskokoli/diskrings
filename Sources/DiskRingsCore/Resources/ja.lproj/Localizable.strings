@@ -402,3 +402,8 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@秒";
 "format.duration.minutes" = "%1$@分%2$@秒";
+"trash.undo.parentChanged" = "元のフォルダが置き換えられたか移動されました（シンボリックリンクなど）";
+"trash.error.mountPoint" = "“%@”は別のボリューム（マウントポイント）のため、ゴミ箱に入れられません";
+"trash.error.containsMountPoint" = "別のボリューム（マウントポイント“%@”）を含むため、ゴミ箱に入れられません";
+"trash.confirm.sizeUncertain" = "サイズが完全には分かっていません（クラウドのみ、読み取り不可、または未スキャンの項目）。そのため常に確認されます。";
+"reason.targetsChanged" = "項目がその間に変更されました（再スキャンなど）。何も実行されていません。もう一度やり直してください。";

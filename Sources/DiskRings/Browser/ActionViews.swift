@@ -40,7 +40,7 @@ struct TrashConfirmationView: View {
                     .toggleStyle(.checkbox)
                     .font(.system(size: 12))
             } else {
-                Label(L("trash.confirm.alwaysAsk"), systemImage: "info.circle")
+                Label(plan.alwaysAskReason, systemImage: "info.circle")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }

@@ -402,3 +402,8 @@
 "unit.eb" = "EB";
 "format.duration.seconds" = "%@ s";
 "format.duration.minutes" = "%1$@ min %2$@ s";
+"trash.undo.parentChanged" = "A pasta original foi substituída ou movida (por exemplo, por um link simbólico)";
+"trash.error.mountPoint" = "“%@” é outro volume (ponto de montagem) e não pode ser movido para o Lixo";
+"trash.error.containsMountPoint" = "Contém outro volume (ponto de montagem “%@”) e não pode ser movido para o Lixo";
+"trash.confirm.sizeUncertain" = "O tamanho não é totalmente conhecido (itens apenas na nuvem, ilegíveis ou ainda não verificados), por isso a confirmação é sempre solicitada.";
+"reason.targetsChanged" = "Os itens mudaram nesse meio-tempo (por exemplo, por uma nova verificação). Nada foi feito – tente novamente.";

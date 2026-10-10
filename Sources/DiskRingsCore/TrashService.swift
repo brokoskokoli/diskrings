@@ -18,6 +18,9 @@ public protocol FileTrashing {
     func identity(atPath path: String) -> FileIdentity?
     /// Pfad mit allen Symlinks aufgelöst (`realpath`); `nil`, wenn er nicht existiert.
     func resolvedPath(_ path: String) -> String?
+    /// Ist hier ein anderes Volume eingehängt (Ordner auf einem anderen
+    /// Gerät als sein Elternordner)?
+    func isMountPoint(atPath path: String) -> Bool
 }
 
 extension FileTrashing {
@@ -27,6 +30,22 @@ extension FileTrashing {
         guard let r = realpath(path, nil) else { return nil }
         defer { free(r) }
         return String(cString: r)
+    }
+
+    /// Über `statfs`: Der Einhängeort des Volumes ist genau dieser Ordner.
+    /// (Ein Vergleich der Geräte mit dem Elternordner träfe auch die
+    /// Firmlinks wie `/Applications`, die auf dem Data-Volume liegen.)
+    public func isMountPoint(atPath path: String) -> Bool {
+        var st = stat()
+        guard lstat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR, let resolved = resolvedPath(path) else {
+            return false
+        }
+        var fs = statfs()
+        guard statfs(path, &fs) == 0 else { return false }
+        let mountedOn = withUnsafeBytes(of: &fs.f_mntonname) { raw in
+            String(decoding: raw.prefix(while: { $0 != 0 }), as: UTF8.self)
+        }
+        return mountedOn == resolved
     }
 }
 
@@ -89,9 +108,14 @@ public struct TrashItem: Sendable, Equatable {
     public var logicalSize: UInt64
     /// Anzahl der Dateien (bei einer Datei 1).
     public var fileCount: Int
+    /// Die Größe ist nicht verlässlich: Im Teilbaum liegt etwas nur in der
+    /// Cloud, nicht Lesbares oder ein Einhängepunkt (zählt mit 0 Byte), der
+    /// Baum ist dort unvollständig, oder die Art auf der Platte hat sich
+    /// seit dem Scan geändert. Dann wird immer nachgefragt.
+    public var sizeIsUncertain: Bool
 
     public init(node: Int32, path: String, name: String, isDirectory: Bool, allocatedSize: UInt64,
-                logicalSize: UInt64, fileCount: Int) {
+                logicalSize: UInt64, fileCount: Int, sizeIsUncertain: Bool = false) {
         self.node = node
         self.path = path
         self.name = name
@@ -99,6 +123,7 @@ public struct TrashItem: Sendable, Equatable {
         self.allocatedSize = allocatedSize
         self.logicalSize = logicalSize
         self.fileCount = fileCount
+        self.sizeIsUncertain = sizeIsUncertain
     }
 
     /// Größe für die Schwelle „Nicht mehr fragen“: die größere der beiden.
@@ -111,6 +136,10 @@ public enum TrashPlanError: Error, Sendable, Equatable {
     case scanRoot(String)
     case protected(path: String, reason: ProtectedPaths.Reason)
     case notLive
+    /// Einhängepunkt eines anderen Volumes.
+    case mountPoint(path: String)
+    /// Der Ordner enthält einen Einhängepunkt.
+    case containsMountPoint(path: String, mountPoint: String)
 
     public var message: String {
         switch self {
@@ -120,6 +149,8 @@ public enum TrashPlanError: Error, Sendable, Equatable {
             p.isEmpty ? L("trash.error.protected", r.message)
                 : L("trash.error.protectedItem", r.message, (p as NSString).lastPathComponent)
         case .notLive: L("reason.notInTree")
+        case .mountPoint(let p): L("trash.error.mountPoint", (p as NSString).lastPathComponent)
+        case .containsMountPoint(_, let m): L("trash.error.containsMountPoint", m)
         }
     }
 }
@@ -139,9 +170,12 @@ public struct TrashPlan: Sendable, Equatable {
         self.rootPath = rootPath
     }
 
-    /// Prüft Auswahl, Scan-Wurzel und Schutzliste und baut den Plan.
+    /// Prüft Auswahl, Scan-Wurzel, Schutzliste und Einhängepunkte und baut
+    /// den Plan. `incompletePaths`: Ordner, die gerade neu eingelesen werden
+    /// (darin oder darüber ist die Größe unsicher).
     public static func make(targets: [Int32], in tree: ScanTree, protection: ProtectedPaths,
-                            sizeMode: SizeMode = .allocated) -> Result<TrashPlan, TrashPlanError> {
+                            sizeMode: SizeMode = .allocated,
+                            incompletePaths: [String] = []) -> Result<TrashPlan, TrashPlanError> {
         guard !targets.isEmpty else { return .failure(.empty) }
         for t in targets where Int(t) >= tree.count || t < 0 || tree.nodes[Int(t)].flags.contains(.dead) {
             return .failure(.notLive)
@@ -153,11 +187,58 @@ public struct TrashPlan: Sendable, Equatable {
             if n == ScanTree.rootIndex { return .failure(.scanRoot(path)) }
             if let r = protection.reason(for: path) { return .failure(.protected(path: path, reason: r)) }
             let node = tree.node(n)
+            if node.flags.contains(.mountPoint) { return .failure(.mountPoint(path: path)) }
+            let scan = inspectSubtree(n, in: tree)
+            if let m = scan.mountPoint {
+                return .failure(.containsMountPoint(path: path, mountPoint: tree.path(of: m)))
+            }
+            let key = ProtectedPaths.normalize(path)
+            let rescanning = incompletePaths.contains { p in
+                let k = ProtectedPaths.normalize(p)
+                return ProtectedPaths.isWithin(k, key) || ProtectedPaths.isWithin(key, k)
+            }
             items.append(TrashItem(node: n, path: path, name: tree.name(of: n), isDirectory: node.isDirectory,
                                    allocatedSize: node.allocatedSize, logicalSize: node.logicalSize,
-                                   fileCount: node.isDirectory ? Int(node.fileCount) : 1))
+                                   fileCount: node.isDirectory ? Int(node.fileCount) : 1,
+                                   sizeIsUncertain: scan.uncertain || !tree.isComplete || rescanning))
         }
         return .success(TrashPlan(items: items, sizeMode: sizeMode, rootPath: tree.rootPath))
+    }
+
+    /// Durchläuft den Teilbaum einmal: erster Einhängepunkt darunter und
+    /// ob etwas mit unbekannter Größe darin liegt (der Knoten selbst zählt mit).
+    static func inspectSubtree(_ n: Int32, in tree: ScanTree) -> (mountPoint: Int32?, uncertain: Bool) {
+        let unknown: NodeFlags = [.dataless, .unreadable, .mountPoint]
+        var uncertain = !tree.nodes[Int(n)].flags.isDisjoint(with: unknown)
+        var stack: [Int32] = [n]
+        while let i = stack.popLast() {
+            for c in tree.childIndices(of: i) {
+                let f = tree.nodes[Int(c)].flags
+                if f.contains(.mountPoint) { return (c, true) }
+                if !f.isDisjoint(with: unknown) { uncertain = true }
+                if tree.nodes[Int(c)].childCount > 0 { stack.append(c) }
+            }
+        }
+        return (nil, uncertain)
+    }
+
+    /// Vergleicht die Art (Ordner oder nicht, per `lstat`) jedes Elements
+    /// mit dem Scan; hat sie sich geändert, ist die Größe unsicher.
+    public func checkingCurrentKinds(using fileManager: any FileTrashing) -> TrashPlan {
+        var out = self
+        for i in out.items.indices {
+            if let id = fileManager.identity(atPath: out.items[i].path), id.isDirectory != out.items[i].isDirectory {
+                out.items[i].sizeIsUncertain = true
+            }
+        }
+        return out
+    }
+
+    public var hasUncertainSize: Bool { items.contains { $0.sizeIsUncertain } }
+
+    /// Warum der Dialog „Nicht mehr fragen“ nicht anbietet.
+    public var alwaysAskReason: String {
+        hasUncertainSize ? L("trash.confirm.sizeUncertain") : L("trash.confirm.alwaysAsk")
     }
 
     public var totalSize: UInt64 {
@@ -166,8 +247,8 @@ public struct TrashPlan: Sendable, Equatable {
     public var totalFiles: Int { items.reduce(0) { $0 + $1.fileCount } }
     var limitSize: UInt64 { items.reduce(0) { $0 + $1.limitSize } }
 
-    /// „Nicht mehr fragen“ ist nur unter 1 GB zulässig.
-    public var allowsDontAskAgain: Bool { limitSize < TrashConfirmation.dontAskLimit }
+    /// „Nicht mehr fragen“ ist nur unter 1 GB und bei sicherer Größe zulässig.
+    public var allowsDontAskAgain: Bool { limitSize < TrashConfirmation.dontAskLimit && !hasUncertainSize }
 
     /// Überschrift des Bestätigungsdialogs.
     public var title: String {
@@ -214,14 +295,19 @@ public struct TrashRecord: Sendable, Equatable {
     /// Identität beim Verschieben; ⌘Z legt nur ein Element mit derselben
     /// Identität zurück (`nil` → kein Undo).
     public var identity: FileIdentity?
+    /// Elternordner mit aufgelösten Symlinks (`realpath`) beim Verschieben.
+    /// ⌘Z legt nur zurück, wenn der Elternordner noch genau dorthin
+    /// aufgelöst wird; `nil` → Vergleich mit dem Elternpfad selbst.
+    public var resolvedParent: String?
 
     public init(originalPath: String, trashURL: URL?, name: String, allocatedSize: UInt64,
-                identity: FileIdentity? = nil) {
+                identity: FileIdentity? = nil, resolvedParent: String? = nil) {
         self.originalPath = originalPath
         self.trashURL = trashURL
         self.name = name
         self.allocatedSize = allocatedSize
         self.identity = identity
+        self.resolvedParent = resolvedParent
     }
 }
 
@@ -273,15 +359,21 @@ public struct TrashService {
                 out.missing.append(item.path)
                 continue
             }
+            if fileManager.isMountPoint(atPath: item.path) {
+                out.failures.append(TrashFailure(path: item.path, message: TrashPlanError.mountPoint(path: item.path).message))
+                continue
+            }
             if let problem = checkResolved(item.path, rootPath: plan.rootPath) {
                 out.failures.append(TrashFailure(path: item.path, message: problem))
                 continue
             }
             let identity = fileManager.identity(atPath: item.path)
+            let resolvedParent = fileManager.resolvedPath((item.path as NSString).deletingLastPathComponent)
             do {
                 let url = try fileManager.trashItem(at: URL(fileURLWithPath: item.path))
                 out.trashed.append(TrashRecord(originalPath: item.path, trashURL: url, name: item.name,
-                                               allocatedSize: item.allocatedSize, identity: identity))
+                                               allocatedSize: item.allocatedSize, identity: identity,
+                                               resolvedParent: resolvedParent))
             } catch {
                 out.failures.append(TrashFailure(path: item.path, message: Self.describe(error)))
             }
@@ -359,6 +451,10 @@ public struct TrashService {
                 out.failures.append(TrashFailure(path: r.originalPath, message: L("trash.undo.parentMissing")))
                 continue
             }
+            if let problem = checkRestoreTarget(r) {
+                out.failures.append(TrashFailure(path: r.originalPath, message: problem))
+                continue
+            }
             do {
                 try fileManager.moveItem(at: src, to: URL(fileURLWithPath: r.originalPath))
                 out.restored.append(r.originalPath)
@@ -367,6 +463,24 @@ public struct TrashService {
             }
         }
         return out
+    }
+
+    /// Prüft vor ⌘Z die Elternkette erneut: Wurde ein Elternordner
+    /// inzwischen durch einen Symlink ersetzt (oder verschoben), würde
+    /// `moveItem` das Element an einen ganz anderen Ort legen. Außerdem darf
+    /// der aufgelöste Zielort nicht geschützt sein. Fehlermeldung oder `nil`.
+    func checkRestoreTarget(_ r: TrashRecord) -> String? {
+        let parent = (r.originalPath as NSString).deletingLastPathComponent
+        guard let resolved = fileManager.resolvedPath(parent),
+              ProtectedPaths.normalize(resolved) == ProtectedPaths.normalize(r.resolvedParent ?? parent) else {
+            return L("trash.undo.parentChanged")
+        }
+        let name = (r.originalPath as NSString).lastPathComponent
+        let target = resolved == "/" ? "/" + name : resolved + "/" + name
+        if let reason = protection.reason(for: target) ?? protection.reason(for: r.originalPath) {
+            return L("trash.error.protected", reason.message)
+        }
+        return nil
     }
 
     static func describe(_ error: Error) -> String {

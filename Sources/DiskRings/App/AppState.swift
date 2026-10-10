@@ -97,7 +97,7 @@ final class AppState {
     var scrollRequest: Int32?
 
     // MARK: Aktionen (M4)
-    /// Schutzliste (SPEC 3.6); einmal pro Start bestimmt.
+    /// Schutzliste (SPEC 3.6); beim Start bestimmt, die Volume-Wurzeln werden vor jedem Papierkorb aufgefrischt.
     @ObservationIgnored var protection = ProtectedPaths()
     /// Dateizugriff für Papierkorb und Undo (austauschbar).
     @ObservationIgnored var fileTrasher: any FileTrashing = FileManager.default
@@ -557,10 +557,14 @@ final class AppState {
 
     func requestTrash(_ targets: [Int32]) {
         guard let tree else { return }
-        switch TrashPlan.make(targets: targets, in: tree, protection: protection, sizeMode: prefs.sizeMode) {
+        // Volumes können seit dem Start ein- oder ausgehängt worden sein.
+        protection = protection.refreshingVolumeRoots()
+        switch TrashPlan.make(targets: targets, in: tree, protection: protection, sizeMode: prefs.sizeMode,
+                              incompletePaths: rescanQueue.paths) {
         case .failure(let e):
             showToast(.error, e.message)
-        case .success(let plan):
+        case .success(let made):
+            let plan = made.checkingCurrentKinds(using: fileTrasher)
             if TrashConfirmation.needsConfirmation(plan, dontAskAgain: prefs.skipTrashConfirmation) {
                 trashRequest = plan
             } else {
@@ -578,6 +582,7 @@ final class AppState {
 
     func performTrash(_ plan: TrashPlan) {
         guard let tree else { return }
+        protection = protection.refreshingVolumeRoots()
         let out = TrashService(fileManager: fileTrasher, protection: protection).trash(plan)
         if !out.removedPaths.isEmpty {
             for p in out.removedPaths { rescanQueue.noteEdit(at: p) }
