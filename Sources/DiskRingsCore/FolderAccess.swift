@@ -117,6 +117,14 @@ public final class FolderAccessStore {
         public var isPersistent: Bool { bookmark != nil }
         var bookmark: Data?
         var key: String
+        /// Schlüssel des aufgelösten Pfads (Symlinks, z. B. /tmp →
+        /// /private/tmp), wenn er sich vom Schlüssel unterscheidet. Scan-Wurzeln
+        /// im Baum sind aufgelöst; so findet auch deren Pfad die Freigabe.
+        var resolvedKey: String?
+
+        func contains(_ queryKey: String) -> Bool {
+            FolderAccessStore.isWithin(queryKey, key) || resolvedKey.map { FolderAccessStore.isWithin(queryKey, $0) } == true
+        }
     }
 
     public enum GrantResult: Sendable, Equatable {
@@ -152,13 +160,34 @@ public final class FolderAccessStore {
     private let backend: any SecurityScopedBookmarks
     private let persistence: any GrantPersistence
     private var nextLeaseID: UInt64 = 1
-    private var activeLeases: Set<UInt64> = []
+    /// Laufende Leases und der Schlüssel ihrer Freigabe. Beim Widerrufen
+    /// fallen alle Leases der Freigabe weg, damit ein altes Lease nach
+    /// erneuter Freigabe nicht den neuen Zugriff beendet.
+    private var activeLeases: [UInt64: String] = [:]
+    private let resolvePath: (String) -> String?
     private var accessCounts: [String: Int] = [:]
     private var startedKeys: Set<String> = []
 
-    public init(backend: any SecurityScopedBookmarks, persistence: any GrantPersistence) {
+    /// - Parameter resolvePath: löst Symlinks auf (Standard `realpath`, auch
+    ///   für noch nicht existierende Pfade über den nächsten vorhandenen
+    ///   Vorfahren); Tests übergeben eine feste Abbildung.
+    public init(backend: any SecurityScopedBookmarks, persistence: any GrantPersistence,
+                resolvePath: @escaping (String) -> String? = FolderAccessStore.resolvedPath) {
         self.backend = backend
         self.persistence = persistence
+        self.resolvePath = resolvePath
+    }
+
+    private func makeGrant(path: String, bookmark: Data?, key: String) -> Grant {
+        let resolved = resolvePath(path).flatMap(Self.key)
+        return Grant(path: path, bookmark: bookmark, key: key, resolvedKey: resolved == key ? nil : resolved)
+    }
+
+    /// Schlüssel des Pfads und, falls verschieden, seines aufgelösten Pfads.
+    private func queryKeys(_ path: String) -> [String] {
+        guard let key = Self.key(path) else { return [] }
+        guard let std = Self.standardized(path), let r = resolvePath(std).flatMap(Self.key), r != key else { return [key] }
+        return [key, r]
     }
 
     // MARK: Laden
@@ -188,7 +217,7 @@ public final class FolderAccessStore {
                 }
                 if started { backend.stopAccessing(path: path) }
             }
-            loaded.append(Grant(path: path, bookmark: bookmark, key: key))
+            loaded.append(makeGrant(path: path, bookmark: bookmark, key: key))
         }
         // Freigaben dieser Sitzung (ohne Bookmark) bleiben erhalten.
         loaded += grants.filter { !$0.isPersistent }
@@ -216,10 +245,10 @@ public final class FolderAccessStore {
     @discardableResult
     public func grant(path: String) -> GrantResult {
         guard let display = Self.standardized(path), let key = Self.key(display) else { return .invalid }
-        if let existing = deepestGrant(forKey: key) { return .alreadyCovered(by: existing.path) }
+        if let existing = deepestGrant(for: display) { return .alreadyCovered(by: existing.path) }
         let bookmark = try? backend.bookmark(forPath: display)
         grants.removeAll { Self.isWithin($0.key, key) }
-        grants.append(Grant(path: display, bookmark: bookmark, key: key))
+        grants.append(makeGrant(path: display, bookmark: bookmark, key: key))
         grants.sort { $0.path < $1.path }
         save()
         return .granted(persisted: bookmark != nil)
@@ -230,12 +259,14 @@ public final class FolderAccessStore {
 
     /// Die tiefste Freigabe, die den Pfad deckt.
     public func grantedAncestor(for path: String) -> String? {
-        guard let key = Self.key(path) else { return nil }
-        return deepestGrant(forKey: key)?.path
+        deepestGrant(for: path)?.path
     }
 
-    private func deepestGrant(forKey key: String) -> Grant? {
-        grants.filter { Self.isWithin(key, $0.key) }.max { $0.key.count < $1.key.count }
+    /// Die tiefste Freigabe, die den Pfad lexikalisch oder über aufgelöste
+    /// Pfade (Pfad oder Freigabe mit Symlink) deckt.
+    private func deepestGrant(for path: String) -> Grant? {
+        let keys = queryKeys(path)
+        return grants.filter { g in keys.contains { g.contains($0) } }.max { $0.key.count < $1.key.count }
     }
 
     /// Entfernt genau diese Freigabe (nicht ihre Vorfahren) und beendet
@@ -246,6 +277,7 @@ public final class FolderAccessStore {
         let g = grants.remove(at: i)
         if startedKeys.remove(key) != nil { backend.stopAccessing(path: g.path) }
         accessCounts[key] = nil
+        activeLeases = activeLeases.filter { $0.value != key }
         save()
         return true
     }
@@ -258,19 +290,23 @@ public final class FolderAccessStore {
 
     /// Beginnt einen Zugriff auf einen gedeckten Pfad; `nil` ohne Freigabe.
     public func beginAccess(for path: String) -> Lease? {
-        guard let key = Self.key(path), let g = deepestGrant(forKey: key) else { return nil }
+        guard let g = deepestGrant(for: path) else { return nil }
         let count = accessCounts[g.key] ?? 0
         if count == 0, backend.startAccessing(path: g.path) { startedKeys.insert(g.key) }
         accessCounts[g.key] = count + 1
         let lease = Lease(id: nextLeaseID, key: g.key, grantPath: g.path)
         nextLeaseID += 1
-        activeLeases.insert(lease.id)
+        activeLeases[lease.id] = g.key
         return lease
     }
 
+    /// Gilt das Lease noch? Nach `endAccess` oder dem Widerrufen seiner
+    /// Freigabe nicht mehr.
+    public func isActive(_ lease: Lease) -> Bool { activeLeases[lease.id] != nil }
+
     /// Beendet einen Zugriff; ein zweites Ende desselben Leases zählt nicht.
     public func endAccess(_ lease: Lease) {
-        guard activeLeases.remove(lease.id) != nil, let count = accessCounts[lease.key] else { return }
+        guard activeLeases.removeValue(forKey: lease.id) != nil, let count = accessCounts[lease.key] else { return }
         if count <= 1 {
             accessCounts[lease.key] = nil
             if startedKeys.remove(lease.key) != nil { backend.stopAccessing(path: lease.grantPath) }
@@ -298,6 +334,22 @@ public final class FolderAccessStore {
             parts.append(c)
         }
         return "/" + parts.joined(separator: "/")
+    }
+
+    /// Pfad mit aufgelösten Symlinks (`realpath`). Existiert er nicht, wird
+    /// der nächste vorhandene Vorfahr aufgelöst und der Rest angehängt;
+    /// `nil` bei einem relativen Pfad.
+    nonisolated public static func resolvedPath(_ path: String) -> String? {
+        guard let std = standardized(path) else { return nil }
+        if let r = realpath(std, nil) {
+            defer { free(r) }
+            return String(cString: r)
+        }
+        guard std != "/" else { return std }
+        let parent = (std as NSString).deletingLastPathComponent
+        guard let resolvedParent = resolvedPath(parent) else { return nil }
+        let name = (std as NSString).lastPathComponent
+        return resolvedParent == "/" ? "/" + name : resolvedParent + "/" + name
     }
 
     /// Vergleichsschlüssel: standardisiert, Unicode-NFC, klein geschrieben.

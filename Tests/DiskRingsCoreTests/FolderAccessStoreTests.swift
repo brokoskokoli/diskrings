@@ -245,6 +245,76 @@ struct FolderAccessStoreTests {
         #expect(!s.revoke(path: "/Volumes/USB/sub"))
     }
 
+    @Test("Widerrufen und neu freigeben: Ende eines alten Leases beendet den neuen Zugriff nicht")
+    func revokeRegrantStaleLease() throws {
+        let s = makeStore()
+        _ = s.grant(path: "/Volumes/USB")
+        let old = try #require(s.beginAccess(for: "/Volumes/USB/a"))
+        #expect(s.isActive(old))
+        #expect(s.revoke(path: "/Volumes/USB"))
+        #expect(!s.isActive(old))
+        #expect(backend.stopped == ["/Volumes/USB"])
+        _ = s.grant(path: "/Volumes/USB")
+        let fresh = try #require(s.beginAccess(for: "/Volumes/USB"))
+        #expect(backend.started == ["/Volumes/USB", "/Volumes/USB"])
+        s.endAccess(old)
+        #expect(backend.stopped == ["/Volumes/USB"])
+        #expect(s.activeAccessCount == 1)
+        #expect(s.isActive(fresh))
+        s.endAccess(fresh)
+        #expect(backend.stopped == ["/Volumes/USB", "/Volumes/USB"])
+        #expect(s.activeAccessCount == 0)
+    }
+
+    @Test("Symlink in der Freigabe: auch der aufgelöste Pfad ist gedeckt (/tmp → /private/tmp)")
+    func resolvedGrantPath() throws {
+        let links = ["/tmp": "/private/tmp", "/Users/a/Ext": "/Volumes/X"]
+        let s = FolderAccessStore(backend: backend, persistence: persistence) { path in
+            links.first { path == $0.key || path.hasPrefix($0.key + "/") }
+                .map { $0.value + path.dropFirst($0.key.count) } ?? path
+        }
+        _ = s.grant(path: "/tmp")
+        _ = s.grant(path: "/Users/a/Ext")
+        #expect(s.covers("/private/tmp/scan/x"))
+        #expect(s.covers("/tmp/scan"))
+        #expect(s.covers("/Volumes/X/sub"))
+        #expect(s.grantedAncestor(for: "/Volumes/X/sub") == "/Users/a/Ext")
+        #expect(!s.covers("/private/tmpfoo"))
+        #expect(!s.covers("/Volumes/Y"))
+        let lease = try #require(s.beginAccess(for: "/private/tmp/scan"))
+        #expect(lease.grantPath == "/tmp")
+        #expect(backend.started == ["/tmp"])
+        // Umgekehrt: Freigabe über den echten Pfad deckt den Symlink-Pfad.
+        let t = FolderAccessStore(backend: FakeBookmarks(), persistence: MemoryGrantPersistence()) { path in
+            links.first { path == $0.key || path.hasPrefix($0.key + "/") }
+                .map { $0.value + path.dropFirst($0.key.count) } ?? path
+        }
+        _ = t.grant(path: "/private/tmp")
+        #expect(t.covers("/tmp/scan"))
+        // Nach einem Neustart wird der aufgelöste Pfad neu bestimmt.
+        let relaunched = FolderAccessStore(backend: backend, persistence: persistence) { path in
+            links.first { path == $0.key || path.hasPrefix($0.key + "/") }
+                .map { $0.value + path.dropFirst($0.key.count) } ?? path
+        }
+        _ = relaunched.load()
+        #expect(relaunched.covers("/private/tmp/scan"))
+    }
+
+    @Test("Symlink im echten Dateisystem: realpath als Standard")
+    func resolvedGrantPathOnDisk() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent("fa-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: base) }
+        let target = base.appendingPathComponent("Ziel")
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        let link = base.appendingPathComponent("Link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+        let s = makeStore()
+        _ = s.grant(path: link.path)
+        let real = try #require(FolderAccessStore.resolvedPath(target.path))
+        #expect(s.covers(real + "/datei"))
+        #expect(s.covers(link.path + "/datei"))
+    }
+
     @Test("Liste der Freigaben ist sortiert")
     func sortedGrants() {
         let s = makeStore()
