@@ -437,3 +437,17 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Lokale APFS- en Time Machine-snapshots zijn niet apart te meten; afhankelijk van hun toestand tellen ze als ‘Opschoonbaar’ of ‘Onleesbare systeemgegevens’.";
+"trash.error.sandboxDenied" = "macOS stond DiskRings niet toe dit onderdeel te verplaatsen. DiskRings kan alleen onderdelen wijzigen in mappen waartoe je toegang hebt gegeven.";
+"trash.undo.sandboxDenied" = "macOS stond DiskRings niet toe het onderdeel terug te zetten. Open de prullenmand in de Finder en kies ‘Zet terug’.";
+"trash.undo.noAccess" = "DiskRings heeft geen toegang meer tot de oorspronkelijke map. Geef opnieuw toegang, of open de prullenmand in de Finder en kies ‘Zet terug’.";
+"sandbox.panel.prompt" = "Geef toegang";
+"sandbox.panel.message" = "Om ‘%@’ te scannen, heeft DiskRings je toestemming nodig. Klik op ‘Geef toegang’ zodat DiskRings deze map mag lezen. Je keuze wordt onthouden.";
+"sandbox.panel.messageGeneric" = "Kies een map of volume dat DiskRings mag lezen. Je keuze wordt onthouden.";
+"sandbox.grantMore" = "Geef toegang tot meer mappen…";
+"sandbox.banner.title" = "Toegang tot mappen";
+"sandbox.banner.message" = "DiskRings leest alleen mappen en volumes die je kiest. Als je op een volume klikt, vraagt DiskRings één keer om toegang en onthoudt die.";
+"settings.section.access" = "Maptoegang";
+"settings.access.empty" = "Nog geen mappen met toegang.";
+"settings.access.remove" = "Verwijder toegang";
+"settings.access.footer" = "DiskRings leest alleen deze mappen en alles daarin. Het verwijderen van toegang wijzigt geen bestanden.";
+"arc.unreadableSystem.sandboxHint" = "Hiertoe behoren ook mappen waartoe DiskRings geen toegang heeft.";

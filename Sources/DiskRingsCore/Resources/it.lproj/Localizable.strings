@@ -437,3 +437,17 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Le istantanee locali APFS e Time Machine non si possono misurare separatamente; a seconda dello stato contano come «Eliminabile» o «Dati di sistema non leggibili».";
+"trash.error.sandboxDenied" = "macOS non ha permesso a DiskRings di spostare questo elemento. DiskRings può modificare solo elementi nelle cartelle a cui hai concesso l’accesso.";
+"trash.undo.sandboxDenied" = "macOS non ha permesso a DiskRings di ripristinare l’elemento. Apri il Cestino nel Finder e scegli “Ripristina”.";
+"trash.undo.noAccess" = "DiskRings non ha più accesso alla cartella originale. Concedi di nuovo l’accesso, oppure apri il Cestino nel Finder e scegli “Ripristina”.";
+"sandbox.panel.prompt" = "Consenti accesso";
+"sandbox.panel.message" = "Per analizzare “%@”, DiskRings ha bisogno del tuo permesso. Fai clic su “Consenti accesso” per permettere a DiskRings di leggere questa cartella. La scelta viene ricordata.";
+"sandbox.panel.messageGeneric" = "Scegli una cartella o un volume che DiskRings può leggere. La scelta viene ricordata.";
+"sandbox.grantMore" = "Consenti accesso ad altre cartelle…";
+"sandbox.banner.title" = "Accesso alle cartelle";
+"sandbox.banner.message" = "DiskRings legge solo le cartelle e i volumi che scegli. Quando fai clic su un volume, DiskRings chiede l’accesso una volta e lo ricorda.";
+"settings.section.access" = "Accesso alle cartelle";
+"settings.access.empty" = "Nessuna cartella consentita finora.";
+"settings.access.remove" = "Rimuovi accesso";
+"settings.access.footer" = "DiskRings legge solo queste cartelle e tutto il loro contenuto. Rimuovere l’accesso non modifica alcun file.";
+"arc.unreadableSystem.sandboxHint" = "Comprende anche cartelle a cui DiskRings non ha accesso.";

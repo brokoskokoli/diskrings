@@ -161,6 +161,22 @@ struct VolumeBreakdownTests {
         // Rolle aus dem Einhängepunkt, wenn kein Rollen-Eintrag vorliegt.
         #expect(Self.vol("Foo", 1, mount: "/System/Volumes/VM").role == .vm)
     }
+
+    @Test("Hinweis zu nicht lesbaren Systemdaten: Festplattenvollzugriff, in der Sandbox Ordnerfreigaben")
+    func accessHints() {
+        let unreadable = VolumeBreakdown.SystemPart(kind: .unreadable, size: 5)
+        let base = unreadable.detail(accessHint: .none)
+        #expect(unreadable.detail(fullDiskAccessDenied: false) == base)
+        #expect(unreadable.detail(fullDiskAccessDenied: true) == unreadable.detail(accessHint: .fullDiskAccess))
+        #expect(unreadable.detail(accessHint: .fullDiskAccess).hasSuffix(L("arc.unreadableSystem.fdaHint")))
+        let sandbox = unreadable.detail(accessHint: .sandbox)
+        #expect(sandbox.hasPrefix(base))
+        #expect(sandbox.hasSuffix(L("arc.unreadableSystem.sandboxHint")))
+        #expect(!sandbox.contains(L("arc.unreadableSystem.fdaHint")))
+        let volume = VolumeBreakdown.SystemPart(kind: .volume(ContainerVolume(name: "VM", device: "disk3s6", mountPoint: nil,
+                                                                             roles: ["VM"], used: 1)), size: 1)
+        #expect(volume.detail(accessHint: .sandbox) == volume.detail(accessHint: .none))
+    }
 }
 
 extension RootSegments {

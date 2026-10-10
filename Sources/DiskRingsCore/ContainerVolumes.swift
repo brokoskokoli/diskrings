@@ -210,13 +210,16 @@ private extension Character {
 /// und nur mit Zeitlimit; bei jedem Fehler `nil`.
 public struct DiskutilAPFSListing: APFSVolumeListing {
     public var timeout: TimeInterval
+    public var environment: AppEnvironment
 
-    public init(timeout: TimeInterval = 4) {
+    public init(timeout: TimeInterval = 4, environment: AppEnvironment = .current) {
         self.timeout = timeout
+        self.environment = environment
     }
 
     public func volumes(inContainer container: String) -> [ContainerVolume]? {
-        guard !Self.isSandboxed(environment: ProcessInfo.processInfo.environment),
+        // In der Sandbox darf die App keine Programme wie diskutil starten.
+        guard !environment.isSandboxed,
               let data = Self.run(executable: "/usr/sbin/diskutil", arguments: ["apfs", "list", "-plist"],
                                   timeout: timeout) else { return nil }
         return Self.parse(data, container: container)
@@ -224,7 +227,7 @@ public struct DiskutilAPFSListing: APFSVolumeListing {
 
     /// Läuft die App in der App-Sandbox?
     public static func isSandboxed(environment: [String: String]) -> Bool {
-        environment["APP_SANDBOX_CONTAINER_ID"] != nil
+        AppEnvironment(environment: environment).isSandboxed
     }
 
     /// Volumes des Containers aus der Plist-Ausgabe; `nil`, wenn sie sich nicht lesen lässt.

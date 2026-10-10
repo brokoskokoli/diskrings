@@ -437,3 +437,17 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Les instantanés APFS et Time Machine locaux ne peuvent pas être mesurés séparément ; selon leur état, ils comptent comme « Purgeable » ou « Données système illisibles ».";
+"trash.error.sandboxDenied" = "macOS n’a pas autorisé DiskRings à déplacer cet élément. DiskRings ne peut modifier que les éléments des dossiers auxquels vous avez accordé l’accès.";
+"trash.undo.sandboxDenied" = "macOS n’a pas autorisé DiskRings à remettre l’élément en place. Ouvrez la Corbeille dans le Finder et choisissez « Remettre ».";
+"trash.undo.noAccess" = "DiskRings n’a plus accès au dossier d’origine. Accordez à nouveau l’accès, ou ouvrez la Corbeille dans le Finder et choisissez « Remettre ».";
+"sandbox.panel.prompt" = "Autoriser l’accès";
+"sandbox.panel.message" = "Pour analyser « %@ », DiskRings a besoin de votre autorisation. Cliquez sur « Autoriser l’accès » pour permettre à DiskRings de lire ce dossier. Votre choix est mémorisé.";
+"sandbox.panel.messageGeneric" = "Choisissez un dossier ou un volume que DiskRings peut lire. Votre choix est mémorisé.";
+"sandbox.grantMore" = "Autoriser l’accès à d’autres dossiers…";
+"sandbox.banner.title" = "Accès aux dossiers";
+"sandbox.banner.message" = "DiskRings ne lit que les dossiers et volumes que vous choisissez. Lorsque vous cliquez sur un volume, DiskRings demande l’accès une seule fois et le mémorise.";
+"settings.section.access" = "Accès aux dossiers";
+"settings.access.empty" = "Aucun dossier autorisé pour l’instant.";
+"settings.access.remove" = "Retirer l’accès";
+"settings.access.footer" = "DiskRings ne lit que ces dossiers et leur contenu. Retirer l’accès ne modifie aucun fichier.";
+"arc.unreadableSystem.sandboxHint" = "Cela comprend aussi les dossiers auxquels DiskRings n’a pas accès.";

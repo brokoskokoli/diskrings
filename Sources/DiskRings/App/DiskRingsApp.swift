@@ -48,7 +48,7 @@ struct DiskRingsApp: App {
         .defaultSize(width: 760, height: 420)
 
         Settings {
-            SettingsView(prefs: state.prefs)
+            SettingsView(prefs: state.prefs, state: state)
         }
     }
 }
@@ -73,7 +73,8 @@ struct RootView: View {
         .navigationTitle(title)
         .dropDestination(for: URL.self) { urls, _ in
             guard let url = urls.first, url.hasDirectoryPath || isDirectory(url) else { return false }
-            state.requestScan(url.path)
+            // In der Sandbox gibt das Ablegen den Ordner frei (Sandbox-Erweiterung).
+            state.handleDrop(url)
             return true
         } isTargeted: { dropTargeted = $0 }
         .overlay {
@@ -106,7 +107,7 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Festplattenvollzugriff kann in den Systemeinstellungen erteilt worden sein.
-            state.fullDiskAccess = FullDiskAccess.status()
+            state.fullDiskAccess = FullDiskAccess.status(in: state.environment)
             // Belegung kann sich außerhalb der App geändert haben.
             if state.phase == .browsing { state.refreshVolumeBreakdown() }
         }

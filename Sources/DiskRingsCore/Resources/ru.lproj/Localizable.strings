@@ -437,3 +437,17 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Локальные снимки APFS и Time Machine нельзя измерить отдельно; в зависимости от состояния они учитываются как «Очищаемое» или «Нечитаемые системные данные».";
+"trash.error.sandboxDenied" = "macOS не разрешила DiskRings переместить этот объект. DiskRings может изменять только объекты в папках, к которым Вы предоставили доступ.";
+"trash.undo.sandboxDenied" = "macOS не разрешила DiskRings вернуть объект. Откройте Корзину в Finder и выберите «Восстановить».";
+"trash.undo.noAccess" = "У DiskRings больше нет доступа к исходной папке. Предоставьте доступ снова или откройте Корзину в Finder и выберите «Восстановить».";
+"sandbox.panel.prompt" = "Разрешить доступ";
+"sandbox.panel.message" = "Чтобы сканировать «%@», DiskRings нужно Ваше разрешение. Нажмите «Разрешить доступ», чтобы DiskRings мог читать эту папку. Выбор будет запомнен.";
+"sandbox.panel.messageGeneric" = "Выберите папку или том, которые DiskRings может читать. Выбор будет запомнен.";
+"sandbox.grantMore" = "Разрешить доступ к другим папкам…";
+"sandbox.banner.title" = "Доступ к папкам";
+"sandbox.banner.message" = "DiskRings читает только выбранные Вами папки и тома. При нажатии на том DiskRings один раз запрашивает доступ и запоминает его.";
+"settings.section.access" = "Доступ к папкам";
+"settings.access.empty" = "Доступ к папкам пока не предоставлен.";
+"settings.access.remove" = "Удалить доступ";
+"settings.access.footer" = "DiskRings читает только эти папки и всё их содержимое. Удаление доступа не изменяет файлы.";
+"arc.unreadableSystem.sandboxHint" = "Сюда также входят папки, к которым у DiskRings нет доступа.";

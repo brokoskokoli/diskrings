@@ -437,3 +437,17 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Lokala APFS- och Time Machine-ögonblicksbilder kan inte mätas separat; beroende på tillstånd räknas de som ”Rensningsbart” eller ”Oläsbar systemdata”.";
+"trash.error.sandboxDenied" = "macOS tillät inte DiskRings att flytta det här objektet. DiskRings kan bara ändra objekt i mappar som du har gett åtkomst till.";
+"trash.undo.sandboxDenied" = "macOS tillät inte DiskRings att lägga tillbaka objektet. Öppna papperskorgen i Finder och välj ”Lägg tillbaka”.";
+"trash.undo.noAccess" = "DiskRings har inte längre åtkomst till den ursprungliga mappen. Ge åtkomst igen, eller öppna papperskorgen i Finder och välj ”Lägg tillbaka”.";
+"sandbox.panel.prompt" = "Ge åtkomst";
+"sandbox.panel.message" = "För att skanna ”%@” behöver DiskRings ditt tillstånd. Klicka på ”Ge åtkomst” så att DiskRings får läsa den här mappen. Ditt val sparas.";
+"sandbox.panel.messageGeneric" = "Välj en mapp eller volym som DiskRings får läsa. Ditt val sparas.";
+"sandbox.grantMore" = "Ge åtkomst till fler mappar…";
+"sandbox.banner.title" = "Åtkomst till mappar";
+"sandbox.banner.message" = "DiskRings läser bara mappar och volymer som du väljer. När du klickar på en volym frågar DiskRings om åtkomst en gång och sparar den.";
+"settings.section.access" = "Mappåtkomst";
+"settings.access.empty" = "Inga mappar har åtkomst ännu.";
+"settings.access.remove" = "Ta bort åtkomst";
+"settings.access.footer" = "DiskRings läser bara de här mapparna och allt i dem. Att ta bort åtkomsten ändrar inga filer.";
+"arc.unreadableSystem.sandboxHint" = "Hit hör även mappar som DiskRings inte har åtkomst till.";

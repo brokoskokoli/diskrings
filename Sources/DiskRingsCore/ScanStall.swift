@@ -52,7 +52,7 @@ extension FullDiskAccess {
     /// Startvolume-Wurzel (auch über `/System/Volumes/Data`) oder des
     /// Home-Ordners, nur wenn der Zugriff nachweislich fehlt (`denied`) und
     /// der Nutzer den Hinweis nicht schon mit „Trotzdem scannen“ quittiert hat.
-    public static func shouldWarnBeforeScan(of path: String, home: String = NSHomeDirectory(), status: Status,
+    public static func shouldWarnBeforeScan(of path: String, home: String = AppEnvironment.current.homeDirectory, status: Status,
                                             dismissed: Bool) -> Bool {
         guard status == .denied, !dismissed else { return false }
         let p = ProtectedPaths.normalize(path)

@@ -437,3 +437,17 @@
 "format.degrees" = "%@°";
 "format.sentences" = "%1$@ %2$@";
 "arc.snapshots.note" = "Las instantáneas locales de APFS y Time Machine no se pueden medir por separado; según su estado cuentan como «Purgable» o «Datos del sistema no legibles».";
+"trash.error.sandboxDenied" = "macOS no ha permitido que DiskRings mueva este ítem. DiskRings solo puede modificar ítems de carpetas a las que hayas concedido acceso.";
+"trash.undo.sandboxDenied" = "macOS no ha permitido que DiskRings devuelva el ítem. Abre la Papelera en el Finder y elige “Devolver”.";
+"trash.undo.noAccess" = "DiskRings ya no tiene acceso a la carpeta original. Vuelve a concederle acceso, o abre la Papelera en el Finder y elige “Devolver”.";
+"sandbox.panel.prompt" = "Conceder acceso";
+"sandbox.panel.message" = "Para analizar “%@”, DiskRings necesita tu permiso. Haz clic en “Conceder acceso” para que DiskRings pueda leer esta carpeta. Se recordará tu elección.";
+"sandbox.panel.messageGeneric" = "Elige una carpeta o un volumen que DiskRings pueda leer. Se recordará tu elección.";
+"sandbox.grantMore" = "Conceder acceso a más carpetas…";
+"sandbox.banner.title" = "Acceso a carpetas";
+"sandbox.banner.message" = "DiskRings solo lee las carpetas y volúmenes que elijas. Al hacer clic en un volumen, DiskRings pide acceso una vez y lo recuerda.";
+"settings.section.access" = "Acceso a carpetas";
+"settings.access.empty" = "Todavía no hay carpetas con acceso concedido.";
+"settings.access.remove" = "Quitar acceso";
+"settings.access.footer" = "DiskRings solo lee estas carpetas y todo su contenido. Quitar el acceso no modifica ningún archivo.";
+"arc.unreadableSystem.sandboxHint" = "Esto también incluye carpetas a las que DiskRings no tiene acceso.";

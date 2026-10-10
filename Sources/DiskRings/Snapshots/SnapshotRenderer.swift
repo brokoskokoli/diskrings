@@ -125,6 +125,17 @@ enum SnapshotRenderer {
             s6.prefs.excludedPaths = ["/Users/demo/Library/Caches", "/Volumes/Backup"]
             failures += renderWindow(SettingsView(prefs: s6.prefs), scheme: scheme, to: dir, name: "settings-\(suffix)")
 
+            // 6b. App-Store-Variante (Sandbox, vorgetäuscht): Startbildschirm
+            // mit Hinweis auf die Ordnerfreigaben, Einstellungen mit Freigaben.
+            let s6b = makeState(tree: nil, volume: nil, otherVolumes: [], sandboxed: true)
+            s6b.volumes = s5b.volumes
+            s6b.containerVolumes = s5b.containerVolumes
+            failures += renderWindow(StartView(state: s6b).frame(width: 900, height: 560), scheme: scheme, to: dir,
+                                     name: "start-sandbox-\(suffix)")
+            for p in ["/Users/demo/Documents", "/Volumes/Backup"] { s6b.grantAccess(URL(fileURLWithPath: p)) }
+            failures += renderWindow(SettingsView(prefs: s6b.prefs, state: s6b), scheme: scheme, to: dir,
+                                     name: "settings-sandbox-\(suffix)")
+
             // 9. Kontextmenü (nachgebildet, siehe `ContextMenuPreview`): Datei,
             //    geschützter Ordner (~/Library) und Mehrfachauswahl.
             let demoProtection = ProtectedPaths(home: "/Users/demo", appBundlePath: nil, volumeRoots: ["/"])
@@ -254,9 +265,11 @@ enum SnapshotRenderer {
         return failures == 0 ? 0 : 1
     }
 
-    static func makeState(tree: ScanTree?, volume: VolumeInfo?, otherVolumes: [ContainerVolume]) -> AppState {
+    static func makeState(tree: ScanTree?, volume: VolumeInfo?, otherVolumes: [ContainerVolume],
+                          sandboxed: Bool = false) -> AppState {
         let defaults = UserDefaults(suiteName: "DiskRingsSnapshots-\(UUID().uuidString)")!
-        let state = AppState(prefs: Preferences(defaults: defaults))
+        let state = AppState(prefs: Preferences(defaults: defaults), environment: AppEnvironment(isSandboxed: sandboxed),
+                             grantPersistence: InMemoryGrantPersistence())
         state.setTree(tree, volume: .some(volume), otherVolumes: otherVolumes)
         state.phase = tree == nil ? .start : .browsing
         return state
