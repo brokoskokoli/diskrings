@@ -619,16 +619,16 @@ struct ScanEngineConcurrencyTests {
         var engine = ScanEngine(options: ScanOptions(workerCount: 1, progressInterval: 0.001))
         // Jeder Ordner dauert 2 ms: ~400 ms Scan, ~400 Fortschrittsmeldungen.
         engine.hooks.beforeOpenDirectory = { _ in usleep(2000) }
-        // Erst lesen, wenn der Scan sicher fertig ist: Eine feste Wartezeit
-        // reichte auf langsamen CI-Runnern nicht (der Konsument las mit, und
-        // es kamen mehr Ereignisse an als gepuffert werden).
-        let building = OSAllocatedUnfairLockBox(false)
-        engine.hooks.phase = { p in if p == .building { building.value = true } }
+        // Erst lesen, wenn der Stream das Endergebnis gepuffert hat und
+        // beendet ist: Eine feste Wartezeit reichte auf langsamen CI-Runnern
+        // nicht (der Konsument las mit, und es kamen mehr Ereignisse an als
+        // gepuffert werden).
+        let done = OSAllocatedUnfairLockBox(false)
+        engine.hooks.streamFinished = { done.value = true }
         let stream = engine.events(fx.root)
         let deadline = Date().addingTimeInterval(30)
-        while !building.value, Date() < deadline { try await Task.sleep(nanoseconds: 20_000_000) }
-        try #require(building.value, "Scan kam nicht bis zum Baumaufbau")
-        try await Task.sleep(nanoseconds: 500_000_000) // Baum von 200 Dateien und .finished: Millisekunden
+        while !done.value, Date() < deadline { try await Task.sleep(nanoseconds: 5_000_000) }
+        try #require(done.value, "Stream wurde nicht beendet")
         var count = 0
         var finished = false
         for try await e in stream {

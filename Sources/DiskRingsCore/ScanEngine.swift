@@ -80,6 +80,7 @@ public struct ScanEngine: Sendable {
             } catch {
                 continuation.finish(throwing: error)
             }
+            engine.hooks.streamFinished?()
         }
         continuation.onTermination = { _ in task.cancel() }
         return stream
@@ -240,6 +241,9 @@ struct ScanHooks: Sendable {
     var beforeOpenDirectory: (@Sendable (String) -> Void)?
     /// Wird zu Beginn der Phasen nach dem Lesen aufgerufen.
     var phase: (@Sendable (ScanPhase) -> Void)?
+    /// Wird aufgerufen, nachdem `events(_:)` das letzte Ereignis gepuffert
+    /// und den Stream beendet hat.
+    var streamFinished: (@Sendable () -> Void)?
 }
 
 struct ScanJob {

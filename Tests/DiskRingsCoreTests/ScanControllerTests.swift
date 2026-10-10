@@ -52,7 +52,9 @@ struct ScanControllerTests {
             c.start(b.root, options: fast)
             let genB = c.generation
             await wait { rec.events.contains { $0.kind == "finished" } }
-            try? await Task.sleep(for: .milliseconds(150)) // späte Nachzügler abwarten
+            // Alle Lese-Tasks (auch der abgebrochene von A) sind beendet: Danach
+            // kann kein Nachzügler mehr kommen.
+            await c.drain()
             let afterB = rec.events.filter { $0.gen == genB }
             #expect(afterB.allSatisfy { $0.root == nil || $0.root == b.root },
                     "Ereignis des alten Scans nach dem Neustart: \(afterB.filter { $0.root == a.root }.map(\.kind))")
@@ -64,10 +66,14 @@ struct ScanControllerTests {
     /// Stream, der alle Ereignisse schon vor dem Lesen gepuffert hat und sie
     /// auch nach dem Abbruch des lesenden Tasks noch ausliefert (so wie
     /// `AsyncThrowingStream` gepufferte Elemente nach `finish` weitergibt).
-    nonisolated static func bufferedStream(_ path: String) -> AsyncThrowingStream<ScanEvent, Error> {
+    nonisolated static func bufferedTree(_ path: String) -> ScanTree {
         var b = ScanTreeBuilder(rootName: path)
         b.file("f", size: 1)
-        let tree = b.build(rootPath: path)
+        return b.build(rootPath: path)
+    }
+
+    nonisolated static func bufferedStream(_ path: String) -> AsyncThrowingStream<ScanEvent, Error> {
+        let tree = bufferedTree(path)
         let (stream, cont) = AsyncThrowingStream.makeStream(of: ScanEvent.self, throwing: Error.self)
         for _ in 0 ..< 50 { cont.yield(.snapshot(tree)) }
         cont.yield(.finished(ScanResult(tree: tree, duration: 0, fileCount: 1, directoryCount: 1, unreadablePaths: [],
@@ -84,14 +90,14 @@ struct ScanControllerTests {
         c.start("/alt")
         c.start("/neu")
         await wait { rec.events.contains { $0.kind == "finished" } }
-        try? await Task.sleep(for: .milliseconds(100))
+        await c.drain()
         #expect(!rec.events.contains { $0.root == "/alt" }, "\(rec.events.filter { $0.root == "/alt" }.count) alte Ereignisse")
         #expect(rec.events.filter { $0.kind == "finished" }.map(\.root) == ["/neu"])
         // Abbruch ohne neuen Scan: gar nichts kommt an.
         rec.events.removeAll()
         c.start("/weg")
         c.cancel()
-        try? await Task.sleep(for: .milliseconds(100))
+        await c.drain()
         #expect(rec.events.isEmpty)
     }
 
@@ -107,8 +113,31 @@ struct ScanControllerTests {
         c.cancel()
         let count = rec.events.count
         #expect(!c.isRunning)
-        try? await Task.sleep(for: .milliseconds(500))
+        await c.drain()
         #expect(rec.events.count == count)
+    }
+
+    @Test("drain wartet auf abgebrochene Lese-Tasks, auch wenn deren Stream noch liefert")
+    func drainWaitsForCancelledReaders() async {
+        // Der Stream liefert erst nach dem Abbruch (50 ms später) noch 50
+        // gepufferte Ereignisse; der Lese-Task muss sie verwerfen und enden.
+        let (stream, cont) = AsyncThrowingStream.makeStream(of: ScanEvent.self, throwing: Error.self)
+        let c = ScanController(makeStream: { _, _, _ in stream })
+        let rec = Recorder()
+        record(c, into: rec)
+        c.start("/spät")
+        c.cancel()
+        let tree = Self.bufferedTree("/spät")
+        Task.detached {
+            try? await Task.sleep(for: .milliseconds(50))
+            for _ in 0 ..< 50 { cont.yield(.snapshot(tree)) }
+            cont.finish()
+        }
+        await c.drain()
+        #expect(rec.events.isEmpty)
+        #expect(!c.isRunning)
+        // Ohne laufende Leser kehrt drain sofort zurück.
+        await c.drain()
     }
 
     @Test("Fehler wird gemeldet, nicht abgebrochene Scans enden mit finished")

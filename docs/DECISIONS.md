@@ -387,7 +387,7 @@ Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4).
 ### CI-Befunde (Runner `macos-26`)
 - Geprüft an den bisherigen Läufen: Das Label `macos-26` existiert (Image `macos-26-arm64`), `setup-xcode` mit `latest-stable` wählt Xcode 26.6 mit Swift 6.3.3; die Prüfung auf `-plugin-path` greift nicht (richtig). Rot waren die Läufe wegen zweier Tests, die nur auf dem langsameren Runner scheiterten:
 - **Live-Snapshot als vollständig markiert (echter Fehler):** `TreeBuilder` leitet `isComplete` daraus ab, ob ein Ordner eigene Größen trägt. Ein früher Live-Snapshot, in dem noch kein Ordner Größen hat, galt deshalb als vollständig. Live-Snapshots werden jetzt mit `partial: true` gebaut und sind nie vollständig. Regressionstest mit 100 ms Verzögerung pro Ordner (deterministisch, lokal vorher rot).
-- **S6, begrenzter Ereignispuffer (Testfehler):** Der Test wartete fest 1,5 s, bevor er den Stream las, und nahm an, dass der Scan bis dahin fertig ist. Auf dem Runner las er mit und bekam mehr als `eventBufferLimit` Ereignisse. Jetzt wartet er über den Phasen-Hook, bis der Baumaufbau beginnt, und dann 0,5 s.
+- **S6, begrenzter Ereignispuffer (Testfehler):** Der Test wartete fest 1,5 s, bevor er den Stream las, und nahm an, dass der Scan bis dahin fertig ist. Auf dem Runner las er mit und bekam mehr als `eventBufferLimit` Ereignisse. Jetzt wartet er über den Phasen-Hook, bis der Baumaufbau beginnt, und dann 0,5 s. (überholt → siehe „Zeitabhängige Tests“: er wartet jetzt auf das Ende des Streams statt auf eine feste Zeit)
 
 ## Lokalisierung
 
@@ -430,3 +430,9 @@ Ursprünglich ohne Kontextmenü (die zentrale Struktur entstand parallel in M4).
 
 ### Kontextmenü: Ziele über Pfade
 - `ContextMenuTarget` hält die Ziele zusätzlich als `NodeTargetSnapshot` (Core: absoluter Pfad und Art je Ziel, Scan-Wurzel) bzw. im Vergleich als `CompareTargetSnapshot` fest. Beim Ausführen eines Eintrags werden die Pfade im **aktuellen** Baum (bzw. Vergleich) neu aufgelöst; nur diese Indizes gehen an `perform`/`performCompare`. Fehlt ein Ziel, hat es eine andere Art (Datei/Ordner/Symlink), hat der Baum eine andere Wurzel oder passt der Pfad nur über eine andere Unicode-Normalform, wird **nichts** ausgeführt und ein kurzer Hinweis gezeigt („Die Elemente haben sich inzwischen geändert …“). Grund: Ein Teil-Rescan, der fertig wird, während das Menü offen ist, ersetzt den Baum und nummeriert beim Kompaktieren um; der alte Index konnte dann ein anderes, lebendes Element treffen und z. B. in den Papierkorb legen (mit „Nicht mehr fragen“ sogar ohne Dialog). Titel und Verfügbarkeit im offenen Menü bleiben die beim Öffnen berechneten.
+
+## Dokumentation und Wartung
+
+### Zeitabhängige Tests
+- Die Tests von `ScanController` warteten nach Abbruch bzw. Neustart 100–500 ms und prüften dann, dass nichts mehr ankam. Jetzt wartet `ScanController.drain()` auf das Ende aller Lese-Tasks, auch abgebrochener. Weil nur diese Tasks den Handler aufrufen, ist „danach kommt nichts mehr“ damit bewiesen statt nur wahrscheinlich, und die Tests warten nicht länger als nötig. Das Verhalten der App ändert sich nicht (`drain()` ruft sie nicht auf).
+- Der Test S6 (begrenzter Ereignispuffer) wartete nach dem Beginn des Baumaufbaus fest 0,5 s auf `.finished`. Jetzt meldet der Test-Hook `ScanHooks.streamFinished`, dass `events(_:)` das Endergebnis gepuffert und den Stream beendet hat; erst danach liest der Test.
