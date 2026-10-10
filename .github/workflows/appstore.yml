@@ -1,0 +1,132 @@
+# App Store Upload: baut die Mac-App-Store-Variante (App Sandbox), signiert sie
+# mit "Apple Distribution", packt sie als .pkg ("3rd Party Mac Developer
+# Installer"), lässt sie von App Store Connect prüfen und lädt sie hoch.
+# Zur Prüfung einreichen bleibt ein Schritt von Hand in App Store Connect.
+#
+#   Actions → App Store Upload → Run workflow, Branch main, dry_run angehakt
+#       → Trockenlauf: bauen, signieren, validieren, nicht hochladen
+#   Actions → App Store Upload → Run workflow, "Use workflow from" → Tags → v<VERSION>,
+#   dry_run nicht angehakt
+#       → Upload (nur auf einem Tag, der zu VERSION passt)
+#
+# Einrichtung, Secrets und Ablauf: dev/APPSTORE.md ("Upload per Workflow").
+# Die Logik steckt in scripts/ci-appstore.sh (nutzt scripts/ci-release.sh und
+# scripts/make-app.sh), damit sie lokal nachvollziehbar bleibt.
+#
+# Sicherheit (wie release.yml):
+#   - Actions auf Commit-SHAs gepinnt (Kommentar = Version), dieselben wie in release.yml.
+#   - Standard-Token ohne Rechte; der Job darf nur lesen.
+#   - Nur manueller Start; Secrets nur im Environment "appstore" (Pflicht-Freigabe)
+#     und nur in den Schritten, die sie brauchen; kein `set -x`;
+#     ${{ }} nie direkt in run-Blöcken (Script-Injection).
+name: App Store Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Trockenlauf: bauen, signieren, validieren, aber nicht hochladen'
+        type: boolean
+        default: true
+
+permissions: {}
+
+# Nie zwei Uploads gleichzeitig, auch nicht für verschiedene Refs.
+concurrency:
+  group: appstore-upload
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Bauen, signieren, hochladen
+    # Wie ci.yml und release.yml (geprüft 10/2026: Image macos-26-arm64, Xcode 26.6).
+    runs-on: macos-26
+    timeout-minutes: 45
+    # Secrets und Pflicht-Freigabe liegen im Environment "appstore".
+    environment: appstore
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Ganze Historie: make-app.sh nimmt die Commit-Anzahl als Build-Nummer.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Ref, VERSION und Secrets prüfen
+        id: preflight
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          APPSTORE_CERTIFICATES_P12_BASE64: ${{ secrets.APPSTORE_CERTIFICATES_P12_BASE64 }}
+          APPSTORE_CERTIFICATES_PASSWORD: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
+          APPSTORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPSTORE_PROVISIONING_PROFILE_BASE64 }}
+          NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: scripts/ci-appstore.sh preflight
+
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+
+      - name: Toolchain
+        run: |
+          xcode-select -p
+          swift --version
+          xcrun --find altool
+
+      - name: swift build
+        run: swift build
+
+      # Performance-Tests laufen auf den geteilten Runnern nicht (siehe ci.yml).
+      - name: swift test (ohne Performance-Tests)
+        run: swift test --skip 'Performance|performance'
+
+      - name: Zertifikate in temporäre Keychain importieren
+        env:
+          APPSTORE_CERTIFICATES_P12_BASE64: ${{ secrets.APPSTORE_CERTIFICATES_P12_BASE64 }}
+          APPSTORE_CERTIFICATES_PASSWORD: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
+        run: scripts/ci-appstore.sh keychain-setup
+
+      # make-app.sh --appstore mit DISKRINGS_KEYCHAIN und dem Profil, dann
+      # Signatur von App und .pkg sowie Entitlements prüfen.
+      - name: Store-Variante bauen und signieren
+        env:
+          APPSTORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPSTORE_PROVISIONING_PROFILE_BASE64 }}
+        run: scripts/ci-appstore.sh build
+
+      - name: Bei App Store Connect validieren
+        env:
+          NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: scripts/ci-appstore.sh validate
+
+      - name: Zu App Store Connect hochladen
+        if: steps.preflight.outputs.upload == 'true'
+        env:
+          NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          # Nur nötig, falls altool --upload-app nicht mehr kennt (siehe dev/APPSTORE.md).
+          APPSTORE_APP_ID: ${{ vars.APPSTORE_APP_ID }}
+        run: scripts/ci-appstore.sh upload
+
+      - name: Zusammenfassung
+        env:
+          UPLOAD: ${{ steps.preflight.outputs.upload }}
+        run: scripts/ci-appstore.sh summary
+
+      - name: Keychain und API-Key-Datei löschen
+        if: always()
+        env:
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+        run: scripts/ci-appstore.sh cleanup
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: DiskRings-${{ steps.preflight.outputs.version }}-appstore
+          path: build/DiskRings-${{ steps.preflight.outputs.version }}.pkg
+          if-no-files-found: error
+          # Signiertes Paket, nur zum Nachsehen: 1 Tag.
+          retention-days: 1

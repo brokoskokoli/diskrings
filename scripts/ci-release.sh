@@ -20,9 +20,13 @@
 # DISKRINGS_KEYCHAIN nach GITHUB_ENV. DISKRINGS_REQUIRE_VALID_IDENTITY=1 verlangt
 # zusätzlich eine gültige (vertrauenswürdige, nicht abgelaufene) Identität.
 #
+# scripts/ci-appstore.sh bindet dieses Skript mit `source` ein und nutzt die
+# Funktionen (Keychain, Zwischenzertifikat, Ausgabe); die Befehle unten laufen
+# nur beim direkten Aufruf.
+#
 # Kein `set -x`: Secrets dürfen nicht im Log landen.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 IDENTITY=${DISKRINGS_IDENTITY:-"Developer ID Application: Stefan Richter (AGRWTKQZ8C)"}
 STATE=${DISKRINGS_CI_STATE:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/diskrings-release}
@@ -144,23 +148,34 @@ user_searchlist() {
     security list-keychains -d user | sed -e 's/^[[:space:]]*"//' -e 's/"[[:space:]]*$//'
 }
 
-ensure_devid_intermediate() {
-    local found
-    found=$(security find-certificate -a -c "Developer ID Certification Authority" -Z 2>/dev/null || true)
-    if grep -q "SHA-256 hash: $DEVID_G2_SHA256" <<<"$found"; then
+# Lädt ein Zwischenzertifikat von apple.com in die temporäre Keychain, falls es
+# (mit genau dieser SHA-256-Summe) noch in keiner Keychain der Suchliste liegt.
+#   ensure_intermediate <Common Name> <URL> <SHA-256 groß, ohne Doppelpunkte>
+ensure_intermediate() {
+    local cn=$1 url=$2 want=$3 found
+    found=$(security find-certificate -a -c "$cn" -Z 2>/dev/null || true)
+    if grep -q "SHA-256 hash: $want" <<<"$found"; then
         return 0
     fi
-    echo "==> Zwischenzertifikat Developer ID G2 fehlt, lade es von apple.com"
-    local cer="$STATE/DeveloperIDG2CA.cer" sum
-    curl -fsSL --retry 3 -o "$cer" "$DEVID_G2_URL" || die "Download von $DEVID_G2_URL fehlgeschlagen."
+    echo "==> Zwischenzertifikat \"$cn\" fehlt, lade es von apple.com"
+    local cer sum
+    cer="$STATE/$(basename "$url")"
+    curl -fsSL --retry 3 -o "$cer" "$url" || die "Download von $url fehlgeschlagen."
     sum=$(shasum -a 256 "$cer" | cut -d' ' -f1 | tr '[:lower:]' '[:upper:]')
-    [ "$sum" = "$DEVID_G2_SHA256" ] || die "Prüfsumme des Zwischenzertifikats stimmt nicht ($sum)."
+    [ "$sum" = "$want" ] || die "Prüfsumme des Zwischenzertifikats $url stimmt nicht ($sum)."
     security import "$cer" -k "$KEYCHAIN" >/dev/null
 }
 
-cmd_keychain_setup() {
-    [ -n "${MACOS_CERTIFICATE_P12_BASE64:-}" ] || die "MACOS_CERTIFICATE_P12_BASE64 fehlt."
-    [ -n "${MACOS_CERTIFICATE_PASSWORD:-}" ] || die "MACOS_CERTIFICATE_PASSWORD fehlt."
+ensure_devid_intermediate() {
+    ensure_intermediate "Developer ID Certification Authority" "$DEVID_G2_URL" "$DEVID_G2_SHA256"
+}
+
+# Legt die temporäre Keychain an und importiert ein base64-kodiertes .p12.
+#   keychain_import <Name der Variable mit dem .p12> <Name der Variable mit dem Passwort> <Hinweis bei Fehlern>
+keychain_import() {
+    local p12_var=$1 pass_var=$2 hint=$3
+    [ -n "${!p12_var:-}" ] || die "$p12_var fehlt."
+    [ -n "${!pass_var:-}" ] || die "$pass_var fehlt."
     [ ! -e "$KEYCHAIN" ] || die "Keychain existiert schon: $KEYCHAIN (vorher keychain-cleanup)."
     mkdir -p "$STATE"
     chmod 700 "$STATE"
@@ -169,9 +184,9 @@ cmd_keychain_setup() {
     kc_pass=$($OPENSSL rand -base64 32)
     if [ -n "${GITHUB_ACTIONS:-}" ]; then echo "::add-mask::$kc_pass"; fi
 
-    (umask 077; printf '%s' "$MACOS_CERTIFICATE_P12_BASE64" | tr -d '[:space:]' \
+    (umask 077; printf '%s' "${!p12_var}" | tr -d '[:space:]' \
         | base64 --decode > "$p12") 2>/dev/null \
-        || { rm -f "$p12"; die "MACOS_CERTIFICATE_P12_BASE64 ist kein gültiges base64."; }
+        || { rm -f "$p12"; die "$p12_var ist kein gültiges base64."; }
 
     echo "==> Temporäre Keychain $KEYCHAIN"
     user_searchlist > "$SEARCHLIST_FILE"
@@ -181,11 +196,12 @@ cmd_keychain_setup() {
     security unlock-keychain -p "$kc_pass" "$KEYCHAIN"
 
     echo "==> .p12 importieren"
-    if ! security import "$p12" -k "$KEYCHAIN" -f pkcs12 -P "$MACOS_CERTIFICATE_PASSWORD" \
-        -T /usr/bin/codesign -T /usr/bin/security >/dev/null 2>"$STATE/import.err"; then
+    if ! security import "$p12" -k "$KEYCHAIN" -f pkcs12 -P "${!pass_var}" \
+        -T /usr/bin/codesign -T /usr/bin/security -T /usr/bin/productsign \
+        >/dev/null 2>"$STATE/import.err"; then
         rm -f "$p12"
         sed 's/^/    /' "$STATE/import.err" >&2
-        die "Import des .p12 fehlgeschlagen. Falsches MACOS_CERTIFICATE_PASSWORD oder beschädigtes .p12? Neu erzeugen mit scripts/setup-release-secrets.sh."
+        die "Import des .p12 fehlgeschlagen. Falsches $pass_var oder beschädigtes .p12? $hint"
     fi
     rm -f "$p12" "$STATE/import.err"
 
@@ -196,26 +212,41 @@ cmd_keychain_setup() {
     local list=()
     while IFS= read -r line; do [ -n "$line" ] && list+=("$line"); done < "$SEARCHLIST_FILE"
     security list-keychains -d user -s "$KEYCHAIN" ${list[@]+"${list[@]}"}
+}
 
-    ensure_devid_intermediate
-
-    local all valid
-    all=$(security find-identity -p codesigning "$KEYCHAIN")
-    if ! grep -qF "\"$IDENTITY\"" <<<"$all"; then
-        echo "Gefundene Identitäten im .p12:" >&2
+# Prüft, dass die Keychain die Identität (Zertifikat + privater Schlüssel) enthält.
+#   require_identity <Name> [Policy, Standard codesigning]
+# DISKRINGS_REQUIRE_VALID_IDENTITY=1: zusätzlich gültig (vertrauenswürdig, nicht abgelaufen).
+require_identity() {
+    local identity=$1 policy=${2:-codesigning} all valid
+    all=$(security find-identity -p "$policy" "$KEYCHAIN")
+    if ! grep -qF "\"$identity\"" <<<"$all"; then
+        echo "Gefundene Identitäten im .p12 (Policy $policy):" >&2
         grep -E '^[[:space:]]+[0-9]+\)' <<<"$all" | sed 's/^/    /' >&2 || echo "    (keine)" >&2
-        die "Das .p12 enthält nicht die Identität \"$IDENTITY\" (mit privatem Schlüssel)."
+        die "Das .p12 enthält nicht die Identität \"$identity\" (mit privatem Schlüssel)."
     fi
-    valid=$(security find-identity -v -p codesigning "$KEYCHAIN")
-    if ! grep -qF "\"$IDENTITY\"" <<<"$valid"; then
+    valid=$(security find-identity -v -p "$policy" "$KEYCHAIN")
+    if ! grep -qF "\"$identity\"" <<<"$valid"; then
         if [ "${DISKRINGS_REQUIRE_VALID_IDENTITY:-0}" = "1" ]; then
-            die "Identität \"$IDENTITY\" ist nicht gültig (abgelaufen, widerrufen oder Kette unvollständig)."
+            die "Identität \"$identity\" ist nicht gültig (abgelaufen, widerrufen oder Kette unvollständig)."
         fi
-        echo "warning: Identität \"$IDENTITY\" ist nicht als gültig markiert (z. B. selbst signiert)." >&2
+        echo "warning: Identität \"$identity\" ist nicht als gültig markiert (z. B. selbst signiert)." >&2
     fi
-    echo "==> Identität \"$IDENTITY\" bereit"
+    echo "==> Identität \"$identity\" bereit"
+}
+
+# DISKRINGS_KEYCHAIN für die folgenden Schritte bekannt machen.
+export_keychain_env() {
     if [ -n "${GITHUB_ENV:-}" ]; then echo "DISKRINGS_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"; fi
     echo "DISKRINGS_KEYCHAIN=$KEYCHAIN"
+}
+
+cmd_keychain_setup() {
+    keychain_import MACOS_CERTIFICATE_P12_BASE64 MACOS_CERTIFICATE_PASSWORD \
+        "Neu erzeugen mit scripts/setup-release-secrets.sh."
+    ensure_devid_intermediate
+    require_identity "$IDENTITY"
+    export_keychain_env
 }
 
 cmd_keychain_cleanup() {
@@ -239,10 +270,13 @@ cmd_keychain_cleanup() {
     fi
 }
 
-case "${1:-}" in
-    preflight) cmd_preflight ;;
-    keychain-setup) cmd_keychain_setup ;;
-    keychain-cleanup) cmd_keychain_cleanup ;;
-    -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//' ;;
-    *) echo "Aufruf: $0 preflight | keychain-setup | keychain-cleanup" >&2; exit 2 ;;
-esac
+# Beim Einbinden mit `source` (scripts/ci-appstore.sh) nur die Funktionen.
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    case "${1:-}" in
+        preflight) cmd_preflight ;;
+        keychain-setup) cmd_keychain_setup ;;
+        keychain-cleanup) cmd_keychain_cleanup ;;
+        -h|--help) sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//' ;;
+        *) echo "Aufruf: $0 preflight | keychain-setup | keychain-cleanup" >&2; exit 2 ;;
+    esac
+fi

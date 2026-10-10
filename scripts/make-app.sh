@@ -42,7 +42,8 @@
 # DISKRINGS_KEYCHAIN=…   Identität nur in diesem Schlüsselbund suchen (z. B. die
 #                        temporäre Keychain der Release-Workflows). Dann gibt es
 #                        keinen Rückfall auf ad hoc: fehlt die Identität dort,
-#                        bricht das Skript ab.
+#                        bricht das Skript ab. Mit --appstore gilt das auch für
+#                        die Installer-Identität und das Provisioning Profile.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -50,7 +51,7 @@ APPSTORE=0
 for arg in "$@"; do
     case "$arg" in
         --appstore) APPSTORE=1 ;;
-        -h|--help) sed -n '2,50p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unbekannte Option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -215,6 +216,12 @@ if [ "$APPSTORE" = "1" ]; then
     APPSTORE_IDENTITY=${DISKRINGS_APPSTORE_IDENTITY:-"Apple Distribution: Stefan Richter (AGRWTKQZ8C)"}
     PROFILE=${DISKRINGS_PROVISIONING_PROFILE:-}
     SIGN_ENTITLEMENTS="$ENTITLEMENTS"
+    # Mit DISKRINGS_KEYCHAIN (Workflow "App Store Upload") muss alles für einen
+    # hochladbaren Build da sein: kein stiller Rückfall auf ein unbrauchbares Paket.
+    if [ -n "$KEYCHAIN" ] && [ -z "$PROFILE" ]; then
+        echo "error: DISKRINGS_KEYCHAIN gesetzt, aber kein DISKRINGS_PROVISIONING_PROFILE" >&2
+        exit 1
+    fi
     if [ -n "$PROFILE" ]; then
         if [ ! -f "$PROFILE" ]; then
             echo "error: DISKRINGS_PROVISIONING_PROFILE=$PROFILE existiert nicht" >&2
@@ -364,6 +371,10 @@ if [ "$APPSTORE" = "1" ]; then
         productsign --sign "$INSTALLER_IDENTITY" ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} "$UNSIGNED_PKG" "$PKG"
         rm -f "$UNSIGNED_PKG"
         pkgutil --check-signature "$PKG" | head -4 || true
+    elif [ -n "$KEYCHAIN" ]; then
+        rm -f "$UNSIGNED_PKG"
+        echo "error: Keine Installer-Identität (3rd Party Mac Developer Installer bzw. Mac Installer Distribution) im Schlüsselbund $KEYCHAIN" >&2
+        exit 1
     else
         echo "warning: Keine Installer-Identität (oder App nur ad hoc signiert): $PKG bleibt unsigniert und ist nicht für App Store Connect geeignet" >&2
         mv "$UNSIGNED_PKG" "$PKG"
