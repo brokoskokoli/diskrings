@@ -201,6 +201,15 @@ else
     IDENTITIES=$(security find-identity -v -p codesigning)
 fi
 
+# Erweiterte Attribute (com.apple.provenance, Quarantäne, Finder-Infos)
+# entfernen: Sonst landen sie als AppleDouble-Dateien (._*) im .pkg bzw.
+# stören die Signatur. Ein nicht entfernbares Attribut bricht nicht ab.
+strip_xattrs() {
+    echo "==> xattr -cr"
+    xattr -cr "$APP" 2>/dev/null || true
+}
+strip_xattrs
+
 SIGNED_WITH=
 if [ "$APPSTORE" = "1" ]; then
     APPSTORE_IDENTITY=${DISKRINGS_APPSTORE_IDENTITY:-"Apple Distribution: Stefan Richter (AGRWTKQZ8C)"}
@@ -213,6 +222,7 @@ if [ "$APPSTORE" = "1" ]; then
         fi
         echo "==> Provisioning Profile einbetten"
         cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
+        strip_xattrs
     fi
     if [ "${DISKRINGS_ADHOC:-0}" != "1" ] && grep -qF "\"$APPSTORE_IDENTITY\"" <<<"$IDENTITIES"; then
         if [ -n "$PROFILE" ]; then
@@ -319,15 +329,44 @@ if [ "$APPSTORE" = "1" ]; then
                      "Mac Installer Distribution: Stefan Richter (AGRWTKQZ8C)"; do
         if grep -qF "\"$candidate\"" <<<"$ALL_IDENTITIES"; then INSTALLER_IDENTITY=$candidate; break; fi
     done
+    # productbuild packt erweiterte Attribute als AppleDouble-Dateien (._*)
+    # ein. com.apple.provenance lässt sich auf neueren macOS-Versionen mit
+    # xattr nicht entfernen; deshalb wird die Nutzlast danach ohne Attribute
+    # neu gepackt (cpio odc, root:wheel, preserve-xattr aus) und erst dann
+    # mit productsign signiert.
+    echo "==> productbuild (Nutzlast ohne erweiterte Attribute)"
+    UNSIGNED_PKG="build/DiskRings-$VERSION-unsigned.pkg"
+    rm -f "$UNSIGNED_PKG"
+    COPYFILE_DISABLE=1 productbuild --component "$APP" /Applications "$UNSIGNED_PKG"
+    PKG_WORK=$(mktemp -d "${TMPDIR:-/tmp}/diskrings-pkg.XXXXXX")
+    pkgutil --expand "$UNSIGNED_PKG" "$PKG_WORK/expanded"
+    COMPONENT=$(find "$PKG_WORK/expanded" -maxdepth 1 -name '*.pkg' -type d | head -1)
+    mkdir "$PKG_WORK/root"
+    ditto --noextattr --noqtn --noacl "$APP" "$PKG_WORK/root/$(basename "$APP")"
+    (cd "$PKG_WORK/root" && find . | LC_ALL=C sort | cpio -o --format odc -R 0:0 2>/dev/null) \
+        | gzip -9 -c > "$COMPONENT/Payload"
+    # Bom mit Besitzer root:wheel (0/0) wie die Nutzlast.
+    mkbom "$PKG_WORK/root" "$PKG_WORK/user.bom"
+    lsbom "$PKG_WORK/user.bom" | awk -F'\t' 'BEGIN { OFS = "\t" } { $3 = "0/0"; print }' > "$PKG_WORK/bom.txt"
+    rm -f "$COMPONENT/Bom"
+    mkbom -i "$PKG_WORK/bom.txt" "$COMPONENT/Bom"
+    sed -i '' 's/preserve-xattr="true"/preserve-xattr="false"/' "$COMPONENT/PackageInfo"
+    rm -f "$UNSIGNED_PKG"
+    pkgutil --flatten "$PKG_WORK/expanded" "$UNSIGNED_PKG"
+    rm -rf "$PKG_WORK"
+    APPLEDOUBLE=$(pkgutil --payload-files "$UNSIGNED_PKG" | grep -c '/\._' || true)
+    if [ "$APPLEDOUBLE" != "0" ]; then
+        echo "error: $UNSIGNED_PKG enthält $APPLEDOUBLE AppleDouble-Dateien" >&2
+        exit 1
+    fi
     if [ -n "$INSTALLER_IDENTITY" ] && [ "$SIGNED_WITH" = "apple-distribution" ]; then
-        echo "==> productbuild ($INSTALLER_IDENTITY)"
-        productbuild --component "$APP" /Applications --sign "$INSTALLER_IDENTITY" \
-            ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} "$PKG"
+        echo "==> productsign ($INSTALLER_IDENTITY)"
+        productsign --sign "$INSTALLER_IDENTITY" ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} "$UNSIGNED_PKG" "$PKG"
+        rm -f "$UNSIGNED_PKG"
         pkgutil --check-signature "$PKG" | head -4 || true
     else
         echo "warning: Keine Installer-Identität (oder App nur ad hoc signiert): $PKG bleibt unsigniert und ist nicht für App Store Connect geeignet" >&2
-        echo "==> productbuild (unsigniert)"
-        productbuild --component "$APP" /Applications "$PKG"
+        mv "$UNSIGNED_PKG" "$PKG"
     fi
     echo "==> $PKG"
 fi
