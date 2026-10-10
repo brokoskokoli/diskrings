@@ -1,13 +1,19 @@
 # App Store Upload: baut die Mac-App-Store-Variante (App Sandbox), signiert sie
 # mit "Apple Distribution", packt sie als .pkg ("3rd Party Mac Developer
 # Installer"), lässt sie von App Store Connect prüfen und lädt sie hoch.
-# Zur Prüfung einreichen bleibt ein Schritt von Hand in App Store Connect.
+# Optional (submit_for_review) reicht er die Version danach über die App Store
+# Connect API zur Prüfung ein: Build-Verarbeitung abwarten, Version anlegen bzw.
+# wiederverwenden, "Neu in dieser Version" aus dev/release-notes/<VERSION>.{en,de}.txt,
+# Build anhängen, einreichen (scripts/asc-submit.sh, Token: scripts/asc-jwt.swift).
 #
 #   Actions → App Store Upload → Run workflow, Branch main, dry_run angehakt
 #       → Trockenlauf: bauen, signieren, validieren, nicht hochladen
 #   Actions → App Store Upload → Run workflow, "Use workflow from" → Tags → v<VERSION>,
 #   dry_run nicht angehakt
 #       → Upload (nur auf einem Tag, der zu VERSION passt)
+#   … zusätzlich submit_for_review angehakt
+#       → Upload und Einreichung zur Prüfung (Veröffentlichung nach Freigabe von Hand,
+#         außer release_after_approval)
 #
 # Einrichtung, Secrets und Ablauf: dev/APPSTORE.md ("Upload per Workflow").
 # Die Logik steckt in scripts/ci-appstore.sh (nutzt scripts/ci-release.sh und
@@ -28,6 +34,14 @@ on:
         description: 'Trockenlauf: bauen, signieren, validieren, aber nicht hochladen'
         type: boolean
         default: true
+      submit_for_review:
+        description: 'Nach dem Upload zur Prüfung einreichen (nur mit Upload auf Tag v<VERSION>; braucht dev/release-notes/<VERSION>.en.txt und .de.txt)'
+        type: boolean
+        default: false
+      release_after_approval:
+        description: 'Nach der Freigabe durch Apple automatisch veröffentlichen (sonst von Hand)'
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -41,7 +55,8 @@ jobs:
     name: Bauen, signieren, hochladen
     # Wie ci.yml und release.yml (geprüft 10/2026: Image macos-26-arm64, Xcode 26.6).
     runs-on: macos-26
-    timeout-minutes: 45
+    # Mit Einreichung bis zu 60 Minuten mehr: Apple verarbeitet den Build erst.
+    timeout-minutes: ${{ inputs.submit_for_review && 120 || 45 }}
     # Secrets und Pflicht-Freigabe liegen im Environment "appstore".
     environment: appstore
     permissions:
@@ -57,6 +72,7 @@ jobs:
         id: preflight
         env:
           DRY_RUN: ${{ inputs.dry_run }}
+          SUBMIT_FOR_REVIEW: ${{ inputs.submit_for_review }}
           APPSTORE_CERTIFICATES_P12_BASE64: ${{ secrets.APPSTORE_CERTIFICATES_P12_BASE64 }}
           APPSTORE_CERTIFICATES_PASSWORD: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
           APPSTORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPSTORE_PROVISIONING_PROFILE_BASE64 }}
@@ -74,6 +90,7 @@ jobs:
           xcode-select -p
           swift --version
           xcrun --find altool
+          jq --version
 
       - name: swift build
         run: swift build
@@ -112,9 +129,23 @@ jobs:
           APPSTORE_APP_ID: ${{ vars.APPSTORE_APP_ID }}
         run: scripts/ci-appstore.sh upload
 
+      # Wartet, bis Apple den Build verarbeitet hat (alle 60 s, höchstens 60 min),
+      # dann Version, "Neu in dieser Version", Build und Einreichung per API.
+      - name: Zur Prüfung einreichen
+        if: steps.preflight.outputs.submit == 'true'
+        timeout-minutes: 70
+        env:
+          NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          APPSTORE_APP_ID: ${{ vars.APPSTORE_APP_ID }}
+          RELEASE_AFTER_APPROVAL: ${{ inputs.release_after_approval }}
+        run: scripts/ci-appstore.sh submit
+
       - name: Zusammenfassung
         env:
           UPLOAD: ${{ steps.preflight.outputs.upload }}
+          SUBMIT: ${{ steps.preflight.outputs.submit }}
         run: scripts/ci-appstore.sh summary
 
       - name: Keychain und API-Key-Datei löschen

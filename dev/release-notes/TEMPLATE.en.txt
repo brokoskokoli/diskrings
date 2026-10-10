@@ -1,0 +1,3 @@
+• New: <what users can do now>
+• Improved: <what works better or faster>
+• Fixed: <which problem is gone>

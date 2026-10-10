@@ -7,10 +7,11 @@
 #   scripts/ci-appstore.sh build             # make-app.sh --appstore, Signaturen prüfen
 #   scripts/ci-appstore.sh validate          # xcrun altool --validate-app (API Key)
 #   scripts/ci-appstore.sh upload            # xcrun altool --upload-app (API Key)
+#   scripts/ci-appstore.sh submit            # zur Prüfung einreichen (scripts/asc-submit.sh)
 #   scripts/ci-appstore.sh summary           # Zusammenfassung nach GITHUB_STEP_SUMMARY
 #   scripts/ci-appstore.sh cleanup           # API-Key-Datei, Keychain, Suchliste
 #
-# preflight liest GITHUB_REF_TYPE, GITHUB_REF_NAME, DRY_RUN und prüft diese
+# preflight liest GITHUB_REF_TYPE, GITHUB_REF_NAME, DRY_RUN, SUBMIT_FOR_REVIEW und prüft diese
 # Secrets (Environment "appstore"), ohne Werte auszugeben:
 #   APPSTORE_CERTIFICATES_P12_BASE64  .p12 mit "Apple Distribution: …" und
 #                                     "3rd Party Mac Developer Installer: …", base64
@@ -18,8 +19,9 @@
 #   APPSTORE_PROVISIONING_PROFILE_BASE64  Profil "Mac App Store Connect", base64
 #   NOTARY_API_KEY_P8_BASE64, NOTARY_API_KEY_ID, NOTARY_API_ISSUER_ID
 #                                     App Store Connect API Key (Rolle App Manager)
-# Ausgabe nach GITHUB_OUTPUT: version, tag, build, upload (true/false).
-# Hochgeladen wird nur bei dry_run = false auf einem Tag v<VERSION>.
+# Ausgabe nach GITHUB_OUTPUT: version, tag, build, upload, submit (true/false).
+# Hochgeladen wird nur bei dry_run = false auf einem Tag v<VERSION>. submit_for_review
+# geht nur zusammen mit einem Upload und braucht dev/release-notes/<VERSION>.{en,de}.txt.
 #
 # Die temporäre Keychain und das Zwischenzertifikat übernimmt scripts/ci-release.sh
 # (eingebunden mit `source`), Zustand unter $DISKRINGS_CI_STATE (Standard
@@ -129,7 +131,7 @@ decode_profile() {
 }
 
 cmd_preflight() {
-    local version tag upload=false build
+    local version tag upload=false build submit=${SUBMIT_FOR_REVIEW:-false}
     local ref_type=${GITHUB_REF_TYPE:-branch} ref_name=${GITHUB_REF_NAME:-} dry_run=${DRY_RUN:-true}
     version=$(version)
     [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
@@ -145,6 +147,15 @@ cmd_preflight() {
         upload=true
     else
         die "Hochladen (dry_run = false) geht nur, wenn der Workflow auf einem Tag gestartet wird (\"Use workflow from\" → Tags → $tag). Für einen Probelauf dry_run anhaken."
+    fi
+    if [ "$submit" = "true" ]; then
+        [ "$upload" = "true" ] \
+            || die "submit_for_review geht nur zusammen mit einem Upload: auf dem Tag $tag starten und dry_run abhaken."
+        # Früh scheitern, nicht erst nach 15 Minuten Bauen.
+        scripts/asc-submit.sh check-notes "$version" \
+            || die "Release Notes für $version fehlen oder sind ungültig (dev/release-notes/README.md)."
+    else
+        submit=false
     fi
 
     local missing=() name
@@ -183,11 +194,12 @@ cmd_preflight() {
     fi
     build=$(git rev-list --count HEAD)
 
-    echo "Version $version, Build $build, Ref $ref_type/$ref_name, hochladen: $upload"
+    echo "Version $version, Build $build, Ref $ref_type/$ref_name, hochladen: $upload, einreichen: $submit"
     gh_output version "$version"
     gh_output tag "$tag"
     gh_output build "$build"
     gh_output upload "$upload"
+    gh_output submit "$submit"
 }
 
 # --- keychain ----------------------------------------------------------------
@@ -354,9 +366,18 @@ cmd_upload() {
     echo "==> Upload erfolgreich"
 }
 
+# --- submit ---------------------------------------------------------------------------
+# Build-Nummer aus dem gebauten Bündel (wie hochgeladen), Rest in asc-submit.sh.
+cmd_submit() {
+    local build
+    build=$(plutil -extract CFBundleVersion raw "$APP/Contents/Info.plist" 2>/dev/null || true)
+    [ -n "$build" ] || die "CFBundleVersion von $APP nicht lesbar (vorher build)."
+    BUILD_NUMBER=$build VERSION=$(version) ASC_STATE="$STATE/asc" scripts/asc-submit.sh submit
+}
+
 # --- summary / cleanup ---------------------------------------------------------------
 cmd_summary() {
-    local version build upload=${UPLOAD:-false} out=${GITHUB_STEP_SUMMARY:-/dev/stdout}
+    local version build upload=${UPLOAD:-false} submit=${SUBMIT:-false} out=${GITHUB_STEP_SUMMARY:-/dev/stdout}
     version=$(version)
     pick_installer_identity "${DISKRINGS_KEYCHAIN:-$KEYCHAIN}"
     build=$(plutil -extract CFBundleVersion raw "$APP/Contents/Info.plist" 2>/dev/null || git rev-list --count HEAD)
@@ -366,7 +387,14 @@ cmd_summary() {
         echo "- Paket: \`$(pkg_path)\` (als Artefakt am Lauf, 1 Tag)"
         echo "- Signatur: $APPSTORE_IDENTITY / $INSTALLER_IDENTITY"
         echo "- Validierung durch App Store Connect: bestanden"
-        if [ "$upload" = "true" ]; then
+        if [ "$upload" = "true" ] && [ "$submit" = "true" ]; then
+            echo "- **Hochgeladen und zur Prüfung eingereicht** (Details oben unter *Einreichung zur Prüfung*)."
+            echo
+            echo "### Nächste Schritte (von Hand)"
+            echo
+            echo "1. Auf die Prüfung warten (meist 1–3 Tage); Rückfragen von Apple in App Store Connect beantworten."
+            echo "2. Bei manueller Veröffentlichung nach der Freigabe: **Diese Version veröffentlichen**."
+        elif [ "$upload" = "true" ]; then
             echo "- **Hochgeladen.** Nach ca. 10–30 Minuten erscheint der Build in App Store Connect (E-Mail von Apple)."
             echo
             echo "### Nächste Schritte (von Hand)"
@@ -386,6 +414,7 @@ cmd_cleanup() {
         rm -f "$ALTOOL_KEY_DIR/AuthKey_$NOTARY_API_KEY_ID.p8"
     fi
     rm -f "$PROFILE_FILE"
+    rm -rf "$STATE/asc"
     cmd_keychain_cleanup
 }
 
@@ -395,8 +424,9 @@ case "${1:-}" in
     build) cmd_build ;;
     validate) cmd_validate ;;
     upload) cmd_upload ;;
+    submit) cmd_submit ;;
     summary) cmd_summary ;;
     cleanup) cmd_cleanup ;;
     -h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//' ;;
-    *) echo "Aufruf: $0 preflight | keychain-setup | build | validate | upload | summary | cleanup" >&2; exit 2 ;;
+    *) echo "Aufruf: $0 preflight | keychain-setup | build | validate | upload | submit | summary | cleanup" >&2; exit 2 ;;
 esac
