@@ -135,15 +135,33 @@ DiskRings ist Open Source (MIT-Lizenz): github.com/brokoskokoli/diskrings
 | Anmeldung erforderlich | aus |
 | Kontakt | eigener Name, Telefon, E-Mail (sieht nur Apple) |
 
-Notizen:
+Notizen (zugleich Antwort auf Apples Rückfrage vom 11.10.2026 an neue Entwicklerkonten; in App Store Connect unter „App-Prüfung → Antworten“ und im Feld „Notizen“ eintragen, < 4000 Zeichen):
 ```
-DiskRings visualizes disk usage as a sunburst chart. In this sandboxed App Store version it only reads folders and volumes the user explicitly selects in the Open dialog (stored as app-scoped security-scoped bookmarks; manageable in Settings → Folder Access). To test: click "Macintosh HD" on the start screen, click "Grant Access" in the Open dialog, and the scan starts.
+1. Screen recording
+Attached: recorded on a MacBook running the latest macOS. It starts with launching DiskRings from the Applications folder and shows the typical flow: choose a volume, grant folder access, scan, explore the sunburst, move a file to the Trash and undo, save a snapshot and compare. The app has no accounts, no user-generated content and no paid content.
 
-"Move to Trash" uses FileManager.trashItem, only within user-selected folders. It never deletes permanently, asks for confirmation, and can be undone with Cmd+Z. System locations are protected.
+2. Purpose and target audience
+DiskRings is a disk space analyzer for Mac users who run low on storage and want to know what fills their disk. It scans a volume or folder the user selects and shows the result as an interactive sunburst chart: each ring is one folder level, each segment is as wide as its share of the space. It also breaks the volume down into System Data (other APFS volumes such as Preboot or VM), Purgeable and Free space. Snapshots let users compare two scans to see what grew. Value: users find large and growing folders in seconds and can clean up safely (Move to Trash only, with confirmation and Undo).
 
-The app makes no network connections and collects no data. Snapshots are stored locally in the app container.
+3. How to use the main features
+No login, no account, no sample files needed.
+- Launch DiskRings. The start screen lists all volumes.
+- Click "Macintosh HD". Because the app is sandboxed, an Open dialog asks for access; click "Grant Access". The scan starts (a few seconds to a minute). Alternatively use "Scan Home Folder", File > Choose Folder... or drag a folder onto the window.
+- Click a segment to zoom in, use Go > Back to return. Right-click a segment or list row for Show in Finder, Quick Look, Copy Path, Rescan This Folder and Move to Trash.
+- Move to Trash asks for confirmation and can be undone with Edit > Undo (Cmd+Z). Nothing is ever deleted permanently; system locations are protected.
+- File > Save Snapshot..., later rescan and choose Snapshots... to compare two scans.
+- Settings > Folder Access lists granted folders and lets the user remove access.
+Optional: without Full Disk Access some protected folders (e.g. ~/Library/Mail) are unreadable and shown as "Unreadable System Data"; the app explains this on the start screen.
+
+4. External services
+None. DiskRings makes no network connections (no network entitlement), uses no third-party SDKs, analytics, authentication, payment or AI services. It only uses macOS system APIs to read file metadata. Snapshots and settings are stored locally in the app container.
+
+5. Regional differences
+None. The app works identically in all regions; it is localized into 14 languages.
+
+6. Regulated industry / third-party material
+Not applicable. DiskRings is not in a regulated industry and contains no protected third-party material. It is open source under the MIT license: https://github.com/brokoskokoli/diskrings
 ```
-
 ## Exportkontrolle
 
 Entfällt beim Upload: Der Store-Build setzt `ITSAppUsesNonExemptEncryption = false`.
