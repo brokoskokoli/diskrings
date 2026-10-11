@@ -1,8 +1,9 @@
 # Releases erstellen
 
 DiskRings wird mit der Developer ID signiert, von Apple notarisiert und als ZIP
-und DMG über GitHub Releases verteilt. Das geht auf zwei Wegen, die dieselben
-Skripte nutzen:
+und DMG über GitHub Releases verteilt; installierte Versionen holen sich neue
+Releases per Sparkle (`appcast.xml`, siehe „Automatische Updates (Sparkle)“).
+Das geht auf zwei Wegen, die dieselben Skripte nutzen:
 
 | Weg | Auslöser | Signatur | Notarisierung |
 |---|---|---|---|
@@ -11,13 +12,14 @@ Skripte nutzen:
 
 Beteiligte Skripte:
 
-- `scripts/make-app.sh`: baut `build/DiskRings.app` (universal) und signiert sie. `DISKRINGS_IDENTITY` wählt die Identität, `DISKRINGS_KEYCHAIN` beschränkt die Suche auf eine Keychain (dann ohne Rückfall auf ad hoc). Mit `--appstore` die Store-Variante (siehe „Mac App Store“ unten).
+- `scripts/make-app.sh`: baut `build/DiskRings.app` (universal, mit eingebettetem `Sparkle.framework`) und signiert sie. `DISKRINGS_IDENTITY` wählt die Identität, `DISKRINGS_KEYCHAIN` beschränkt die Suche auf eine Keychain (dann ohne Rückfall auf ad hoc). Mit `--appstore` die Store-Variante ohne Sparkle (siehe „Mac App Store“ unten).
 - `scripts/notarize.sh`: `check` prüft die Zugangsdaten, `submit <datei>` reicht ein und wartet. Nutzt den API Key, wenn `NOTARY_API_KEY_ID` gesetzt ist, sonst das Profil `diskrings`.
 - `scripts/release.sh`: Tests, `make-app.sh`, Notarisierung von App und DMG, `stapler`, `spctl`, `SHA256SUMS`.
-- `scripts/ci-release.sh`: Schritte nur für den Workflow (Vorprüfung, temporäre Keychain).
+- `scripts/ci-release.sh`: Schritte für den Workflow (Vorprüfung, temporäre Keychain) und `appcast` (Sparkle-Signatur und `dist/appcast.xml`, auch von `release.sh` lokal genutzt).
+- `scripts/make-appcast.sh`: schreibt `appcast.xml` (ein Eintrag, XML-maskiert); `scripts/sparkle-ed25519.swift` prüft Signaturen gegen den öffentlichen Schlüssel; `scripts/sparkle-tools.sh`: Version und SHA-256 des Sparkle-Archivs für `sign_update`/`generate_keys`. Tests: `scripts/test-make-appcast.sh` (läuft in der CI).
 - `scripts/ci-appstore.sh`: Schritte des Workflows „App Store Upload“ (`.github/workflows/appstore.yml`): Vorprüfung, Keychain mit beiden Store-Identitäten, `make-app.sh --appstore`, Prüfung, `altool` Validierung und Upload. Nutzt die Keychain-Funktionen aus `ci-release.sh`.
 - `scripts/asc-submit.sh` (mit `scripts/asc-jwt.swift`): Einreichung zur Prüfung über die App Store Connect API für `submit_for_review`; Tests gegen einen Mock-Server: `scripts/test-asc-submit.sh`.
-- `scripts/setup-release-secrets.sh`: richtet die Secrets einmalig ein (`--appstore`: für den Store-Workflow im Environment `appstore`).
+- `scripts/setup-release-secrets.sh`: richtet die Secrets einmalig ein (`--appstore`: für den Store-Workflow im Environment `appstore`; `--sparkle`: Schlüssel für die automatischen Updates).
 
 ## Einmalige Einrichtung (GitHub Actions)
 
@@ -136,8 +138,9 @@ Der Workflow „Release“ startet, wartet ggf. auf deine Freigabe (Actions → 
 2. baut und testet (ohne Performance-Tests, wie die CI),
 3. importiert das Zertifikat in eine temporäre Keychain mit Zufallspasswort (`set-key-partition-list`, damit `codesign` ohne Dialog läuft),
 4. ruft `scripts/release.sh --skip-checks` auf: `make-app.sh` mit dieser Keychain, Notarisierung von App und DMG per API Key, `stapler`, `spctl`, ZIP, DMG, `SHA256SUMS`,
-5. löscht die Keychain (immer, auch bei Fehlern) und lädt die Dateien als Artefakt hoch,
-6. legt im getrennten Job `publish` (nur dieser darf schreiben, er sieht keine Signier-Secrets) das Release `v<version>` mit generierten Release-Notes an.
+5. signiert das ZIP für Sparkle und schreibt `appcast.xml` (`scripts/ci-release.sh appcast`, eigener Schritt, nur dort das Secret `SPARKLE_ED_PRIVATE_KEY`),
+6. löscht die Keychain (immer, auch bei Fehlern) und lädt die Dateien als Artefakt hoch,
+7. legt im getrennten Job `publish` (nur dieser darf schreiben, er sieht keine Signier-Secrets) das Release `v<version>` mit ZIP, DMG, `appcast.xml`, `SHA256SUMS` und generierten Release-Notes an.
 
 Dauer: meist 5–10 Minuten (v0.1.0: knapp 5 Minuten, die Notarisierung selbst unter einer Minute). Die allererste Notarisierung eines Teams kann deutlich länger dauern; deshalb wurde sie für v0.1.0 einmal lokal mit `scripts/release.sh` gemacht.
 
@@ -173,6 +176,39 @@ scripts/release.sh
 ```
 
 Nicht beide Wege für dieselbe Version mischen: Wenn der Tag-Workflow schon ein Release angelegt hat, nicht zusätzlich `release.sh --publish` aufrufen.
+
+## Automatische Updates (Sparkle)
+
+Die GitHub-Version enthält [Sparkle](https://sparkle-project.org) 2.10.0 (SwiftPM, exakt gepinnt; Begründung und Trennung von der Store-Variante: [DECISIONS.md](DECISIONS.md), „Automatische Updates mit Sparkle“). Die App liest `SUFeedURL` = `https://github.com/brokoskokoli/diskrings/releases/latest/download/appcast.xml`, also immer den Appcast des **neuesten** Releases, und installiert ein Update nur, wenn dessen EdDSA-Signatur zum öffentlichen Schlüssel in ihrer Info.plist (`SUPublicEDKey`) passt. Menü „DiskRings → Nach Updates suchen …“ und Einstellungen → Allgemein → „Updates“. Ob automatisch geprüft wird, fragt Sparkle beim zweiten Start (`SUEnableAutomaticChecks` ist nicht gesetzt); kein Systemprofil.
+
+**Hinweis für Nutzer bis 0.2.1:** Diese Versionen enthalten noch kein Sparkle. Wer sie installiert hat, muss die erste Version mit Sparkle einmal von Hand laden (DMG oder ZIP); danach kommen Updates automatisch. In den Release-Notes dieser Version erwähnen.
+
+### Einmalig: Schlüssel einrichten
+
+Im echten Terminal im Projektordner:
+
+```sh
+scripts/setup-release-secrets.sh --sparkle
+```
+
+Das Skript lädt Sparkles `generate_keys` aus dem offiziellen Archiv (SHA-256 geprüft), erzeugt einen Ed25519-Schlüssel im Anmelde-Schlüsselbund (Konto `diskrings`; vorhandene werden wiederverwendet), exportiert den privaten Teil mit `generate_keys -x` in ein temporäres Verzeichnis (0700), prüft ihn gegen den öffentlichen, setzt ihn per `gh secret set SPARKLE_ED_PRIVATE_KEY --env release` (ohne Ausgabe) und löscht die Exportdatei. Der öffentliche Schlüssel landet in `Resources/sparkle-public-ed-key.txt`: **committen und pushen**, `make-app.sh` schreibt ihn in die Info.plist.
+
+- **Den privaten Schlüssel sichern** (Schlüsselbundverwaltung → „Private key for signing Sparkle updates“ → Passwort in den Passwortmanager). Geht er verloren, nehmen installierte Versionen keine Updates mehr an; dann hilft nur ein neuer Schlüssel und ein manuelles Update aller Nutzer.
+- **Den Schlüssel nie wechseln**, solange es Installationen mit dem alten gibt (das Skript warnt, wenn `Resources/sparkle-public-ed-key.txt` schon einen anderen enthält). Auf einem anderen Mac: dort `generate_keys -x`, hier `generate_keys --account diskrings -f <datei>`.
+- Kontrolle: Settings → Environments → release zeigt jetzt **6 Environment secrets**.
+
+### Was bei jedem Release passiert
+
+- **Vorprüfung:** Beim Veröffentlichen sind `SPARKLE_ED_PRIVATE_KEY` und eine gültige `Resources/sparkle-public-ed-key.txt` Pflicht; im Trockenlauf genügt eine Warnung (dann ohne `appcast.xml`).
+- **Bauen:** `make-app.sh` bettet `Sparkle.framework` ein und signiert es von innen nach außen (XPC-Dienste, Autoupdate, Updater.app, Framework) mit Developer ID, Hardened Runtime und Zeitstempel; danach die App, ohne `--deep`. Beim Veröffentlichen bricht es ohne öffentlichen Schlüssel ab (`DISKRINGS_REQUIRE_UPDATE_KEY=1`).
+- **Appcast:** `scripts/ci-release.sh appcast` lädt `sign_update` aus `Sparkle-2.10.0.tar.xz` (SHA-256 `c2bf58aa…6da0c`, fest in `scripts/sparkle-tools.sh`), signiert `DiskRings-<version>.zip` (Schlüssel nur über stdin), prüft die Signatur mit `scripts/sparkle-ed25519.swift` gegen `Resources/sparkle-public-ed-key.txt` und gegen `SUPublicEDKey` der gebauten App und schreibt `dist/appcast.xml`: ein Eintrag mit `sparkle:version` = Build-Nummer (`CFBundleVersion`, danach vergleicht Sparkle), `shortVersionString` = `VERSION`, `minimumSystemVersion` 14.0, Download `https://github.com/brokoskokoli/diskrings/releases/download/v<version>/DiskRings-<version>.zip` mit Länge und `sparkle:edSignature`, Link auf die Release-Seite und, falls vorhanden, `dev/release-notes/<version>.en.txt` als Text. `SHA256SUMS` enthält auch `appcast.xml`. Im Trockenlauf steht der Appcast in der Zusammenfassung des Laufs und im Artefakt.
+- **Veröffentlichen:** `appcast.xml` ist ein Release-Asset. Weil die App `releases/latest/download/appcast.xml` liest, sehen Nutzer das Update, sobald das Release als „Latest“ markiert ist. Vorabversionen (Pre-release) zählen nicht als „Latest“.
+
+Die ZIP ist das Update-Archiv (Sparkle entpackt sie und prüft Signatur und Developer ID), die DMG bleibt für Erstinstallationen.
+
+**Lokal:** `scripts/release.sh` erzeugt `appcast.xml` ebenfalls, mit dem Schlüssel aus `SPARKLE_ED_PRIVATE_KEY` oder sonst aus dem Schlüsselbund (Konto `DISKRINGS_SPARKLE_ACCOUNT`, Standard `diskrings`; macOS fragt evtl., ob `sign_update` den Eintrag lesen darf). Mit `--publish` ist er Pflicht.
+
+**Sparkle aktualisieren:** Neue Version frühestens zwei Wochen nach ihrem Release, Changelog lesen. Dann in `Package.swift` (`exact:`), `Package.resolved` (`swift package update Sparkle`), `scripts/sparkle-tools.sh` (Version und SHA-256 des `.tar.xz`, z. B. `gh release view <tag> -R sparkle-project/Sparkle --json assets`) gleichzeitig ändern; `scripts/test-make-appcast.sh` prüft, dass die drei zusammenpassen.
 
 ## Mac App Store
 
@@ -212,6 +248,9 @@ Variablen von `make-app.sh --appstore`: `DISKRINGS_APPSTORE_IDENTITY` (Standard 
 | „Identität … ist nicht gültig“ | Zertifikat abgelaufen oder widerrufen. Neues Developer-ID-Zertifikat anlegen, Skript erneut ausführen. |
 | „Apple lehnt den API-Key ab“ | Key ID, Issuer ID oder `.p8` passen nicht zusammen, Key widerrufen oder ein Individual Key statt eines Team Keys. Die letzten Zeilen von `notarytool` stehen darüber. |
 | „Notarisierung … nicht akzeptiert“ | Das Protokoll von Apple steht direkt darunter im Log (`notarytool log`). Meist fehlende Hardened Runtime oder eine unsignierte Datei im Bündel. |
+| „Automatische Updates nicht eingerichtet“ | `SPARKLE_ED_PRIVATE_KEY` oder `Resources/sparkle-public-ed-key.txt` fehlt: `scripts/setup-release-secrets.sh --sparkle`, Datei committen. Im Trockenlauf nur eine Warnung. |
+| „Die Signatur passt nicht zu Resources/sparkle-public-ed-key.txt“ | Das Secret gehört zu einem anderen Schlüssel als die Datei im Repo. Nicht die Datei ändern (sonst nehmen installierte Apps keine Updates mehr an), sondern das Secret mit dem richtigen Schlüssel neu setzen (`--sparkle`). |
+| „Prüfsumme des Sparkle-Archivs stimmt nicht“ | Download beschädigt oder das Archiv wurde ersetzt: nicht übergehen, sondern prüfen (`gh release view 2.10.0 -R sparkle-project/Sparkle --json assets`). |
 | „Release vX existiert schon“ | Altes Release löschen (`gh release delete vX`) und den Lauf wiederholen, oder `VERSION` erhöhen. |
 | Lauf wartet und tut nichts | Pflicht-Freigabe: Actions → Lauf → **Review deployments** → `release` → Approve. |
 | `hdiutil: create failed - Resource busy` | Bekanntes Runner-Problem; `release.sh` versucht es dreimal. Sonst Lauf wiederholen. |
@@ -243,13 +282,14 @@ Mit dem Workflow verlässt der private Schlüssel der Developer ID den Rechner: 
 
 **Gegenmaßnahmen im Workflow**
 
-- Secrets nur im Environment `release`, nur in den drei Schritten, die sie brauchen; der Job mit Schreibrecht (`publish`) sieht sie nicht, der Job mit den Secrets hat nur Leserecht.
+- Secrets nur im Environment `release`, nur in den Schritten, die sie brauchen; der Job mit Schreibrecht (`publish`) sieht sie nicht, der Job mit den Secrets hat nur Leserecht.
 - Standard-Token ohne Rechte (`permissions: {}`), `persist-credentials: false` beim Checkout.
 - Actions auf Commit-SHAs gepinnt; nur Actions von GitHub (`actions/*`) und `maxim-lobanov/setup-xcode` (wie in der CI). Updates bewusst einspielen (SHA und Versionskommentar ändern).
 - Auslöser nur Tag-Push `v*` und manueller Start; keine Pull-Request-Auslöser, also kommt fremder Code aus Forks nie an die Secrets.
 - Kein `set -x`; GitHub maskiert Secret-Werte im Log zusätzlich, das zufällige Keychain-Passwort wird per `::add-mask::` maskiert. Die `.p8` liegt nur für die Dauer eines `notarytool`-Aufrufs in einer Datei (0600) unter `$RUNNER_TEMP`, das `.p12` nur bis zum Import. Die Keychain wird im `always()`-Schritt gelöscht.
 - Bekannte Restlücke: Das zufällige Keychain-Passwort und das `.p12`-Passwort stehen für die Dauer von `security create-keychain`/`unlock-keychain`/`import`/`set-key-partition-list` als Prozessargumente in der Prozessliste (das `security`-Werkzeug nimmt sie nicht anders ohne Dialog an). Auf dem gehosteten, nur für diesen Job gestarteten Runner kann sie nur der eigene Job sehen; das Risiko ist gering. Lokal gilt dasselbe für `scripts/setup-release-secrets.sh` (temporäres Export-Passwort).
 - Das Zwischenzertifikat von Apple wird, falls es auf dem Runner fehlt, nur mit geprüfter SHA-256-Summe nachgeladen.
+- Sparkle-Schlüssel: `SPARKLE_ED_PRIVATE_KEY` sehen nur die Vorprüfung (Vorhandensein, Format) und der Appcast-Schritt; dort geht er nur per stdin an `sign_update` und landet nie in einer Datei. `sign_update` kommt aus dem Sparkle-Archiv mit fester SHA-256-Summe, entpackt wird erst nach der Prüfung. Wer den Schlüssel erbeutet, kann Updates signieren, die installierte DiskRings-Apps annehmen würden; ausliefern kann er sie aber nur, wenn er zusätzlich ein Release als neuestes auf GitHub veröffentlichen kann (Feed und Download liegen dort, nur per HTTPS). Bei Verdacht: Schlüsselwechsel nach der Sparkle-Dokumentation (EdDSA-Schlüssel rotieren: eine Version mit neuem `SUPublicEDKey` veröffentlichen, die noch mit dem alten Schlüssel signiert ist), danach den alten Schlüssel löschen.
 
 **Was du einrichten solltest**
 

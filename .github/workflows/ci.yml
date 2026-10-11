@@ -52,16 +52,38 @@ jobs:
       - name: swift test (ohne Performance-Tests)
         run: swift test --skip 'Performance|performance'
 
-      - name: Release-Build (universal)
-        run: swift build -c release --product DiskRings --arch arm64 --arch x86_64
+      # GitHub-Variante (universal, mit Sparkle). Ohne Zertifikat signiert
+      # make-app.sh ad hoc; ohne Resources/sparkle-public-ed-key.txt nur mit Warnung.
+      - name: GitHub-Variante (ad hoc, universal, mit Sparkle)
+        run: |
+          DISKRINGS_ADHOC=1 scripts/make-app.sh
+          APP=build/DiskRings.app
+          test "$(lipo -archs "$APP/Contents/MacOS/DiskRings" | wc -w | tr -d ' ')" = 2
+          test -d "$APP/Contents/Frameworks/Sparkle.framework"
+          otool -L "$APP/Contents/MacOS/DiskRings" | grep -q '@rpath/Sparkle.framework/'
+          otool -l "$APP/Contents/MacOS/DiskRings" | grep -q '@executable_path/../Frameworks'
+          plutil -extract SUFeedURL raw "$APP/Contents/Info.plist" | grep -qx 'https://github.com/brokoskokoli/diskrings/releases/latest/download/appcast.xml'
+          codesign --verify --deep --strict "$APP"
+
+      - name: Appcast- und Sparkle-Skripte testen
+        run: scripts/test-make-appcast.sh
 
       # Mac-App-Store-Variante (Sandbox), damit sie nicht unbemerkt bricht. Ohne
       # Zertifikate auf dem Runner signiert make-app.sh ad hoc mit den
       # Sandbox-Entitlements und baut ein unsigniertes .pkg (siehe dev/APPSTORE.md).
-      - name: App-Store-Variante (ad hoc)
+      # Kein Sparkle in der Store-Variante (Apple lehnt Selbst-Updater ab):
+      # make-app.sh prüft das selbst, hier zusätzlich unabhängig.
+      - name: App-Store-Variante (ad hoc, ohne Sparkle)
         run: |
           scripts/make-app.sh --appstore
-          ENTITLEMENTS=$(codesign -d --entitlements - build/appstore/DiskRings.app 2>/dev/null)
+          APP=build/appstore/DiskRings.app
+          ENTITLEMENTS=$(codesign -d --entitlements - "$APP" 2>/dev/null)
           grep -q "com.apple.security.app-sandbox" <<<"$ENTITLEMENTS"
-          plutil -extract ITSAppUsesNonExemptEncryption raw build/appstore/DiskRings.app/Contents/Info.plist | grep -qx false
-          test -f "build/DiskRings-$(tr -d '[:space:]' < VERSION).pkg"
+          plutil -extract ITSAppUsesNonExemptEncryption raw "$APP/Contents/Info.plist" | grep -qx false
+          PKG="build/DiskRings-$(tr -d '[:space:]' < VERSION).pkg"
+          test -f "$PKG"
+          if find "$APP" -iname '*sparkle*' | grep -q .; then echo "::error::Sparkle-Dateien im Store-Bündel"; exit 1; fi
+          if otool -L "$APP/Contents/MacOS/DiskRings" | grep -qi sparkle; then echo "::error::Store-Binary gegen Sparkle gelinkt"; exit 1; fi
+          if strings -a "$APP/Contents/MacOS/DiskRings" | grep -qE 'SUFeedURL|SUPublicEDKey|SUEnable|SPU[A-Z][A-Za-z]+|[Ss]parkle'; then echo "::error::Sparkle-Zeichenketten im Store-Binary"; exit 1; fi
+          if grep -q '<key>SU' "$APP/Contents/Info.plist"; then echo "::error::Sparkle-Schlüssel in der Store-Info.plist"; exit 1; fi
+          if pkgutil --payload-files "$PKG" | grep -qi sparkle; then echo "::error::Sparkle im Store-Paket"; exit 1; fi

@@ -13,7 +13,12 @@
 #   4. Endgültiges ZIP (ditto) und DMG (hdiutil, mit Link auf /Applications)
 #      aus der gehefteten App; DMG signieren, einreichen, heften
 #   5. Gatekeeper-Prüfung mit spctl
-#   6. nur mit --publish: gh release create v<VERSION> mit ZIP und DMG
+#   6. Sparkle: ZIP signieren, dist/appcast.xml (scripts/ci-release.sh appcast);
+#      Schlüssel aus SPARKLE_ED_PRIVATE_KEY, lokal sonst aus dem Schlüsselbund
+#      (Konto DISKRINGS_SPARKLE_ACCOUNT, Standard "diskrings"). Mit --publish
+#      Pflicht (auch der öffentliche Schlüssel in der App), sonst eine Warnung.
+#      DISKRINGS_SKIP_APPCAST=1 lässt den Schritt aus (Release-Workflow: eigener Schritt).
+#   7. nur mit --publish: gh release create v<VERSION> mit ZIP, DMG und appcast.xml
 #
 # Notarisierung (scripts/notarize.sh): Schlüsselbund-Profil "diskrings"
 # (Standard) oder App Store Connect API Key über NOTARY_API_KEY_ID,
@@ -37,7 +42,7 @@ for arg in "$@"; do
     case "$arg" in
         --publish) PUBLISH=1 ;;
         --skip-checks) SKIP_CHECKS=1 ;;
-        -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unbekannte Option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -91,6 +96,9 @@ else
 fi
 
 # --- 2. App bauen und signieren --------------------------------------------
+# Mit --publish muss der öffentliche Sparkle-Schlüssel in die App (sonst nimmt
+# sie nie wieder ein Update an).
+if [ "$PUBLISH" = "1" ]; then export DISKRINGS_REQUIRE_UPDATE_KEY=1; fi
 scripts/make-app.sh
 # Ausgabe erst einsammeln: `grep -q` direkt in der Pipe beendet sich beim ersten
 # Treffer, codesign bekommt SIGPIPE, und mit pipefail gilt das als Fehler.
@@ -164,13 +172,23 @@ xcrun stapler validate "$APP"
 xcrun stapler validate "$DMG"
 
 (cd "$DIST" && shasum -a 256 "$(basename "$ZIP")" "$(basename "$DMG")" > SHA256SUMS)
+
+# --- 6. Sparkle-Appcast ----------------------------------------------------
+if [ "${DISKRINGS_SKIP_APPCAST:-0}" = "1" ]; then
+    echo "==> appcast.xml übersprungen (DISKRINGS_SKIP_APPCAST=1)"
+else
+    if [ -z "${GITHUB_ACTIONS:-}" ]; then export DISKRINGS_SPARKLE_ACCOUNT=${DISKRINGS_SPARKLE_ACCOUNT:-diskrings}; fi
+    if [ "$PUBLISH" = "1" ]; then export DISKRINGS_REQUIRE_APPCAST=1; fi
+    scripts/ci-release.sh appcast >/dev/null
+fi
 echo "==> Artefakte:"
 ls -l "$DIST"
 
-# --- 6. Veröffentlichen ----------------------------------------------------
+# --- 7. Veröffentlichen ----------------------------------------------------
 if [ "$PUBLISH" = "1" ]; then
+    [ -f "$DIST/appcast.xml" ] || { echo "error: $DIST/appcast.xml fehlt." >&2; exit 1; }
     echo "==> gh release create v$VERSION"
-    gh release create "v$VERSION" "$ZIP" "$DMG" "$DIST/SHA256SUMS" \
+    gh release create "v$VERSION" "$ZIP" "$DMG" "$DIST/SHA256SUMS" "$DIST/appcast.xml" \
         --title "DiskRings $VERSION" --generate-notes --target "$(git rev-parse HEAD)"
 else
     echo "==> Nicht veröffentlicht (dazu: scripts/release.sh --publish)"

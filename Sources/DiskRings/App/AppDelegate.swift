@@ -13,6 +13,8 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let state = AppState(prefs: Preferences())
+    /// Automatische Updates (nur GitHub-Variante, sonst ohne Funktion), einmal pro Prozess.
+    let updater = AppUpdater.live()
     /// Von `RootView` beim ersten Erscheinen gesetzt; bleibt gültig, auch wenn
     /// das Fenster später geschlossen wird.
     var openWindow: OpenWindowAction?

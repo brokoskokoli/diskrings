@@ -237,6 +237,10 @@
 "settings.section.trash" = "Papperskorg";
 "settings.trash.confirm" = "Fråga innan objekt flyttas till papperskorgen";
 "settings.trash.footer" = "Objekt på 1 GB eller mer måste alltid bekräftas.";
+"menu.checkForUpdates" = "Sök efter uppdateringar…";
+"settings.section.updates" = "Uppdateringar";
+"settings.updates.automatic" = "Sök efter uppdateringar automatiskt";
+"settings.updates.footer" = "DiskRings frågar GitHub om en ny version finns. Ingen information om dig eller dina filer skickas.";
 "settings.section.scan" = "Skanning";
 "settings.includeHidden" = "Räkna med dolda filer";
 "settings.crossMounts" = "Gå in i andra volymer vid skanning";

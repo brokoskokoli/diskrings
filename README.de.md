@@ -31,7 +31,8 @@ DiskRings scannt ein Volume oder einen Ordner und zeigt die Belegung als Sunburs
 - **Sicher aufräumen:** Kontextmenü mit Im Finder zeigen, Öffnen, Übersicht (Quick Look), Pfad kopieren, Ordner neu scannen und In den Papierkorb legen. Gelöscht wird nur über den Papierkorb, mit Rückfrage und Widerrufen per ⌘Z. Systembereiche sind geschützt.
 - **Färbung** nach Ast oder nach Dateityp, hell und dunkel.
 - **Kommandozeilen-Werkzeug** `diskrings-cli` für Scan, Top-Ordner, Snapshots und Vergleich.
-- **Datenschutz:** keine Netzwerkzugriffe, keine Telemetrie, kein Konto.
+- **Datenschutz:** keine Telemetrie, kein Konto; einzige Netzwerkanfrage ist die Update-Prüfung der GitHub-Version (die App-Store-Version macht keine).
+- **Automatische Updates** für die Version von GitHub (Sparkle, signiert und geprüft); die App-Store-Version aktualisiert der App Store.
 - **Lokalisiert** in 14 Sprachen, Größen, Zahlen und Datum im Format der Region.
 
 ### Sunburst-Diagramm
@@ -126,7 +127,9 @@ echo 0.2.0 > VERSION && git commit -am "Version 0.2.0" && git push origin main
 git tag -a v0.2.0 -m "DiskRings 0.2.0" && git push origin v0.2.0
 ```
 
-Danach den Lauf freigeben (Actions → Release → **Review deployments** → `release` → **Approve and deploy**). Der Workflow `release.yml` baut, signiert, notarisiert und veröffentlicht das Release in etwa 5–10 Minuten. Ein Trockenlauf ohne Veröffentlichung: `gh workflow run release.yml -f dry_run=true`.
+Danach den Lauf freigeben (Actions → Release → **Review deployments** → `release` → **Approve and deploy**). Der Workflow `release.yml` baut, signiert, notarisiert und veröffentlicht das Release in etwa 5–10 Minuten, mit `appcast.xml` für die automatischen Updates (Sparkle; installierte Versionen nach 0.2.1 finden es dort, wer 0.2.1 oder älter hat, aktualisiert einmal von Hand). Ein Trockenlauf ohne Veröffentlichung: `gh workflow run release.yml -f dry_run=true`.
+
+Einmalig für die automatischen Updates: `scripts/setup-release-secrets.sh --sparkle` legt den EdDSA-Schlüssel an (privater Teil als Secret `SPARKLE_ED_PRIVATE_KEY`, öffentlicher in `Resources/sparkle-public-ed-key.txt`, committen). Ohne beides bricht ein echtes Release in der Vorprüfung ab.
 
 **Lokal:** Einmalig das Notarisierungs-Profil anlegen (mit einem app-spezifischen Passwort der Apple-ID; alternativ API-Key-Variablen, siehe RELEASING.md):
 
@@ -136,7 +139,7 @@ xcrun notarytool store-credentials diskrings --apple-id <apple-id> --team-id AGR
 
 1. `VERSION` erhöhen und committen.
 2. `scripts/release.sh`: führt `check.sh` und `make-app.sh` aus, notarisiert App und DMG, heftet die Tickets an, erzeugt `dist/DiskRings-<version>.zip`, `.dmg` und `SHA256SUMS` und prüft mit `spctl`.
-3. `scripts/release.sh --publish` legt zusätzlich das GitHub-Release `v<version>` an (sauberes Arbeitsverzeichnis, Tag noch nicht vorhanden).
+3. `scripts/release.sh --publish` legt zusätzlich das GitHub-Release `v<version>` an (sauberes Arbeitsverzeichnis, Tag noch nicht vorhanden), mit `appcast.xml` (Sparkle-Schlüssel aus dem Schlüsselbund, Konto `diskrings`, oder aus `SPARKLE_ED_PRIVATE_KEY`).
 
 ## Häufige Fragen
 
@@ -148,7 +151,10 @@ xcrun notarytool store-credentials diskrings --apple-id <apple-id> --team-id AGR
 
 ## Datenschutz
 
-Keine Netzwerkverbindungen, keine Telemetrie, keine Analyse- oder Absturzberichte. Scans und Snapshots bleiben auf dem Mac (`~/Library/Application Support/DiskRings`).
+Keine Telemetrie, keine Analyse- oder Absturzberichte. Scans und Snapshots bleiben auf dem Mac (`~/Library/Application Support/DiskRings`).
+
+- **Mac-App-Store-Version:** stellt überhaupt keine Netzwerkverbindungen her.
+- **Version von GitHub:** fragt bei GitHub nach Updates (Datei `appcast.xml` des neuesten Releases), wenn du **Nach Updates suchen …** wählst und, wenn du es erlaubst, etwa einmal am Tag. Dabei werden keine Daten über dich, deinen Mac oder deine Dateien übertragen, auch kein Systemprofil. Vor der ersten automatischen Prüfung fragt DiskRings nach; abschalten unter **Einstellungen → Allgemein → Automatisch nach Updates suchen**. Updates werden nur mit passender EdDSA-Signatur installiert. Ausführlich: [privacy.html](https://brokoskokoli.github.io/diskrings/privacy.html).
 
 ## Mitmachen
 

@@ -237,6 +237,10 @@
 "settings.section.trash" = "Kosz";
 "settings.trash.confirm" = "Pytaj przed przeniesieniem do Kosza";
 "settings.trash.footer" = "Rzeczy o rozmiarze 1 GB lub większym są zawsze potwierdzane.";
+"menu.checkForUpdates" = "Sprawdź uaktualnienia…";
+"settings.section.updates" = "Uaktualnienia";
+"settings.updates.automatic" = "Automatycznie sprawdzaj uaktualnienia";
+"settings.updates.footer" = "DiskRings pyta GitHub, czy jest dostępna nowa wersja. Żadne informacje o Tobie ani Twoich plikach nie są przesyłane.";
 "settings.section.scan" = "Skanowanie";
 "settings.includeHidden" = "Uwzględniaj pliki ukryte";
 "settings.crossMounts" = "Przechodź do innych woluminów podczas skanowania";

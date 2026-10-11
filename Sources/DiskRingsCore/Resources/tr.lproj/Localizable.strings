@@ -237,6 +237,10 @@
 "settings.section.trash" = "Çöp Sepeti";
 "settings.trash.confirm" = "Çöp Sepeti’ne taşımadan önce sor";
 "settings.trash.footer" = "1 GB veya daha büyük öğeler her zaman onaylatılır.";
+"menu.checkForUpdates" = "Güncellemeleri Denetle…";
+"settings.section.updates" = "Güncellemeler";
+"settings.updates.automatic" = "Güncellemeleri otomatik olarak denetle";
+"settings.updates.footer" = "DiskRings, yeni bir sürüm olup olmadığını GitHub’a sorar. Sizinle veya dosyalarınızla ilgili hiçbir bilgi gönderilmez.";
 "settings.section.scan" = "Tarama";
 "settings.includeHidden" = "Gizli dosyaları say";
 "settings.crossMounts" = "Tarama sırasında başka bölümlere geç";

@@ -237,6 +237,10 @@
 "settings.section.trash" = "废纸篓";
 "settings.trash.confirm" = "移到废纸篓前询问";
 "settings.trash.footer" = "1 GB 及以上的项目始终需要确认。";
+"menu.checkForUpdates" = "检查更新…";
+"settings.section.updates" = "更新";
+"settings.updates.automatic" = "自动检查更新";
+"settings.updates.footer" = "DiskRings 会向 GitHub 查询是否有新版本。不会发送任何关于你或你的文件的信息。";
 "settings.section.scan" = "扫描";
 "settings.includeHidden" = "统计隐藏文件";
 "settings.crossMounts" = "扫描时进入其他宗卷";

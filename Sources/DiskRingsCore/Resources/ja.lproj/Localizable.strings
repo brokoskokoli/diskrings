@@ -237,6 +237,10 @@
 "settings.section.trash" = "ゴミ箱";
 "settings.trash.confirm" = "ゴミ箱に入れる前に確認";
 "settings.trash.footer" = "1 GB以上の項目は常に確認されます。";
+"menu.checkForUpdates" = "アップデートを確認…";
+"settings.section.updates" = "アップデート";
+"settings.updates.automatic" = "アップデートを自動的に確認";
+"settings.updates.footer" = "DiskRingsは新しいバージョンがあるかどうかをGitHubに問い合わせます。あなたやあなたのファイルに関する情報は送信されません。";
 "settings.section.scan" = "スキャン";
 "settings.includeHidden" = "不可視ファイルを含める";
 "settings.crossMounts" = "スキャン時にほかのボリュームにも入る";

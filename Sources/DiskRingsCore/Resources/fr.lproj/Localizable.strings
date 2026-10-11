@@ -237,6 +237,10 @@
 "settings.section.trash" = "Corbeille";
 "settings.trash.confirm" = "Demander avant de placer dans la corbeille";
 "settings.trash.footer" = "Les éléments de 1 Go ou plus sont toujours confirmés.";
+"menu.checkForUpdates" = "Rechercher des mises à jour…";
+"settings.section.updates" = "Mises à jour";
+"settings.updates.automatic" = "Rechercher automatiquement les mises à jour";
+"settings.updates.footer" = "DiskRings demande à GitHub si une nouvelle version est disponible. Aucune information sur vous ou vos fichiers n’est transmise.";
 "settings.section.scan" = "Analyse";
 "settings.includeHidden" = "Compter les fichiers cachés";
 "settings.crossMounts" = "Parcourir les autres volumes pendant l’analyse";

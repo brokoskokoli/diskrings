@@ -237,6 +237,10 @@
 "settings.section.trash" = "Cestino";
 "settings.trash.confirm" = "Chiedi prima di spostare nel Cestino";
 "settings.trash.footer" = "Gli elementi da 1 GB in su vengono sempre confermati.";
+"menu.checkForUpdates" = "Controlla aggiornamenti…";
+"settings.section.updates" = "Aggiornamenti";
+"settings.updates.automatic" = "Controlla automaticamente gli aggiornamenti";
+"settings.updates.footer" = "DiskRings chiede a GitHub se è disponibile una nuova versione. Non viene inviata alcuna informazione su di te o sui tuoi file.";
 "settings.section.scan" = "Scansione";
 "settings.includeHidden" = "Conteggia i file nascosti";
 "settings.crossMounts" = "Attraversa altri volumi durante la scansione";

@@ -128,6 +128,10 @@ enum SnapshotRenderer {
                 failures += renderWindow(SettingsPage(tab: tab, prefs: s6.prefs), scheme: scheme, to: dir,
                                          name: "settings-\(tab.rawValue)-\(suffix)")
             }
+            // Reiter „Allgemein“ der GitHub-Variante mit dem Abschnitt „Updates“.
+            failures += renderWindow(SettingsPage(tab: .general, prefs: s6.prefs,
+                                                  updater: .preview(automaticallyChecks: true)),
+                                     scheme: scheme, to: dir, name: "settings-general-updates-\(suffix)")
             // Ganzes Fenster mit Reiterleiste (außerhalb der Settings-Scene als Segmente gezeichnet).
             failures += renderWindow(SettingsView(prefs: s6.prefs), scheme: scheme, to: dir, name: "settings-\(suffix)")
 

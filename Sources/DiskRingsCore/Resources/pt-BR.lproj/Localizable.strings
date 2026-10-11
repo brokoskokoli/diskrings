@@ -237,6 +237,10 @@
 "settings.section.trash" = "Lixo";
 "settings.trash.confirm" = "Perguntar antes de mover para o Lixo";
 "settings.trash.footer" = "Itens de 1 GB ou mais sempre exigem confirmação.";
+"menu.checkForUpdates" = "Buscar Atualizações…";
+"settings.section.updates" = "Atualizações";
+"settings.updates.automatic" = "Buscar atualizações automaticamente";
+"settings.updates.footer" = "O DiskRings consulta o GitHub para saber se há uma nova versão disponível. Nenhuma informação sobre você ou seus arquivos é enviada.";
 "settings.section.scan" = "Análise";
 "settings.includeHidden" = "Contar arquivos ocultos";
 "settings.crossMounts" = "Entrar em outros volumes durante a análise";

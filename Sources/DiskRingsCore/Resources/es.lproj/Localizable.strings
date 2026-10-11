@@ -237,6 +237,10 @@
 "settings.section.trash" = "Papelera";
 "settings.trash.confirm" = "Preguntar antes de trasladar a la papelera";
 "settings.trash.footer" = "Los ítems de 1 GB o más siempre se confirman.";
+"menu.checkForUpdates" = "Buscar actualizaciones…";
+"settings.section.updates" = "Actualizaciones";
+"settings.updates.automatic" = "Buscar actualizaciones automáticamente";
+"settings.updates.footer" = "DiskRings consulta a GitHub si hay una nueva versión disponible. No se envía ninguna información sobre ti ni sobre tus archivos.";
 "settings.section.scan" = "Análisis";
 "settings.includeHidden" = "Contar archivos ocultos";
 "settings.crossMounts" = "Entrar en otros volúmenes durante el análisis";

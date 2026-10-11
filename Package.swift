@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.1
 import Foundation
 import PackageDescription
 
@@ -22,6 +22,13 @@ let testSwiftSettings: [SwiftSetting] =
         ? [.unsafeFlags(["-plugin-path", testingPluginPath])]
         : []
 
+// Automatische Updates (Sparkle) nur in der GitHub-Variante (Developer ID).
+// Die Mac-App-Store-Variante baut mit `--disable-default-traits`: Dann ist
+// Sparkle weder gelinkt noch eingebettet, und der Code unter `#if Updates`
+// fehlt (siehe dev/DECISIONS.md, „Automatische Updates mit Sparkle“).
+// Sparkle exakt gepinnt: 2.10.0 (13.09.2026, Commit eef1a539a373c1f1a320624b1130fc5de7b2e100;
+// Binärziel mit SHA-256 17e28312b8e18ab7cdbbe09a6fb28cc55a5479ec6c371dbc07cdecd2a14fd959
+// im Manifest von Sparkle, Revision in Package.resolved).
 let package = Package(
     name: "DiskRings",
     defaultLocalization: "en",
@@ -31,9 +38,22 @@ let package = Package(
         .executable(name: "DiskRings", targets: ["DiskRings"]),
         .executable(name: "diskrings-cli", targets: ["diskrings-cli"]),
     ],
+    traits: [
+        .trait(name: "Updates", description: "Automatische Updates per Sparkle (nur GitHub-Variante)"),
+        .default(enabledTraits: ["Updates"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
+    ],
     targets: [
         .target(name: "DiskRingsCore", resources: [.process("Resources")]),
-        .executableTarget(name: "DiskRings", dependencies: ["DiskRingsCore"]),
+        .executableTarget(
+            name: "DiskRings",
+            dependencies: [
+                "DiskRingsCore",
+                .product(name: "Sparkle", package: "Sparkle", condition: .when(traits: ["Updates"])),
+            ]
+        ),
         .executableTarget(name: "diskrings-cli", dependencies: ["DiskRingsCore"]),
         .testTarget(
             name: "DiskRingsCoreTests",

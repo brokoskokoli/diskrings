@@ -3,6 +3,7 @@
 #
 #   scripts/setup-release-secrets.sh             # Environment "release" (release.yml)
 #   scripts/setup-release-secrets.sh --appstore  # Environment "appstore" (appstore.yml)
+#   scripts/setup-release-secrets.sh --sparkle   # Schlüssel für automatische Updates
 #
 # Ablauf:
 #   1. Ziel wählen: Environment "release" (empfohlen) oder Repository-Secrets;
@@ -31,8 +32,19 @@
 # APPSTORE_PROVISIONING_PROFILE_BASE64, NOTARY_API_KEY_P8_BASE64,
 # NOTARY_API_KEY_ID, NOTARY_API_ISSUER_ID.
 #
+# --sparkle (dev/RELEASING.md, „Automatische Updates“): Sparkles generate_keys
+# aus dem geprüften Release-Archiv (scripts/sparkle-tools.sh) erzeugt einen
+# EdDSA-Schlüssel im Anmelde-Schlüsselbund (Konto DISKRINGS_SPARKLE_ACCOUNT,
+# Standard "diskrings") oder nimmt den vorhandenen. Der private Schlüssel wird
+# mit `generate_keys -x` in ein temporäres Verzeichnis (0700) exportiert, gegen
+# den öffentlichen Schlüssel geprüft, per `gh secret set SPARKLE_ED_PRIVATE_KEY`
+# (Environment "release") gesetzt und überschrieben/gelöscht. Der öffentliche
+# Schlüssel landet in Resources/sparkle-public-ed-key.txt (ins Repo committen).
+# Der Schlüssel bleibt im Schlüsselbund: Ohne ihn lassen sich keine Updates mehr
+# signieren, die installierte Apps annehmen (Sicherung siehe dev/RELEASING.md).
+#
 # Nichts davon landet im Repo oder in der Shell-History; Werte werden nie
-# ausgegeben. Kein `set -x`.
+# ausgegeben (außer dem öffentlichen Schlüssel). Kein `set -x`.
 set -euo pipefail
 
 IDENTITY=${DISKRINGS_IDENTITY:-"Developer ID Application: Stefan Richter (AGRWTKQZ8C)"}
@@ -55,6 +67,12 @@ APPSTORE_SECRETS=(APPSTORE_DISTRIBUTION_P12_BASE64 APPSTORE_INSTALLER_P12_BASE64
                   APPSTORE_CERTIFICATES_PASSWORD
                   APPSTORE_PROVISIONING_PROFILE_BASE64
                   NOTARY_API_KEY_P8_BASE64 NOTARY_API_KEY_ID NOTARY_API_ISSUER_ID)
+# --sparkle
+SPARKLE_ACCOUNT=${DISKRINGS_SPARKLE_ACCOUNT:-diskrings}
+SPARKLE_PUBLIC_KEY_FILE=${DISKRINGS_UPDATE_KEY_FILE:-Resources/sparkle-public-ed-key.txt}
+SPARKLE_BIN=        # Ordner mit generate_keys (step_sparkle_tools)
+SPARKLE_PUB=        # öffentlicher Schlüssel (step_sparkle_key)
+SPARKLE_KEY_FILE=   # exportierter privater Schlüssel im WORK-Ordner
 
 WORK=
 cleanup() {
@@ -217,12 +235,15 @@ step_target() {
     say "Environment nutzen, und lassen sich mit einer Pflicht-Freigabe schützen (empfohlen)."
     if confirm "Secrets im Environment \"$ENV_NAME\" ablegen (sonst Repository-Secrets)?" j; then
         SECRET_SCOPE=(--env "$ENV_NAME")
+        local created=0
         if ! gh api "repos/$REPO/environments/$ENV_NAME" >/dev/null 2>&1; then
             confirm "Environment \"$ENV_NAME\" existiert nicht. Anlegen?" j || die "Abgebrochen."
             gh api -X PUT "repos/$REPO/environments/$ENV_NAME" >/dev/null
             say "  Environment angelegt."
+            created=1
         fi
-        step_protection
+        # --sparkle ergänzt nur ein Secret: den Schutz eines vorhandenen Environments nicht erneut abfragen.
+        if [ "$MODE" != "sparkle" ] || [ "$created" = 1 ]; then step_protection; fi
     else
         SECRET_SCOPE=()
     fi
@@ -479,6 +500,112 @@ step_set_secrets_appstore() {
     fi
 }
 
+# --- Sparkle (--sparkle) ----------------------------------------------------------
+# Öffentlicher Ed25519-Schlüssel: base64 von genau 32 Byte.
+is_ed_public_key() {
+    [[ "$1" =~ ^[A-Za-z0-9+/]{43}=$ ]] && [ "$(printf '%s' "$1" | base64 --decode 2>/dev/null | wc -c | tr -d ' ')" = 32 ]
+}
+
+step_sparkle_tools() {
+    say ""
+    say "== Sparkle-Werkzeuge (generate_keys) aus dem offiziellen Release-Archiv"
+    # shellcheck source=scripts/sparkle-tools.sh
+    source scripts/sparkle-tools.sh
+    sparkle_fetch_tools "$WORK/sparkle" generate_keys || die "Sparkle-Werkzeuge nicht verfügbar."
+    SPARKLE_BIN="$WORK/sparkle/tools/bin"
+    say "  Sparkle $SPARKLE_VERSION, Prüfsumme stimmt."
+}
+
+# Vorhandenen Schlüssel im Schlüsselbund nehmen oder einen neuen erzeugen.
+step_sparkle_key() {
+    say ""
+    say "== EdDSA-Schlüssel im Anmelde-Schlüsselbund (Konto \"$SPARKLE_ACCOUNT\")"
+    local existing="" repo_key=""
+    existing=$("$SPARKLE_BIN/generate_keys" --account "$SPARKLE_ACCOUNT" -p 2>/dev/null | tr -d '[:space:]') || existing=""
+    if [ -f "$SPARKLE_PUBLIC_KEY_FILE" ]; then repo_key=$(tr -d '[:space:]' < "$SPARKLE_PUBLIC_KEY_FILE"); fi
+    if [ -n "$existing" ] && is_ed_public_key "$existing"; then
+        say "  Vorhanden, öffentlicher Schlüssel: $existing"
+        confirm "Diesen Schlüssel verwenden?" j || die "Abgebrochen. (Anderes Konto: DISKRINGS_SPARKLE_ACCOUNT=…)"
+    else
+        if [ -n "$repo_key" ]; then
+            say "warning: $SPARKLE_PUBLIC_KEY_FILE enthält schon einen Schlüssel, aber der Schlüsselbund"
+            say "         hat keinen privaten Schlüssel im Konto \"$SPARKLE_ACCOUNT\". Ein NEUER Schlüssel"
+            say "         bedeutet: Installierte Versionen nehmen künftige Updates NICHT mehr an."
+            say "         Liegt der alte Schlüssel auf einem anderen Mac: dort exportieren (generate_keys -x)"
+            say "         und hier importieren (generate_keys -f), dann dieses Skript erneut starten."
+            confirm "Trotzdem einen neuen Schlüssel erzeugen?" n || die "Abgebrochen."
+        else
+            confirm "Neuen Schlüssel erzeugen (macOS fragt evtl. nach dem Schlüsselbund)?" j || die "Abgebrochen."
+        fi
+        "$SPARKLE_BIN/generate_keys" --account "$SPARKLE_ACCOUNT" >/dev/null \
+            || die "generate_keys fehlgeschlagen (Schlüsselbund-Zugriff erlaubt?)."
+        existing=$("$SPARKLE_BIN/generate_keys" --account "$SPARKLE_ACCOUNT" -p 2>/dev/null | tr -d '[:space:]') || existing=""
+        is_ed_public_key "$existing" || die "generate_keys liefert keinen öffentlichen Schlüssel."
+        say "  Erzeugt, öffentlicher Schlüssel: $existing"
+    fi
+    if [ -n "$repo_key" ] && [ "$repo_key" != "$existing" ]; then
+        say "warning: $SPARKLE_PUBLIC_KEY_FILE enthält einen ANDEREN Schlüssel ($repo_key)."
+        say "         Wird er ersetzt, nehmen installierte Versionen künftige Updates nicht mehr an."
+        confirm "Datei trotzdem mit dem Schlüssel aus dem Schlüsselbund überschreiben?" n || die "Abgebrochen."
+    fi
+    SPARKLE_PUB=$existing
+}
+
+# Privaten Schlüssel exportieren und gegen den öffentlichen prüfen.
+step_sparkle_export() {
+    SPARKLE_KEY_FILE="$WORK/sparkle-private.key"
+    say ""
+    say "==> generate_keys -x (Export in ein temporäres Verzeichnis, wird gleich gelöscht)"
+    (umask 077; "$SPARKLE_BIN/generate_keys" --account "$SPARKLE_ACCOUNT" -x "$SPARKLE_KEY_FILE" >/dev/null) \
+        || die "Export fehlgeschlagen (Schlüsselbund-Zugriff erlaubt?)."
+    chmod 600 "$SPARKLE_KEY_FILE"
+    local n
+    n=$(tr -d '[:space:]' < "$SPARKLE_KEY_FILE" | base64 --decode 2>/dev/null | wc -c | tr -d ' ')
+    [ "${n:-0}" -ge 32 ] || die "Exportierter Schlüssel ist kein base64."
+    if [ "$n" = 32 ]; then
+        local derived
+        swiftc -O scripts/sparkle-ed25519.swift -o "$WORK/sparkle-ed25519" >/dev/null 2>&1 \
+            || die "scripts/sparkle-ed25519.swift lässt sich nicht kompilieren."
+        derived=$("$WORK/sparkle-ed25519" public-key < "$SPARKLE_KEY_FILE") || die "Schlüssel nicht lesbar."
+        [ "$derived" = "$SPARKLE_PUB" ] || die "Exportierter privater Schlüssel passt nicht zum öffentlichen."
+        say "  Privater Schlüssel passt zum öffentlichen."
+    else
+        say "  (Älteres Schlüsselformat, Abgleich übersprungen; der Release-Workflow prüft die Signatur.)"
+    fi
+}
+
+step_sparkle_secret() {
+    local where="Repository-Secrets"
+    if [ "${#SECRET_SCOPE[@]}" -gt 0 ]; then where="Environment \"$ENV_NAME\""; fi
+    say ""
+    say "== Secret SPARKLE_ED_PRIVATE_KEY in $REPO ($where)"
+    confirm "Jetzt setzen (vorhandenes wird überschrieben)?" j || die "Abgebrochen, nichts gesetzt."
+    tr -d '[:space:]' < "$SPARKLE_KEY_FILE" | set_secret SPARKLE_ED_PRIVATE_KEY
+    printf '%s\n' "$SPARKLE_PUB" > "$SPARKLE_PUBLIC_KEY_FILE"
+    say "  $SPARKLE_PUBLIC_KEY_FILE geschrieben"
+}
+
+main_sparkle() {
+    say "DiskRings: Schlüssel für automatische Updates (Sparkle) einrichten (dev/RELEASING.md)"
+    step_target
+    step_sparkle_tools
+    step_sparkle_key
+    step_sparkle_export
+    step_sparkle_secret
+
+    cat <<MSG
+
+Fertig. Nächste Schritte:
+  - $SPARKLE_PUBLIC_KEY_FILE committen und pushen (öffentlicher Schlüssel, gehört ins Repo).
+  - Den privaten Schlüssel sichern (er bleibt im Anmelde-Schlüsselbund, Konto
+    "$SPARKLE_ACCOUNT"): Geht er verloren, nehmen installierte Versionen keine
+    Updates mehr an. Sicherung z. B. im Passwortmanager:
+      Schlüsselbundverwaltung → "Private key for signing Sparkle updates" → Passwort anzeigen.
+  - Trockenlauf: gh workflow run release.yml --repo $REPO -f dry_run=true
+  - Temporäre Dateien werden jetzt gelöscht.
+MSG
+}
+
 main_appstore() {
     say "DiskRings: Secrets für den Workflow \"App Store Upload\" einrichten (dev/APPSTORE.md)"
     step_target
@@ -501,8 +628,9 @@ main() {
     case "${1:-}" in
         "") ;;
         --appstore) MODE=appstore; ENV_NAME=${DISKRINGS_APPSTORE_ENV:-appstore} ;;
-        -h|--help) sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//'; return 0 ;;
-        *) die "Unbekannte Option: $1 (erlaubt: --appstore)" ;;
+        --sparkle) MODE=sparkle ;;
+        -h|--help) sed -n '2,47p' "$0" | sed 's/^# \{0,1\}//'; return 0 ;;
+        *) die "Unbekannte Option: $1 (erlaubt: --appstore, --sparkle)" ;;
     esac
     [ "$(uname -s)" = "Darwin" ] || die "Nur auf macOS (Schlüsselbund)."
     [ -t 0 ] || die "Interaktives Skript: bitte im Terminal starten."
@@ -514,6 +642,10 @@ main() {
 
     if [ "$MODE" = "appstore" ]; then
         main_appstore
+        return 0
+    fi
+    if [ "$MODE" = "sparkle" ]; then
+        main_sparkle
         return 0
     fi
     say "DiskRings: Secrets für den Release-Workflow einrichten (dev/RELEASING.md)"

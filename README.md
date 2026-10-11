@@ -39,7 +39,8 @@ DiskRings scans a volume or folder and draws its disk usage as a sunburst: every
 - **Safe cleanup:** context menu with Show in Finder, Open, Quick Look, Copy Path, Rescan This Folder and Move to Trash. Deleting only ever moves items to the Trash, asks first, and can be undone with ⌘Z. System locations are protected.
 - **Color by branch or by file type**, light and dark mode.
 - **Command-line tool** `diskrings-cli` for scans, top folders, snapshots and diffs (handy for scripts).
-- **Private by design:** no network access, no telemetry, no account.
+- **Private by design:** no telemetry, no account; the only network request is the update check of the GitHub download (the App Store version makes none).
+- **Automatic updates** for the download from GitHub (Sparkle, signed and verified); the App Store version is updated by the App Store.
 - **Localized** into 14 languages, with sizes, numbers and dates formatted for your region.
 
 ### Sunburst chart
@@ -159,9 +160,9 @@ git push origin v0.2.0
 ```
 
 3. Approve the run: **Actions → Release → Review deployments → `release` → Approve and deploy** (the `release` environment requires a maintainer's approval).
-4. After about 5–10 minutes the release with DMG, ZIP and `SHA256SUMS` appears under [Releases](https://github.com/brokoskokoli/diskrings/releases), with release notes generated from the commits.
+4. After about 5–10 minutes the release with DMG, ZIP, `appcast.xml` and `SHA256SUMS` appears under [Releases](https://github.com/brokoskokoli/diskrings/releases), with release notes generated from the commits. Installed copies newer than 0.2.1 find the update through `appcast.xml` (Sparkle); the ZIP is the signed update archive, the DMG is for first installs. Users of 0.2.1 or older have to download the new version once by hand.
 
-Before a release you can do a dry run that builds, signs and notarizes without publishing: `gh workflow run release.yml -f dry_run=true`. Only repository admins can create `v*` tags. A local release without CI is possible with `scripts/release.sh --publish`. The Mac App Store build is uploaded separately: run **Actions → App Store Upload** on the tag with `dry_run` unchecked, approve it, then select the build in App Store Connect and submit it for review, or check `submit_for_review` to let the workflow submit it via the App Store Connect API using the release notes in `dev/release-notes/` (details in [dev/APPSTORE.md](dev/APPSTORE.md), German). One-time setup, secrets, troubleshooting and security trade-offs: [dev/RELEASING.md](dev/RELEASING.md) (German).
+Before a release you can do a dry run that builds, signs and notarizes without publishing: `gh workflow run release.yml -f dry_run=true`. Only repository admins can create `v*` tags. A local release without CI is possible with `scripts/release.sh --publish`. The Mac App Store build is uploaded separately: run **Actions → App Store Upload** on the tag with `dry_run` unchecked, approve it, then select the build in App Store Connect and submit it for review, or check `submit_for_review` to let the workflow submit it via the App Store Connect API using the release notes in `dev/release-notes/` (details in [dev/APPSTORE.md](dev/APPSTORE.md), German). Automatic updates need a one-time EdDSA key: `scripts/setup-release-secrets.sh --sparkle` stores the private key as the secret `SPARKLE_ED_PRIVATE_KEY` and writes the public key to `Resources/sparkle-public-ed-key.txt` (commit it); without both, a real release stops in the preflight check. One-time setup, secrets, troubleshooting and security trade-offs: [dev/RELEASING.md](dev/RELEASING.md) (German).
 
 ## FAQ
 
@@ -189,7 +190,10 @@ Yes. Any mounted volume or folder you can read can be scanned. Network volumes a
 
 ## Privacy
 
-DiskRings makes no network connections and contains no telemetry, analytics or crash reporting. Scan results and snapshots stay on your Mac (`~/Library/Application Support/DiskRings`).
+DiskRings contains no telemetry, analytics or crash reporting. Scan results and snapshots stay on your Mac (`~/Library/Application Support/DiskRings`).
+
+- **Mac App Store version:** makes no network connections at all.
+- **Download from GitHub:** checks GitHub for updates (the file `appcast.xml` of the latest release) when you choose **Check for Updates…** and, if you allow it, about once a day. No information about you, your Mac or your files is sent, and no system profile. DiskRings asks before checking automatically; turn it off in **Settings → General → Automatically check for updates**. Updates are only installed if their EdDSA signature matches. Full policy: [privacy.html](https://brokoskokoli.github.io/diskrings/privacy.html).
 
 ## Contributing
 

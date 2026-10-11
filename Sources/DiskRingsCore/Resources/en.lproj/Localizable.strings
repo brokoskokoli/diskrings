@@ -237,6 +237,10 @@
 "settings.section.trash" = "Trash";
 "settings.trash.confirm" = "Ask before moving to the Trash";
 "settings.trash.footer" = "Items of 1 GB or more are always confirmed.";
+"menu.checkForUpdates" = "Check for Updates…";
+"settings.section.updates" = "Updates";
+"settings.updates.automatic" = "Automatically check for updates";
+"settings.updates.footer" = "DiskRings asks GitHub whether a new version is available. No information about you or your files is sent.";
 "settings.section.scan" = "Scan";
 "settings.includeHidden" = "Count hidden files";
 "settings.crossMounts" = "Cross into other volumes while scanning";

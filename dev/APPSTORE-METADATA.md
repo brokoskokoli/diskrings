@@ -19,7 +19,7 @@ Screenshots erzeugt `swift run DiskRings --store-screenshots <ordner> --language
 
 ## App-Datenschutz
 
-„Daten werden nicht erfasst“ (Data Not Collected). DiskRings stellt keine Netzwerkverbindungen her.
+„Daten werden nicht erfasst“ (Data Not Collected). Die Store-Variante stellt keine Netzwerkverbindungen her: Sparkle (Update-Prüfung) steckt nur in der Download-Version von GitHub; `make-app.sh --appstore` baut ohne den Package Trait `Updates` und bricht ab, wenn Sparkle im Bündel auftaucht (siehe `dev/DECISIONS.md`).
 
 ## Preise und Verfügbarkeit
 

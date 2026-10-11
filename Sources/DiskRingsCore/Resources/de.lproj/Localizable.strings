@@ -237,6 +237,10 @@
 "settings.section.trash" = "Papierkorb";
 "settings.trash.confirm" = "Vor dem Papierkorb fragen";
 "settings.trash.footer" = "Elemente ab 1 GB werden immer bestätigt.";
+"menu.checkForUpdates" = "Nach Updates suchen …";
+"settings.section.updates" = "Updates";
+"settings.updates.automatic" = "Automatisch nach Updates suchen";
+"settings.updates.footer" = "DiskRings fragt bei GitHub nach, ob eine neue Version verfügbar ist. Dabei werden keine Daten über dich oder deine Dateien übertragen.";
 "settings.section.scan" = "Scan";
 "settings.includeHidden" = "Versteckte Dateien zählen";
 "settings.crossMounts" = "Andere Volumes beim Scan überqueren";

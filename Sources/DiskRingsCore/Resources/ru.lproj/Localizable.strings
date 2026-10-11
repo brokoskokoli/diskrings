@@ -237,6 +237,10 @@
 "settings.section.trash" = "Корзина";
 "settings.trash.confirm" = "Спрашивать перед перемещением в Корзину";
 "settings.trash.footer" = "Для объектов размером от 1 ГБ подтверждение запрашивается всегда.";
+"menu.checkForUpdates" = "Проверить обновления…";
+"settings.section.updates" = "Обновления";
+"settings.updates.automatic" = "Автоматически проверять обновления";
+"settings.updates.footer" = "DiskRings спрашивает у GitHub, доступна ли новая версия. Никакие сведения о вас или ваших файлах не передаются.";
 "settings.section.scan" = "Сканирование";
 "settings.includeHidden" = "Учитывать скрытые файлы";
 "settings.crossMounts" = "Переходить на другие тома при сканировании";

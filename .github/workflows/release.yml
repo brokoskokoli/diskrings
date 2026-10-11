@@ -1,6 +1,8 @@
 # Release: baut DiskRings, signiert mit der Developer ID, notarisiert und heftet
-# die Tickets an (App und DMG), erzeugt ZIP, DMG und SHA256SUMS und
-# veröffentlicht ein GitHub Release mit generierten Release-Notes.
+# die Tickets an (App und DMG), erzeugt ZIP, DMG und SHA256SUMS, signiert das
+# ZIP für Sparkle (automatische Updates) und schreibt appcast.xml, und
+# veröffentlicht ein GitHub Release mit generierten Release-Notes. Die App
+# liest den Appcast über releases/latest/download/appcast.xml.
 #
 #   git tag v0.1.0 && git push origin v0.1.0   → Release v0.1.0 (Tag muss zu VERSION passen)
 #   Actions → Release → Run workflow           → Trockenlauf (dry_run): alles außer
@@ -64,6 +66,8 @@ jobs:
           NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
           NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          # Nur auf Vorhandensein und Format geprüft; beim Veröffentlichen Pflicht.
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: scripts/ci-release.sh preflight
 
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -96,7 +100,21 @@ jobs:
           NOTARY_API_KEY_P8_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
           NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          # Öffentlicher Sparkle-Schlüssel in der App: beim Veröffentlichen Pflicht.
+          DISKRINGS_REQUIRE_UPDATE_KEY: ${{ steps.preflight.outputs.publish == 'true' && '1' || '0' }}
+          # appcast.xml entsteht im nächsten Schritt (nur dort der Sparkle-Schlüssel).
+          DISKRINGS_SKIP_APPCAST: '1'
         run: scripts/release.sh --skip-checks
+
+      # Sparkle-Werkzeuge aus dem offiziellen Archiv (SHA-256 fest in
+      # scripts/sparkle-tools.sh), ZIP signieren, Signatur gegen den öffentlichen
+      # Schlüssel der App prüfen, dist/appcast.xml schreiben. Der Schlüssel geht
+      # nur über stdin an sign_update. Im Trockenlauf ohne Secret: Warnung.
+      - name: Sparkle-Update signieren, appcast.xml erzeugen
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          DISKRINGS_REQUIRE_APPCAST: ${{ steps.preflight.outputs.publish }}
+        run: scripts/ci-release.sh appcast
 
       - name: Keychain löschen
         if: always()
@@ -109,6 +127,7 @@ jobs:
             dist/*.zip
             dist/*.dmg
             dist/SHA256SUMS
+            dist/appcast.xml
           if-no-files-found: error
           # Trockenlauf: Artefakte sind signiert, notarisiert und öffentlich
           # herunterladbar, daher nur 1 Tag; echte Releases 14 Tage.
@@ -138,6 +157,8 @@ jobs:
           TAG: ${{ needs.build.outputs.tag }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
+          # Ohne appcast.xml bekämen Nutzer dieses Release nicht als Update.
+          test -f dist/appcast.xml || { echo "::error::dist/appcast.xml fehlt."; exit 1; }
           if out=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName 2>&1); then
             echo "::error::Release $TAG existiert schon. Löschen (gh release delete $TAG) oder VERSION erhöhen."
             exit 1
@@ -146,6 +167,6 @@ jobs:
             exit 1
           fi
           gh release create "$TAG" \
-            "dist/DiskRings-$VERSION.zip" "dist/DiskRings-$VERSION.dmg" dist/SHA256SUMS \
+            "dist/DiskRings-$VERSION.zip" "dist/DiskRings-$VERSION.dmg" dist/SHA256SUMS dist/appcast.xml \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "DiskRings $VERSION" --generate-notes

@@ -237,6 +237,10 @@
 "settings.section.trash" = "Prullenmand";
 "settings.trash.confirm" = "Vraag voor verplaatsen naar prullenmand";
 "settings.trash.footer" = "Onderdelen van 1 GB of meer moeten altijd worden bevestigd.";
+"menu.checkForUpdates" = "Zoek naar updates…";
+"settings.section.updates" = "Updates";
+"settings.updates.automatic" = "Automatisch zoeken naar updates";
+"settings.updates.footer" = "DiskRings vraagt GitHub of er een nieuwe versie beschikbaar is. Er wordt geen informatie over jou of je bestanden verstuurd.";
 "settings.section.scan" = "Scan";
 "settings.includeHidden" = "Tel verborgen bestanden mee";
 "settings.crossMounts" = "Ga tijdens het scannen andere volumes in";

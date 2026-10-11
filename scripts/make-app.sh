@@ -38,6 +38,19 @@
 # DISKRINGS_SIGN_TIMEOUT Sekunden (Standard 60) ab. Abhilfe: Im Dialog „Immer
 # erlauben“ wählen (einmalig), danach läuft die Signatur ohne Rückfrage.
 #
+# Automatische Updates (Sparkle 2, dev/RELEASING.md „Automatische Updates“):
+# Nur die GitHub-Variante enthält Sparkle (Package Trait `Updates`, Standard).
+# Das Skript bettet Sparkle.framework unter Contents/Frameworks ein, setzt den
+# rpath @executable_path/../Frameworks, signiert das Framework von innen nach
+# außen (XPC-Dienste, Autoupdate, Updater.app, Framework; ohne --deep) und
+# schreibt SUFeedURL und SUPublicEDKey (aus Resources/sparkle-public-ed-key.txt)
+# in die Info.plist. Fehlt der Schlüssel, bleibt der Updater in der App aus
+# (Warnung); DISKRINGS_REQUIRE_UPDATE_KEY=1 (Release) macht ihn zur Pflicht.
+# DISKRINGS_UPDATE_KEY_FILE=… liest den Schlüssel aus einer anderen Datei (Tests).
+# --appstore baut mit `--disable-default-traits` (ohne Sparkle) und bricht ab,
+# wenn trotzdem ein Sparkle-Bestandteil im Bündel, in der Info.plist oder in
+# den gelinkten Bibliotheken (otool -L) auftaucht.
+#
 # DISKRINGS_IDENTITY=…   andere Signier-Identität (Name wie in `security find-identity`)
 # DISKRINGS_KEYCHAIN=…   Identität nur in diesem Schlüsselbund suchen (z. B. die
 #                        temporäre Keychain der Release-Workflows). Dann gibt es
@@ -46,12 +59,15 @@
 #                        die Installer-Identität und das Provisioning Profile.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Sparkle-Hilfen (sparkle_fix_rpaths, sparkle_sign_framework), getestet in scripts/test-make-appcast.sh.
+# shellcheck source=scripts/sparkle-tools.sh
+source scripts/sparkle-tools.sh
 
 APPSTORE=0
 for arg in "$@"; do
     case "$arg" in
         --appstore) APPSTORE=1 ;;
-        -h|--help) sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,59p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unbekannte Option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -59,6 +75,10 @@ done
 APP=build/DiskRings.app
 if [ "$APPSTORE" = "1" ]; then APP=build/appstore/DiskRings.app; fi
 ENTITLEMENTS=Resources/DiskRings-AppStore.entitlements
+UPDATE_FEED_URL=https://github.com/brokoskokoli/diskrings/releases/latest/download/appcast.xml
+UPDATE_KEY_FILE=${DISKRINGS_UPDATE_KEY_FILE:-Resources/sparkle-public-ed-key.txt}
+# Zeichenketten, die im Store-Binary nicht vorkommen dürfen (strings | grep -E).
+SPARKLE_STRINGS='SUFeedURL|SUPublicEDKey|SUEnable[A-Za-z]*|SUScheduled[A-Za-z]*|SPU[A-Z][A-Za-z]+|[Ss]parkle'
 BUNDLE_ID=de.stefanrichter.DiskRings
 IDENTITY=${DISKRINGS_IDENTITY:-"Developer ID Application: Stefan Richter (AGRWTKQZ8C)"}
 KEYCHAIN=${DISKRINGS_KEYCHAIN:-}
@@ -72,9 +92,12 @@ if [ "$YEAR" -gt 2026 ]; then COPYRIGHT_YEARS="2026–$YEAR"; fi
 
 # --- Build -----------------------------------------------------------------
 ARCHS=${DISKRINGS_ARCHS:-"arm64 x86_64"}
-arch_flags() { for a in $1; do printf -- '--arch %s ' "$a"; done; }
+# Store-Variante ohne Package Traits, also ohne Sparkle (Package.swift).
+TRAIT_FLAGS=""
+if [ "$APPSTORE" = "1" ]; then TRAIT_FLAGS="--disable-default-traits"; fi
+arch_flags() { for a in $1; do printf -- '--arch %s ' "$a"; done; printf '%s' "$TRAIT_FLAGS"; }
 
-echo "==> swift build -c release ($ARCHS)"
+echo "==> swift build -c release ($ARCHS${TRAIT_FLAGS:+, $TRAIT_FLAGS})"
 # shellcheck disable=SC2046
 if ! swift build -c release --product DiskRings $(arch_flags "$ARCHS"); then
     if [ -n "${DISKRINGS_ARCHS:-}" ]; then exit 1; fi
@@ -109,6 +132,74 @@ if [ "$APPSTORE" = "1" ]; then
     echo "    Icon enthält 1024 px (512@2x)"
 fi
 
+# --- Sparkle (nur GitHub-Variante) -------------------------------------------
+SPARKLE_FW="$APP/Contents/Frameworks/Sparkle.framework"
+# Store-Variante: kein Sparkle-Bestandteil im Bündel, in der Info.plist oder im Binary.
+assert_no_sparkle() {
+    local found
+    found=$(find "$APP" -iname '*sparkle*' 2>/dev/null || true)
+    if [ -n "$found" ]; then
+        echo "error: Store-Variante enthält Sparkle-Dateien:" >&2
+        echo "$found" >&2
+        exit 1
+    fi
+    if otool -L "$APP/Contents/MacOS/DiskRings" | grep -qi sparkle; then
+        echo "error: Store-Variante ist gegen Sparkle gelinkt (otool -L)" >&2
+        exit 1
+    fi
+    # Auch keine Sparkle-Zeichenketten (Info.plist-Schlüssel, Klassennamen) im Binary.
+    local hits
+    hits=$(strings -a "$APP/Contents/MacOS/DiskRings" | grep -E "$SPARKLE_STRINGS" | sort -u | head -5 || true)
+    if [ -n "$hits" ]; then
+        echo "error: Store-Binary enthält Sparkle-Zeichenketten:" >&2
+        echo "$hits" >&2
+        exit 1
+    fi
+    if [ -f "$APP/Contents/Info.plist" ] && grep -qE '<key>SU[A-Za-z]+</key>' "$APP/Contents/Info.plist"; then
+        echo "error: Store-Variante hat Sparkle-Schlüssel (SU…) in der Info.plist" >&2
+        exit 1
+    fi
+}
+
+UPDATE_KEY=""
+if [ "$APPSTORE" = "1" ]; then
+    assert_no_sparkle
+    echo "    kein Sparkle (Store-Variante)"
+else
+    if [ ! -d "$BIN_DIR/Sparkle.framework" ]; then
+        echo "error: $BIN_DIR/Sparkle.framework fehlt (Trait \"Updates\" aus?)" >&2
+        exit 1
+    fi
+    echo "==> Sparkle.framework einbetten"
+    mkdir -p "$APP/Contents/Frameworks"
+    ditto "$BIN_DIR/Sparkle.framework" "$SPARKLE_FW"
+    # Header und Module braucht die fertige App nicht (wie „Embed & Sign“ in Xcode).
+    rm -rf "$SPARKLE_FW/Headers" "$SPARKLE_FW/PrivateHeaders" "$SPARKLE_FW/Modules" \
+        "$SPARKLE_FW/Versions/B/Headers" "$SPARKLE_FW/Versions/B/PrivateHeaders" "$SPARKLE_FW/Versions/B/Modules"
+    # rpath: das eingebettete Framework finden; rpaths in den Build-Ordner entfernen.
+    EXE="$APP/Contents/MacOS/DiskRings"
+    sparkle_fix_rpaths "$EXE" || { echo "error: rpaths von $EXE lassen sich nicht anpassen" >&2; exit 1; }
+    if ! otool -L "$EXE" | grep -q '@rpath/Sparkle.framework/'; then
+        echo "error: DiskRings ist nicht gegen Sparkle gelinkt" >&2
+        exit 1
+    fi
+    # Öffentlicher EdDSA-Schlüssel (darf ins Repo); ohne ihn bleibt der Updater aus.
+    if [ -f "$UPDATE_KEY_FILE" ]; then UPDATE_KEY=$(tr -d '[:space:]' < "$UPDATE_KEY_FILE"); fi
+    if [ -n "$UPDATE_KEY" ]; then
+        KEY_BYTES=$(printf '%s' "$UPDATE_KEY" | base64 --decode 2>/dev/null | wc -c | tr -d ' ' || echo 0)
+        if ! [[ "$UPDATE_KEY" =~ ^[A-Za-z0-9+/]+=*$ ]] || [ "$KEY_BYTES" != "32" ]; then
+            echo "error: $UPDATE_KEY_FILE enthält keinen gültigen öffentlichen EdDSA-Schlüssel (base64, 32 Byte)" >&2
+            exit 1
+        fi
+        echo "    SUPublicEDKey aus $UPDATE_KEY_FILE"
+    elif [ "${DISKRINGS_REQUIRE_UPDATE_KEY:-0}" = "1" ]; then
+        echo "error: $UPDATE_KEY_FILE fehlt oder ist leer; für ein Release Pflicht (scripts/setup-release-secrets.sh --sparkle)" >&2
+        exit 1
+    else
+        echo "warning: $UPDATE_KEY_FILE fehlt oder ist leer: automatische Updates bleiben in dieser App aus" >&2
+    fi
+fi
+
 # Lokalisierung: die .lproj-Ordner aus DiskRingsCore (Localizable.strings,
 # .stringsdict, InfoPlist.strings) ins Haupt-Bundle. Dann nutzt die App das
 # Haupt-Bundle (L10n.bundle), macOS kennt die Sprachen (Sprache pro App in den
@@ -123,6 +214,17 @@ done
 APPSTORE_PLIST=""
 if [ "$APPSTORE" = "1" ]; then
     APPSTORE_PLIST="<key>ITSAppUsesNonExemptEncryption</key><false/>"
+fi
+
+# GitHub-Variante: Sparkle-Feed und öffentlicher Schlüssel. SUEnableAutomaticChecks
+# bleibt absichtlich weg (Sparkle fragt beim zweiten Start), keine Systemprofil-Daten.
+UPDATE_PLIST=""
+if [ "$APPSTORE" != "1" ]; then
+    UPDATE_PLIST="<key>SUFeedURL</key><string>${UPDATE_FEED_URL}</string>"
+    UPDATE_PLIST="$UPDATE_PLIST<key>SUEnableSystemProfiling</key><false/>"
+    if [ -n "$UPDATE_KEY" ]; then
+        UPDATE_PLIST="$UPDATE_PLIST<key>SUPublicEDKey</key><string>${UPDATE_KEY}</string>"
+    fi
 fi
 
 cat > "$APP/Contents/Info.plist" <<PLIST
@@ -147,6 +249,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSHumanReadableCopyright</key><string>Copyright © ${COPYRIGHT_YEARS} Stefan Richter. MIT License.</string>
     ${APPSTORE_PLIST}
+    ${UPDATE_PLIST}
     <!-- Datenschutz-Abfragen (TCC): macOS zeigt diese Texte, wenn der Scan
          geschützte Orte öffnet. Ohne sie fragt macOS mit einem generischen
          Text bzw. verweigert den Zugriff still. Englische Basis; die
@@ -186,8 +289,17 @@ codesign_with_timeout() {
     wait "$pid"
 }
 
+# Sparkle.framework signieren: sparkle_sign_framework (scripts/sparkle-tools.sh),
+# von innen nach außen, ohne --deep; nur wenn eingebettet (GitHub-Variante).
+sign_sparkle() {
+    [ -d "$SPARKLE_FW" ] || return 0
+    echo "==> codesign Sparkle.framework (von innen nach außen)"
+    sparkle_sign_framework "$SPARKLE_FW" "$@"
+}
+
 sign_adhoc() {
     echo "==> codesign (ad hoc)"
+    sign_sparkle codesign --force --sign - --timestamp=none
     codesign --force --sign - --timestamp=none "$APP"
     SIGNED_WITH=adhoc
 }
@@ -299,11 +411,17 @@ elif ! grep -qF "\"$IDENTITY\"" <<<"$IDENTITIES"; then
     sign_adhoc
 else
     echo "==> codesign ($IDENTITY, Hardened Runtime, Timeout ${SIGN_TIMEOUT}s)"
-    set +e
-    codesign_with_timeout --force --sign "$IDENTITY" ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} \
-        --options runtime --timestamp "$APP"
-    rc=$?
-    set -e
+    # Kein Abbruch durch set -e: Den Code (124 = Schlüsselbund-Dialog) erklärt der Zweig unten.
+    rc=0
+    if [ -d "$SPARKLE_FW" ]; then
+        echo "==> codesign Sparkle.framework (von innen nach außen)"
+        sparkle_sign_framework "$SPARKLE_FW" codesign_with_timeout --force --sign "$IDENTITY" \
+            ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} --options runtime --timestamp || rc=$?
+    fi
+    if [ "$rc" -eq 0 ]; then
+        codesign_with_timeout --force --sign "$IDENTITY" ${KEYCHAIN_ARGS[@]+"${KEYCHAIN_ARGS[@]}"} \
+            --options runtime --timestamp "$APP" || rc=$?
+    fi
     if [ "$rc" -eq 0 ]; then
         SIGNED_WITH=developer-id
     elif [ "$rc" -eq 124 ]; then
@@ -329,6 +447,10 @@ codesign -dvv "$APP" 2>&1 | grep -E '^(Identifier|Format|Authority|Timestamp|Tea
 if [ "$APPSTORE" = "1" ]; then
     echo "==> Entitlements"
     codesign -d --entitlements - "$APP" 2>/dev/null || true
+    assert_no_sparkle
+elif [ -d "$SPARKLE_FW" ]; then
+    codesign --verify --strict "$SPARKLE_FW"
+    echo "    Sparkle.framework: $(codesign -dvv "$SPARKLE_FW" 2>&1 | grep -E '^(Authority|Signature)=' | head -1)"
 fi
 echo "==> $APP ($SIGNED_WITH)"
 

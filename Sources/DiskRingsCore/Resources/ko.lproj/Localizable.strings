@@ -237,6 +237,10 @@
 "settings.section.trash" = "휴지통";
 "settings.trash.confirm" = "휴지통으로 이동하기 전에 묻기";
 "settings.trash.footer" = "1 GB 이상의 항목은 항상 확인합니다.";
+"menu.checkForUpdates" = "업데이트 확인…";
+"settings.section.updates" = "업데이트";
+"settings.updates.automatic" = "자동으로 업데이트 확인";
+"settings.updates.footer" = "DiskRings는 새 버전이 있는지 GitHub에 확인합니다. 사용자나 사용자의 파일에 관한 정보는 전송되지 않습니다.";
 "settings.section.scan" = "스캔";
 "settings.includeHidden" = "숨김 파일 포함";
 "settings.crossMounts" = "스캔 시 다른 볼륨으로 진입";

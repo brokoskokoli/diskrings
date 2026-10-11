@@ -41,13 +41,16 @@ struct SettingsView: View {
     @Bindable var prefs: Preferences
     /// Für die Ordnerfreigaben der App-Store-Variante; `nil` in Vorschaubildern ohne Zustand.
     var state: AppState?
+    /// Automatische Updates (Abschnitt im Reiter „Allgemein“); `nil` oder nicht
+    /// verfügbar in der App-Store-Variante und in Vorschaubildern ohne Updater.
+    var updater: AppUpdater?
     @AppStorage("settings.selectedTab") private var selectedTab = SettingsTab.general.rawValue
 
     var body: some View {
         let tabs = SettingsTab.visible(sandboxed: state?.isSandboxed ?? false)
         TabView(selection: $selectedTab) {
             ForEach(tabs) { tab in
-                SettingsPage(tab: tab, prefs: prefs, state: state)
+                SettingsPage(tab: tab, prefs: prefs, state: state, updater: updater)
                     .tabItem { Label(tab.title, systemImage: tab.systemImage) }
                     .tag(tab.rawValue)
             }
@@ -63,6 +66,7 @@ struct SettingsPage: View {
     let tab: SettingsTab
     @Bindable var prefs: Preferences
     var state: AppState?
+    var updater: AppUpdater?
     @ViewState private var selectedExclusion: String?
 
     static let width: CGFloat = 500
@@ -98,6 +102,9 @@ struct SettingsPage: View {
                 Text(L("settings.section.trash"))
             } footer: {
                 Text(L("settings.trash.footer")).font(.footnote).foregroundStyle(.secondary)
+            }
+            if let updater, updater.isAvailable {
+                UpdatesSection(updater: updater)
             }
         case .chart:
             Section(L("settings.section.chart")) {

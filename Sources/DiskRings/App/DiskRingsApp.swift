@@ -54,6 +54,7 @@ struct DiskRingsApp: App {
         }
         .defaultSize(width: 1180, height: 760)
         .commands {
+            UpdateCommands(updater: delegate.updater)
             AppCommands(state: state)
             SnapshotCommands(state: state)
         }
@@ -64,7 +65,7 @@ struct DiskRingsApp: App {
         .defaultSize(width: 760, height: 420)
 
         Settings {
-            SettingsView(prefs: state.prefs, state: state)
+            SettingsView(prefs: state.prefs, state: state, updater: delegate.updater)
         }
     }
 }
