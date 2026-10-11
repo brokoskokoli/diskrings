@@ -208,7 +208,7 @@ Die ZIP ist das Update-Archiv (Sparkle entpackt sie und prüft Signatur und Deve
 
 **Lokal:** `scripts/release.sh` erzeugt `appcast.xml` ebenfalls, mit dem Schlüssel aus `SPARKLE_ED_PRIVATE_KEY` oder sonst aus dem Schlüsselbund (Konto `DISKRINGS_SPARKLE_ACCOUNT`, Standard `diskrings`; macOS fragt evtl., ob `sign_update` den Eintrag lesen darf). Mit `--publish` ist er Pflicht.
 
-**Sparkle aktualisieren:** Neue Version frühestens zwei Tage nach ihrem Release, Changelog lesen. Dann in `Package.swift` (`exact:`), `Package.resolved` (`swift package update Sparkle`), `scripts/sparkle-tools.sh` (Version und SHA-256 des `.tar.xz`, z. B. `gh release view <tag> -R sparkle-project/Sparkle --json assets`) gleichzeitig ändern; `scripts/test-make-appcast.sh` prüft, dass die drei zusammenpassen.
+**Sparkle aktualisieren:** Neue Version frühestens zwei Wochen nach ihrem Release, Changelog lesen. Dann in `Package.swift` (`exact:`), `Package.resolved` (`swift package update Sparkle`), `scripts/sparkle-tools.sh` (Version und SHA-256 des `.tar.xz`, z. B. `gh release view <tag> -R sparkle-project/Sparkle --json assets`) gleichzeitig ändern; `scripts/test-make-appcast.sh` prüft, dass die drei zusammenpassen.
 
 ## Mac App Store
 
