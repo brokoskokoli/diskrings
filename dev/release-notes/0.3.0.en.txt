@@ -1,0 +1,2 @@
+• New: DiskRings can now keep itself up to date. Choose "Check for Updates…" in the DiskRings menu, or turn on automatic checks under Settings → General.
+• Note: If you use version 0.2.1 or older, install this version once by hand. Future updates then arrive automatically.

@@ -1,0 +1,2 @@
+• Neu: DiskRings hält sich jetzt selbst aktuell. Wähle „Nach Updates suchen …“ im Menü DiskRings oder schalte die automatische Suche unter Einstellungen → Allgemein ein.
+• Hinweis: Wer Version 0.2.1 oder älter nutzt, installiert diese Version einmal von Hand. Spätere Updates kommen dann automatisch.
