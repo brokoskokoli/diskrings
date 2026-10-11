@@ -28,7 +28,7 @@ Die Spezifikation steht in `SPEC.md` und ist verbindlich. Wenn du von ihr abweic
 - Jeder bestätigte Fund wird zuerst als Regressionstest geschrieben und dann behoben. Erst danach wird committet.
 - Der Haupt-Agent koordiniert, führt die Ergebnisse zusammen, prüft selbst nach (Tests, gerenderte PNGs, CLI-Läufe auf echten Ordnern, nur lesend) und hält Abweichungen in `dev/DECISIONS.md` fest.
 - Agenten exportieren keine Zertifikate, lesen keine Secrets, führen `scripts/setup-release-secrets.sh` nicht aus und setzen keine Secrets.
-- GitHub-Actions nur auf geprüfte, mindestens zwei Wochen alte Versionen per Commit-SHA pinnen; keine Updates auf ganz frische Versionen.
+- Abhängigkeiten (GitHub-Actions, Sparkle u. a.) nur auf geprüfte, mindestens zwei Tage alte Versionen exakt pinnen (Actions per Commit-SHA, Pakete mit Version und Prüfsumme); keine Updates auf ganz frische Versionen.
 
 ## Releases
 - Ablauf und Einrichtung: `dev/RELEASING.md`; Kurzfassung in `README.md` („Publishing a new version“).
