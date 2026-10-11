@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Clic: subir un nivel";
 
 /* Settings */
+"settings.tab.general" = "General";
 "settings.section.chart" = "Gráfico";
 "settings.rings" = "Número de anillos";
 "settings.colorScheme" = "Esquema de colores";

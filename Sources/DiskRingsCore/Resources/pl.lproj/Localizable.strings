@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Kliknij: poziom wyżej";
 
 /* Settings */
+"settings.tab.general" = "Ogólne";
 "settings.section.chart" = "Wykres";
 "settings.rings" = "Liczba pierścieni";
 "settings.colorScheme" = "Schemat kolorów";

@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "클릭: 한 단계 위로";
 
 /* Settings */
+"settings.tab.general" = "일반";
 "settings.section.chart" = "차트";
 "settings.rings" = "링 개수";
 "settings.colorScheme" = "색상 구성";

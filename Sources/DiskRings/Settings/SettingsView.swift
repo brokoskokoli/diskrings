@@ -2,16 +2,104 @@ import AppKit
 import DiskRingsCore
 import SwiftUI
 
-/// Einstellungen (SPEC 3.7), soweit sie in M2/M3 schon wirken.
+/// Reiter des Einstellungsfensters. „Ordnerzugriff“ gibt es nur in der
+/// App-Store-Variante (Sandbox).
+enum SettingsTab: String, CaseIterable, Identifiable {
+    case general, chart, scan, snapshots, access
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .general: L("settings.tab.general")
+        case .chart: L("settings.section.chart")
+        case .scan: L("settings.section.scan")
+        case .snapshots: L("settings.section.snapshots")
+        case .access: L("settings.section.access")
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .general: "gearshape"
+        case .chart: "chart.pie"
+        case .scan: "internaldrive"
+        case .snapshots: "clock.arrow.circlepath"
+        case .access: "lock.shield"
+        }
+    }
+
+    static func visible(sandboxed: Bool) -> [SettingsTab] {
+        sandboxed ? allCases : allCases.filter { $0 != .access }
+    }
+}
+
+/// Einstellungen (SPEC 3.7) als Fenster mit Reitern. Jeder Reiter ist ein
+/// eigenes, kurzes Formular, damit das Fenster auch auf kleinen Bildschirmen
+/// ganz sichtbar bleibt; lange Listen scrollen innerhalb ihres Reiters.
 struct SettingsView: View {
     @Bindable var prefs: Preferences
     /// Für die Ordnerfreigaben der App-Store-Variante; `nil` in Vorschaubildern ohne Zustand.
     var state: AppState?
-    @ViewState private var selectedExclusion: String?
+    @AppStorage("settings.selectedTab") private var selectedTab = SettingsTab.general.rawValue
 
     var body: some View {
-        Form {
+        let tabs = SettingsTab.visible(sandboxed: state?.isSandboxed ?? false)
+        TabView(selection: $selectedTab) {
+            ForEach(tabs) { tab in
+                SettingsPage(tab: tab, prefs: prefs, state: state)
+                    .tabItem { Label(tab.title, systemImage: tab.systemImage) }
+                    .tag(tab.rawValue)
+            }
+        }
+        .onAppear {
+            if !tabs.map(\.rawValue).contains(selectedTab) { selectedTab = SettingsTab.general.rawValue }
+        }
+    }
+}
+
+/// Inhalt eines Reiters. Die Bild-Renderer zeichnen jeden Reiter einzeln.
+struct SettingsPage: View {
+    let tab: SettingsTab
+    @Bindable var prefs: Preferences
+    var state: AppState?
+    @ViewState private var selectedExclusion: String?
+
+    static let width: CGFloat = 500
+    /// Höhe des Reiters „Ordnerzugriff“: Die Liste der Freigaben kann beliebig
+    /// lang werden und scrollt deshalb in fester Höhe.
+    static let accessHeight: CGFloat = 380
+
+    var body: some View {
+        switch tab {
+        case .access:
+            Form {
+                if let state { FolderAccessSection(state: state) }
+            }
+            .formStyle(.grouped)
+            .frame(width: Self.width, height: Self.accessHeight)
+        default:
+            // Die übrigen Reiter haben einen begrenzten Inhalt und sind so hoch wie nötig.
+            Form { content }
+                .formStyle(.grouped)
+                .frame(width: Self.width)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch tab {
+        case .general:
             LanguageSection()
+            Section {
+                Toggle(L("settings.trash.confirm"), isOn: Binding(get: { !prefs.skipTrashConfirmation },
+                                                                  set: { prefs.skipTrashConfirmation = !$0 }))
+            } header: {
+                Text(L("settings.section.trash"))
+            } footer: {
+                Text(L("settings.trash.footer")).font(.footnote).foregroundStyle(.secondary)
+            }
+        case .chart:
             Section(L("settings.section.chart")) {
                 Stepper(value: $prefs.ringCount, in: SunburstOptions.ringRange) {
                     LabeledContent(L("settings.rings"), value: ByteFormat.count(prefs.ringCount))
@@ -42,14 +130,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.radioGroup)
             }
-            Section {
-                Toggle(L("settings.trash.confirm"), isOn: Binding(get: { !prefs.skipTrashConfirmation },
-                                                                  set: { prefs.skipTrashConfirmation = !$0 }))
-            } header: {
-                Text(L("settings.section.trash"))
-            } footer: {
-                Text(L("settings.trash.footer")).font(.footnote).foregroundStyle(.secondary)
-            }
+        case .scan:
             Section {
                 Toggle(L("settings.includeHidden"), isOn: $prefs.includeHidden)
                 Toggle(L("settings.crossMounts"), isOn: $prefs.crossMountPoints)
@@ -58,7 +139,7 @@ struct SettingsView: View {
                     List(prefs.excludedPaths, id: \.self, selection: $selectedExclusion) { p in
                         Text(p).lineLimit(1).truncationMode(.middle)
                     }
-                    .frame(height: 90)
+                    .frame(height: 120)
                     .border(Color.primary.opacity(0.15))
                     HStack(spacing: 4) {
                         Button { addExclusion() } label: { Image(systemName: "plus") }
@@ -77,14 +158,11 @@ struct SettingsView: View {
             } footer: {
                 Text(L("settings.scan.footer")).font(.footnote).foregroundStyle(.secondary)
             }
+        case .snapshots:
             SnapshotSettingsSection(prefs: prefs.snapshots)
-            if let state, state.isSandboxed {
-                FolderAccessSection(state: state)
-            }
+        case .access:
+            EmptyView()
         }
-        .formStyle(.grouped)
-        .frame(width: 480)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     /// Winkelschwelle mit einer Nachkommastelle im Format des Locales („0.5“, „0,5“).

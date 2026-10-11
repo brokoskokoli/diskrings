@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Нажмите: на уровень выше";
 
 /* Settings */
+"settings.tab.general" = "Основные";
 "settings.section.chart" = "Диаграмма";
 "settings.rings" = "Количество колец";
 "settings.colorScheme" = "Цветовая схема";

@@ -164,7 +164,7 @@ enum CompareDemoRenderer {
             // 9. Dialog „Snapshot sichern“ und Einstellungen.
             shot(SnapshotNameSheet(title: L("snapshots.save.title"), message: L("snapshots.save.message", home),
                                    confirm: L("snapshots.save.confirm"), name: .constant("before macOS update")) { _ in }, "snapshot-save-sheet", nil)
-            shot(SettingsView(prefs: makeState().prefs), "settings-snapshots", nil)
+            shot(SettingsPage(tab: .snapshots, prefs: makeState().prefs), "settings-snapshots", nil)
 
             // 10. Kontextmenü im Vergleich (nachgebildet): bestehender Ordner,
             //     entferntes Element, Vergleich zweier Snapshots.

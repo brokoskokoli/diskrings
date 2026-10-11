@@ -123,6 +123,12 @@ enum SnapshotRenderer {
             let s6 = makeState(tree: nil, volume: nil, otherVolumes: [])
             s6.prefs.paletteScheme = .fileType
             s6.prefs.excludedPaths = ["/Users/demo/Library/Caches", "/Volumes/Backup"]
+            // Jeder Reiter einzeln (settings-general, -chart, -scan, -snapshots).
+            for tab in SettingsTab.visible(sandboxed: false) {
+                failures += renderWindow(SettingsPage(tab: tab, prefs: s6.prefs), scheme: scheme, to: dir,
+                                         name: "settings-\(tab.rawValue)-\(suffix)")
+            }
+            // Ganzes Fenster mit Reiterleiste (außerhalb der Settings-Scene als Segmente gezeichnet).
             failures += renderWindow(SettingsView(prefs: s6.prefs), scheme: scheme, to: dir, name: "settings-\(suffix)")
 
             // 6b. App-Store-Variante (Sandbox, vorgetäuscht): Startbildschirm
@@ -133,8 +139,8 @@ enum SnapshotRenderer {
             failures += renderWindow(StartView(state: s6b).frame(width: 900, height: 560), scheme: scheme, to: dir,
                                      name: "start-sandbox-\(suffix)")
             for p in ["/Users/demo/Documents", "/Volumes/Backup"] { s6b.grantAccess(URL(fileURLWithPath: p)) }
-            failures += renderWindow(SettingsView(prefs: s6b.prefs, state: s6b), scheme: scheme, to: dir,
-                                     name: "settings-sandbox-\(suffix)")
+            failures += renderWindow(SettingsPage(tab: .access, prefs: s6b.prefs, state: s6b), scheme: scheme, to: dir,
+                                     name: "settings-access-\(suffix)")
 
             // 9. Kontextmenü (nachgebildet, siehe `ContextMenuPreview`): Datei,
             //    geschützter Ordner (~/Library) und Mehrfachauswahl.

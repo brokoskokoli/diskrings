@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Klick: eine Ebene nach oben";
 
 /* Settings */
+"settings.tab.general" = "Allgemein";
 "settings.section.chart" = "Diagramm";
 "settings.rings" = "Ringanzahl";
 "settings.colorScheme" = "Farbschema";

@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Click: up one level";
 
 /* Settings */
+"settings.tab.general" = "General";
 "settings.section.chart" = "Chart";
 "settings.rings" = "Number of rings";
 "settings.colorScheme" = "Color scheme";

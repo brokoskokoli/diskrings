@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "点按：上移一层";
 
 /* Settings */
+"settings.tab.general" = "通用";
 "settings.section.chart" = "图表";
 "settings.rings" = "环数";
 "settings.colorScheme" = "配色方案";

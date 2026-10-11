@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Clic : remonter d’un niveau";
 
 /* Settings */
+"settings.tab.general" = "Général";
 "settings.section.chart" = "Graphique";
 "settings.rings" = "Nombre d’anneaux";
 "settings.colorScheme" = "Couleurs";

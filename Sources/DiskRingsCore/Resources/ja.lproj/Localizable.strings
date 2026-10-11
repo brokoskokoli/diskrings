@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "クリック：1階層上へ";
 
 /* Settings */
+"settings.tab.general" = "一般";
 "settings.section.chart" = "グラフ";
 "settings.rings" = "リングの数";
 "settings.colorScheme" = "配色";

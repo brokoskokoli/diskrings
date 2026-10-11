@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Tıklama: bir düzey yukarı";
 
 /* Settings */
+"settings.tab.general" = "Genel";
 "settings.section.chart" = "Grafik";
 "settings.rings" = "Halka sayısı";
 "settings.colorScheme" = "Renk şeması";

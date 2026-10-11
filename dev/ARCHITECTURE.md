@@ -113,7 +113,7 @@ Zwei Build-Varianten aus demselben Binary: `scripts/make-app.sh` (Developer ID, 
 - `Snapshots/SnapshotRenderer.swift`: `--render-snapshots` (Szenen als PNG).
 - `Snapshots/StoreScreenshotRenderer.swift`: `--store-screenshots` (sechs App-Store-Szenen, 1440 × 900 pt bei Skalierung 2).
 - `Start/StartView.swift`: Startbildschirm (Volumes, Ordnerwahl, Hinweis auf Festplattenvollzugriff bzw. in der Sandbox `SandboxAccessBanner`) und Scan-Ansicht mit Stillstands-Hinweis.
-- `Settings/SettingsView.swift`, `Settings/LanguageSection.swift`: Einstellungen, Sprachwahl, Neustart; `FolderAccessSection` (nur Sandbox).
+- `Settings/SettingsView.swift`, `Settings/LanguageSection.swift`: Einstellungsfenster mit Reitern (`SettingsTab`: Allgemein, Diagramm, Scan, Snapshots, Ordnerzugriff nur in der Sandbox), Inhalt je Reiter in `SettingsPage` (von den Renderern einzeln gezeichnet), Sprachwahl, Neustart; `FolderAccessSection`.
 - `Support/Support.swift`: Farbumrechnung, Texte zu Arcs, Volumes, `VolumeUsageBar`/`VolumeUsageLegend` (gestapelter Belegungsbalken auf Startbildschirm und Statusleiste), `ViewState` (Ersatz für `@State`, siehe DECISIONS).
 
 ### CLI (`Sources/diskrings-cli/main.swift`)

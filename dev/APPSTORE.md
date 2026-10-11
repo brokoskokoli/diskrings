@@ -224,4 +224,4 @@ Die Store-Variante hat einen eigenen Container mit eigenen Einstellungen, Freiga
 ## Offene Punkte vor der ersten Einreichung
 
 - Auf echtem Gerät mit Distributionssignatur einmal prüfen: Volume freigeben und scannen, App neu starten (Bookmark wird aufgelöst), Testordner in einem freigegebenen temporären Ordner in den Papierkorb legen und mit ⌘Z zurücklegen. Ob die Sandbox das Zurücklegen aus `~/.Trash` erlaubt, ist bisher nicht auf echten Daten geprüft.
-- Screenshots: `--store-screenshots` (siehe [Screenshots](#screenshots)) hochladen; Sandbox-Ansichten bei Bedarf aus dem Snapshot-Renderer (`start-sandbox-*`, `settings-sandbox-*`).
+- Screenshots: `--store-screenshots` (siehe [Screenshots](#screenshots)) hochladen; Sandbox-Ansichten bei Bedarf aus dem Snapshot-Renderer (`start-sandbox-*`, `settings-access-*`).

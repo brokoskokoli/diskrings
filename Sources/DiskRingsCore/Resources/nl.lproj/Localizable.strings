@@ -221,6 +221,7 @@
 "sunburst.center.hint" = "Klik: één niveau omhoog";
 
 /* Settings */
+"settings.tab.general" = "Algemeen";
 "settings.section.chart" = "Diagram";
 "settings.rings" = "Aantal ringen";
 "settings.colorScheme" = "Kleurenschema";
