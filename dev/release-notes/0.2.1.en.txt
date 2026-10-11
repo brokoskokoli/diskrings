@@ -1,0 +1,2 @@
+• Improved: Settings are now organized in tabs (General, Chart, Scan, Snapshots, Folder Access) and fit on every screen.
+• Fixed: On smaller displays the Settings window could be taller than the screen, so some options, such as Folder Access, were out of reach.

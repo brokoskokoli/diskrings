@@ -29,7 +29,7 @@ Gratis, alle Länder und Regionen.
 
 | Feld | Eintrag |
 |---|---|
-| Version | `0.2.0` (muss zur Datei `VERSION` des hochgeladenen Builds passen) |
+| Version | `0.2.1` (muss zur Datei `VERSION` des hochgeladenen Builds passen) |
 | Copyright | `2026 Stefan Richter` |
 | Support-URL | `https://github.com/brokoskokoli/diskrings/issues` |
 | Marketing-URL | `https://brokoskokoli.github.io/diskrings/` |

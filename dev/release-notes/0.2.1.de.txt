@@ -1,0 +1,2 @@
+• Verbessert: Die Einstellungen sind jetzt in Reiter gegliedert (Allgemein, Diagramm, Scan, Snapshots, Ordnerzugriff) und passen auf jeden Bildschirm.
+• Behoben: Auf kleineren Bildschirmen konnte das Einstellungsfenster höher als der Bildschirm sein, sodass manche Optionen wie der Ordnerzugriff nicht erreichbar waren.
