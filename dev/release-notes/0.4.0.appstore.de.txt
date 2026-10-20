@@ -1,0 +1,3 @@
+• Neu: Mit KI analysieren. Rechtsklick auf einen Ordner oder eine Datei, dann „Mit KI analysieren“: Ein KI-Assistent im Browser erklärt, was es ist und ob man es gefahrlos löschen kann. Für Assistenten ohne direkten Link kopiert DiskRings den Prompt zum Einfügen, und „Prompt kopieren“ funktioniert mit jedem Assistenten.
+• Datenschutz: Der Prompt enthält Pfad, Größen und die Namen der größten Elemente. Benutzername, voller Name und Rechnername werden durch Platzhalter ersetzt, der Benutzerordner durch „~“. DiskRings fragt vor dem ersten Senden und baut selbst keine Netzwerkverbindung auf.
+• Neu: Unter Einstellungen → KI legst du fest, welche Assistenten im Menü erscheinen.

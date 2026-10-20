@@ -171,7 +171,8 @@ struct SparkleSeparationTests {
     func manifest() throws {
         let text = try String(contentsOf: SourceTree.root.appendingPathComponent("Package.swift"), encoding: .utf8)
         #expect(text.contains(#".package(url: "https://github.com/sparkle-project/Sparkle", exact: "#))
-        #expect(text.contains(#".default(enabledTraits: ["Updates"])"#))
+        // Standard-Traits: Updates (Sparkle) und AISessions (KI-CLIs), beide nur GitHub-Variante.
+        #expect(text.contains(#".default(enabledTraits: ["Updates", "AISessions"])"#))
         #expect(text.contains(#".product(name: "Sparkle", package: "Sparkle", condition: .when(traits: ["Updates"]))"#))
         #expect(text.components(separatedBy: #"package: "Sparkle""#).count == 2, "Sparkle nur in einem Target")
     }

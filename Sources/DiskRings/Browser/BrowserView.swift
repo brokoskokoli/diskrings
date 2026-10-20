@@ -30,6 +30,12 @@ struct BrowserView: View {
         .sheet(isPresented: Binding(get: { state.infoNode != nil }, set: { if !$0 { state.infoNode = nil } })) {
             if let n = state.infoNode { NodeInfoView(state: state, node: n) { state.infoNode = nil } }
         }
+        .sheet(isPresented: Binding(get: { state.ai.consent != nil }, set: { if !$0 { state.ai.consent = nil } })) {
+            if let r = state.ai.consent {
+                AIConsentView(request: r, onCancel: { state.answerAIConsent(r, proceed: false, dontAskAgain: false) },
+                              onContinue: { state.answerAIConsent(r, proceed: true, dontAskAgain: $0) })
+            }
+        }
     }
 }
 

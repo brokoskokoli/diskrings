@@ -19,6 +19,11 @@ final class Preferences {
         static let listWidth = "listWidth"
         static let fdaHintDismissed = "fullDiskAccessHintDismissed"
         static let showFree = "showFreeSpace"
+        static let aiDisabled = "aiDisabledItems"
+        /// Früherer gemeinsamer Merker (nur noch für Web übernommen).
+        static let aiConsentLegacy = "aiConsentGiven"
+        static let aiConsentWeb = "aiConsentWeb"
+        static let aiConsentSession = "aiConsentSession"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -43,6 +48,17 @@ final class Preferences {
     var fullDiskAccessHintDismissed: Bool {
         didSet { defaults.set(fullDiskAccessHintDismissed, forKey: Key.fdaHintDismissed) }
     }
+    /// Abgewählte Einträge des Menüs „Mit KI analysieren“ (IDs aus den
+    /// Katalogen; neue Einträge sind so automatisch an, siehe `AIMenuSelection`).
+    var aiDisabledItems: [String] { didSet { defaults.set(aiDisabledItems, forKey: Key.aiDisabled) } }
+    /// Datenschutz-Hinweis mit „Nicht mehr fragen“ quittiert, getrennt für
+    /// Web-KI und interaktive Sitzung.
+    var aiConsent: AIConsentState {
+        didSet {
+            defaults.set(aiConsent.web, forKey: Key.aiConsentWeb)
+            defaults.set(aiConsent.session, forKey: Key.aiConsentSession)
+        }
+    }
     /// Snapshot-Einstellungen (SPEC 3.7), siehe Snapshots/SnapshotLibrary.swift.
     let snapshots: SnapshotPreferences
 
@@ -63,7 +79,17 @@ final class Preferences {
         let w = defaults.object(forKey: Key.listWidth) as? Double ?? 400
         listWidth = Self.listWidthRange.contains(w) ? w : 400
         fullDiskAccessHintDismissed = defaults.object(forKey: Key.fdaHintDismissed) as? Bool ?? false
+        aiDisabledItems = defaults.stringArray(forKey: Key.aiDisabled) ?? []
+        aiConsent = AIConsentState(web: defaults.object(forKey: Key.aiConsentWeb) as? Bool,
+                                   session: defaults.object(forKey: Key.aiConsentSession) as? Bool,
+                                   legacy: defaults.object(forKey: Key.aiConsentLegacy) as? Bool)
         snapshots = SnapshotPreferences(defaults: defaults)
+    }
+
+    /// Auswahl im Menü „Mit KI analysieren“ (unbekannte IDs fallen beim Laden weg).
+    var aiSelection: AIMenuSelection {
+        get { AIMenuSelection(stored: aiDisabledItems, known: AIAssistant.knownItemIDs) }
+        set { aiDisabledItems = newValue.stored }
     }
 
     /// Erlaubter Bereich der Winkelschwelle in Grad.

@@ -193,6 +193,7 @@ struct CompareContextMenu: View {
     let entry: Int32
 
     var body: some View {
+        let _: Void = AIContextMenu.install
         let _: Void = CompareContextMenuSections.install
         if let target = state.compareContextTarget(for: entry) {
             ContextMenuItems(state: state, target: target, header: state.compareMenuHeader(entry))
@@ -206,6 +207,7 @@ struct CompareContextMenuPreview: View {
     let entry: Int32
 
     var body: some View {
+        let _: Void = AIContextMenu.install
         let _: Void = CompareContextMenuSections.install
         if let target = state.compareContextTarget(for: entry) {
             ContextMenuPreviewBody(state: state, target: target, header: state.compareMenuHeader(entry))

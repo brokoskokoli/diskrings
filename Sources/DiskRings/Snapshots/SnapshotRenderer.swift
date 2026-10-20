@@ -132,6 +132,20 @@ enum SnapshotRenderer {
             failures += renderWindow(SettingsPage(tab: .general, prefs: s6.prefs,
                                                   updater: .preview(automaticallyChecks: true)),
                                      scheme: scheme, to: dir, name: "settings-general-updates-\(suffix)")
+            // Reiter „KI“ mit Zustand: GitHub-Variante mit (vorgetäuscht) gefundenen CLIs,
+            // eine Web-KI abgewählt; dazu die App-Store-Variante ohne CLI-Teil.
+            let s6ai = makeState(tree: nil, volume: nil, otherVolumes: [])
+            simulateAITools(s6ai)
+            s6ai.prefs.aiDisabledItems = ["web.duckai"]
+            failures += renderWindow(SettingsPage(tab: .ai, prefs: s6ai.prefs, state: s6ai), scheme: scheme, to: dir,
+                                     name: "settings-ai-github-\(suffix)")
+            // Ganzer Inhalt ohne feste Höhe (im Fenster scrollt der untere Teil).
+            failures += renderWindow(Form { AISettingsSections(prefs: s6ai.prefs, state: s6ai) }
+                .formStyle(.grouped).frame(width: SettingsPage.width).fixedSize(horizontal: false, vertical: true),
+                                     scheme: scheme, to: dir, name: "settings-ai-github-full-\(suffix)")
+            let s6aiStore = makeState(tree: nil, volume: nil, otherVolumes: [], sandboxed: true)
+            failures += renderWindow(SettingsPage(tab: .ai, prefs: s6aiStore.prefs, state: s6aiStore), scheme: scheme,
+                                     to: dir, name: "settings-ai-store-\(suffix)")
             // Ganzes Fenster mit Reiterleiste (außerhalb der Settings-Scene als Segmente gezeichnet).
             failures += renderWindow(SettingsView(prefs: s6.prefs), scheme: scheme, to: dir, name: "settings-\(suffix)")
 
@@ -165,6 +179,47 @@ enum SnapshotRenderer {
                         ContextMenuPreview(state: s9b, node: d2)
                     }
                     .padding(24), scheme: scheme, to: dir, name: "contextmenu-\(suffix)")
+
+                // 9b. „Mit KI analysieren“: Kontextmenü eines Ordners mit geöffnetem
+                //     Untermenü (GitHub-Variante mit gefundenen CLIs, App-Store-Variante)
+                //     und der Datenschutz-Hinweis (Web-KI, Sitzung).
+                if let caches = demo.index(ofPath: "Library/Caches") {
+                    let sAI = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers)
+                    sAI.protection = demoProtection
+                    simulateAITools(sAI)
+                    let sAIStore = makeState(tree: demo, volume: demoVolume, otherVolumes: demoOthers, sandboxed: true)
+                    sAIStore.protection = demoProtection
+                    let target = ContextMenuTarget(nodes: [caches], clicked: caches, tree: demo)
+                    failures += renderWindow(
+                        HStack(alignment: .top, spacing: 8) {
+                            ContextMenuPreview(state: sAI, node: caches)
+                            ContextSubmenuPreview(state: sAI, target: target, item: AIContextMenu.item)
+                                .padding(.top, 150)
+                            ContextSubmenuPreview(state: sAIStore, target: target, item: AIContextMenu.item)
+                                .padding(.top, 150)
+                                .padding(.leading, 16)
+                        }
+                        .padding(24), scheme: scheme, to: dir, name: "contextmenu-ai-\(suffix)")
+                    let item = "Caches"
+                    let at = AITarget(path: demo.path(of: caches), isDirectory: true, change: nil)
+                    if let claude = AIWebCatalog.service(id: "web.claude") {
+                        failures += renderWindow(
+                            HStack(alignment: .top, spacing: 24) {
+                                AIConsentView(request: AIConsentRequest(action: .web(claude), itemName: item, target: at),
+                                              onCancel: {}, onContinue: { _ in })
+                                    .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                                    .shadow(radius: 8)
+                                AIConsentView(request: AIConsentRequest(
+                                    action: .session(toolID: "cli.claude", toolName: "Claude Code",
+                                                     executable: "/opt/homebrew/bin/claude"),
+                                    itemName: item, target: at), onCancel: {}, onContinue: { _ in })
+                                    .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                                    .shadow(radius: 8)
+                            }
+                            .padding(24)
+                            .background(Color.gray.opacity(0.3)), scheme: scheme, to: dir, name: "ai-consent-\(suffix)")
+                    }
+                }
 
                 // 10. Papierkorb-Dialog: ein Ordner unter 1 GB (mit „Nicht mehr fragen“)
                 //     und eine Mehrfachauswahl über 1 GB (ohne).
@@ -273,6 +328,17 @@ enum SnapshotRenderer {
             }
         }
         return failures == 0 ? 0 : 1
+    }
+
+    /// Vorgetäuscht gefundene KI-CLIs (nur GitHub-Variante).
+    static func simulateAITools(_ state: AppState) {
+        #if AISessions
+        let found = [("cli.claude", "/opt/homebrew/bin/claude"), ("cli.codex", "/usr/local/bin/codex"),
+                     ("cli.copilot", "/opt/homebrew/bin/copilot")]
+        state.ai.simulateTools(found.compactMap { id, path in
+            AICLICatalog.tool(id: id).map { AICLIInstallation(tool: $0, path: path) }
+        })
+        #endif
     }
 
     static func makeState(tree: ScanTree?, volume: VolumeInfo?, otherVolumes: [ContainerVolume],

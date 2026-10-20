@@ -23,6 +23,13 @@ enum FileActions {
         pb.setString(paths.joined(separator: "\n"), forType: .string)
     }
 
+    /// Text in die Zwischenablage (z. B. der KI-Prompt).
+    static func copyText(_ text: String) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+    }
+
     /// Steht der Cursor gerade in einem Textfeld (z. B. der Suche)?
     static var isEditingText: Bool {
         (NSApp.keyWindow?.firstResponder as? NSText) != nil

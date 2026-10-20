@@ -81,11 +81,15 @@ struct ContextMenuItem: Identifiable {
     /// Begründung zusätzlich als graue Zeile unter dem Eintrag zeigen
     /// (Tooltips in Menüs erscheinen erst nach einer Verzögerung).
     var showsReasonInline = false
+    /// Untermenü statt einer Aktion: Gruppen von Einträgen (zwischen
+    /// Trennlinien), z. B. „Mit KI analysieren“.
+    var submenu: (@MainActor (ContextMenuTarget, AppState) -> [[ContextMenuItem]])?
 
     init(id: String, title: @escaping @MainActor (ContextMenuTarget, AppState) -> String, systemImage: String,
          shortcut: ActionShortcut? = nil,
          availability: @escaping @MainActor (ContextMenuTarget, AppState) -> ActionAvailability,
-         perform: @escaping @MainActor (ContextMenuTarget, AppState) -> Void, showsReasonInline: Bool = false) {
+         perform: @escaping @MainActor (ContextMenuTarget, AppState) -> Void, showsReasonInline: Bool = false,
+         submenu: (@MainActor (ContextMenuTarget, AppState) -> [[ContextMenuItem]])? = nil) {
         self.id = id
         self.title = title
         self.systemImage = systemImage
@@ -93,6 +97,7 @@ struct ContextMenuItem: Identifiable {
         self.availability = availability
         self.perform = perform
         self.showsReasonInline = showsReasonInline
+        self.submenu = submenu
     }
 
     /// Eingebauter Eintrag aus SPEC 3.5.
@@ -169,6 +174,7 @@ struct NodeContextMenu: View {
     let node: Int32
 
     var body: some View {
+        let _: Void = AIContextMenu.install
         if let tree = state.tree {
             let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node, tree: tree)
             ContextMenuItems(state: state, target: target,
@@ -213,19 +219,46 @@ struct ContextMenuItems: View {
             ForEach(ContextMenuRegistry.sections(for: target, state: state)) { section in
                 Divider()
                 ForEach(section.items) { item in
-                    let availability = item.availability(target, state)
-                    let button = Button {
-                        item.perform(target, state)
-                    } label: {
-                        Label(item.title(target, state), systemImage: item.systemImage)
-                    }
-                    .disabled(!availability.isEnabled)
-                    .help(availability.reason ?? "")
-                    if let s = item.shortcut?.keyboardShortcut { button.keyboardShortcut(s) } else { button }
-                    if item.showsReasonInline, !availability.isEnabled, let reason = availability.reason {
-                        Text(reason).font(.caption)
+                    ContextMenuEntry(state: state, target: target, item: item)
+                }
+            }
+        }
+    }
+}
+
+/// Ein Eintrag (Knopf oder Untermenü) im echten Kontextmenü.
+struct ContextMenuEntry: View {
+    let state: AppState
+    let target: ContextMenuTarget
+    let item: ContextMenuItem
+
+    var body: some View {
+        let availability = item.availability(target, state)
+        if let submenu = item.submenu {
+            Menu {
+                let groups = availability.isEnabled ? submenu(target, state) : []
+                ForEach(groups.indices, id: \.self) { gi in
+                    if gi > 0 { Divider() }
+                    ForEach(groups[gi]) { sub in
+                        ContextMenuEntry(state: state, target: target, item: sub)
                     }
                 }
+            } label: {
+                Label(item.title(target, state), systemImage: item.systemImage)
+            }
+            .disabled(!availability.isEnabled)
+            .help(availability.reason ?? "")
+        } else {
+            let button = Button {
+                item.perform(target, state)
+            } label: {
+                Label(item.title(target, state), systemImage: item.systemImage)
+            }
+            .disabled(!availability.isEnabled)
+            .help(availability.reason ?? "")
+            if let s = item.shortcut?.keyboardShortcut { button.keyboardShortcut(s) } else { button }
+            if item.showsReasonInline, !availability.isEnabled, let reason = availability.reason {
+                Text(reason).font(.caption)
             }
         }
     }
@@ -257,6 +290,7 @@ struct ContextMenuPreview: View {
     let node: Int32
 
     var body: some View {
+        let _: Void = AIContextMenu.install
         if let tree = state.tree {
             let target = ContextMenuTarget(nodes: state.contextTargets(for: node), clicked: node, tree: tree)
             ContextMenuPreviewBody(state: state, target: target,
@@ -286,7 +320,10 @@ struct ContextMenuPreviewBody: View {
                             Image(systemName: item.systemImage).frame(width: 16)
                             Text(item.title(target, state))
                             Spacer(minLength: 24)
-                            if let s = item.shortcut { Text(s.display).foregroundStyle(.secondary) }
+                            if item.submenu != nil {
+                                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                            } else if let s = item.shortcut { Text(s.display).foregroundStyle(.secondary) }
                         }
                         .font(.system(size: 13))
                         .foregroundStyle(a.isEnabled ? .primary : .tertiary)
@@ -306,5 +343,40 @@ struct ContextMenuPreviewBody: View {
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator, lineWidth: 0.5))
             .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
         }
+    }
+}
+
+
+/// Nachbildung eines Untermenüs für die Vorschaubilder (Gruppen wie im
+/// echten Menü, gleiche Titel und Verfügbarkeiten).
+struct ContextSubmenuPreview: View {
+    let state: AppState
+    let target: ContextMenuTarget
+    let item: ContextMenuItem
+
+    var body: some View {
+        let groups = item.submenu?(target, state) ?? []
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(groups.indices, id: \.self) { gi in
+                if gi > 0 { Divider().padding(.vertical, 4) }
+                ForEach(groups[gi]) { sub in
+                    let a = sub.availability(target, state)
+                    HStack(spacing: 8) {
+                        Image(systemName: sub.systemImage).frame(width: 16)
+                        Text(sub.title(target, state))
+                        Spacer(minLength: 24)
+                    }
+                    .font(.system(size: 13))
+                    .foregroundStyle(a.isEnabled ? .primary : .tertiary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 3)
+                }
+            }
+        }
+        .padding(.vertical, 6)
+        .frame(width: 320, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator, lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
     }
 }

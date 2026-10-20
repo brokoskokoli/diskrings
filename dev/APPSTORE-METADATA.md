@@ -21,6 +21,8 @@ Screenshots erzeugt `swift run DiskRings --store-screenshots <ordner> --language
 
 „Daten werden nicht erfasst“ (Data Not Collected). Die Store-Variante stellt keine Netzwerkverbindungen her: Sparkle (Update-Prüfung) steckt nur in der Download-Version von GitHub; `make-app.sh --appstore` baut ohne den Package Trait `Updates` und bricht ab, wenn Sparkle im Bündel auftaucht (siehe `dev/DECISIONS.md`).
 
+„Mit KI analysieren“ ändert daran nichts: Die App öffnet auf ausdrücklichen Klick nur den Standardbrowser mit einem Link (bzw. kopiert den Prompt in die Zwischenablage). Die Daten gehen vom Nutzer über seinen Browser an einen Dienst seiner Wahl; weder der Entwickler noch ein in die App eingebundener Dritter erhält sie („collect“ im Sinne von Apple = Übertragung vom Gerät an den Entwickler oder seine Partner). Keine Netzwerk-Berechtigung, kein SDK. Die interaktiven CLI-Sitzungen gibt es in der Store-Variante nicht (Package Trait `AISessions` aus, `make-app.sh --appstore` prüft das Binary).
+
 ## Preise und Verfügbarkeit
 
 Gratis, alle Länder und Regionen.
@@ -52,12 +54,12 @@ Finde in Sekunden heraus, was deinen Mac füllt: ein interaktives Ringdiagramm a
 
 **EN**
 ```
-disk,space,storage,analyzer,usage,sunburst,cleanup,folder,size,free,purgeable,system data,snapshot
+disk,space,storage,analyzer,ai,sunburst,cleanup,folder,size,free,purgeable,system data,snapshot
 ```
 
 **DE**
 ```
-festplatte,speicherplatz,analyse,belegung,ordner,größe,aufräumen,sunburst,systemdaten,frei,volume
+festplatte,speicherplatz,analyse,belegung,ordner,größe,aufräumen,sunburst,systemdaten,frei,ki
 ```
 
 ### Beschreibung (4000)
@@ -88,6 +90,11 @@ MADE FOR THE MAC
 • Fast parallel scanning of millions of files
 • Full keyboard navigation and VoiceOver support, color-blind friendly comparison colors
 • Light and dark mode, 14 languages
+
+ASK AN AI ASSISTANT
+• Not sure what a folder is? Right-click it and choose Analyze with AI
+• DiskRings prepares a prompt with the path, sizes, largest items and file types and opens the AI assistant of your choice in your browser, or copies the prompt for you to paste anywhere
+• Your user name and computer name are replaced by placeholders; nothing is sent before you click
 
 PRIVATE BY DESIGN
 DiskRings makes no network connections and collects no data. It only reads the folders and volumes you choose, and remembers your choice.
@@ -122,6 +129,11 @@ FÜR DEN MAC GEMACHT
 • Vollständig per Tastatur und mit VoiceOver bedienbar, farbenblind-taugliche Vergleichsfarben
 • Hell- und Dunkelmodus, 14 Sprachen
 
+EINEN KI-ASSISTENTEN FRAGEN
+• Unklar, was ein Ordner ist? Rechtsklick und „Mit KI analysieren“
+• DiskRings stellt einen Prompt mit Pfad, Größen, größten Elementen und Dateitypen zusammen und öffnet den KI-Assistenten deiner Wahl im Browser oder kopiert den Prompt zum Einfügen
+• Benutzername und Rechnername werden durch Platzhalter ersetzt; vor deinem Klick wird nichts übertragen
+
 DATENSCHUTZ VON ANFANG AN
 DiskRings baut keine Netzwerkverbindungen auf und erfasst keine Daten. Die App liest nur die Ordner und Volumes, die du auswählst, und merkt sich deine Auswahl.
 
@@ -151,10 +163,11 @@ No login, no account, no sample files needed.
 - Move to Trash asks for confirmation and can be undone with Edit > Undo (Cmd+Z). Nothing is ever deleted permanently; system locations are protected.
 - File > Save Snapshot..., later rescan and choose Snapshots... to compare two scans.
 - Settings > Folder Access lists granted folders and lets the user remove access.
+- Right-click a segment > Analyze with AI: after a one-time explanation, opens the user's default browser with a prompt about the item for an AI assistant chosen in Settings > AI (or copies the prompt to the clipboard). The app itself sends nothing.
 Optional: without Full Disk Access some protected folders (e.g. ~/Library/Mail) are unreadable and shown as "Unreadable System Data"; the app explains this on the start screen.
 
 4. External services
-None. DiskRings makes no network connections (no network entitlement), uses no third-party SDKs, analytics, authentication, payment or AI services. It only uses macOS system APIs to read file metadata. Snapshots and settings are stored locally in the app container.
+None. DiskRings makes no network connections (no network entitlement), uses no third-party SDKs, analytics, authentication, payment or AI services. It only uses macOS system APIs to read file metadata. Snapshots and settings are stored locally in the app container. The optional "Analyze with AI" menu only opens a web link in the user's default browser (NSWorkspace) or copies text to the clipboard, on explicit click; the app does not call any AI API itself.
 
 5. Regional differences
 None. The app works identically in all regions; it is localized into 14 languages.

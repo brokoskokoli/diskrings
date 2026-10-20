@@ -105,6 +105,11 @@ struct RootView: View {
         .onAppear {
             delegate.openWindow = openWindow
             delegate.openSettings = openSettings
+            state.ai.openSettings = { openSettings() }
+            #if AISessions
+            // KI-CLIs einmal pro Start im Hintergrund suchen (nicht in der Sandbox).
+            if state.ai.tools == nil, !state.ai.isSearching { state.ai.detectTools(environment: state.environment) }
+            #endif
             state.refreshVolumes()
             if swipe == nil {
                 let s = SwipeNavigation(state: state)

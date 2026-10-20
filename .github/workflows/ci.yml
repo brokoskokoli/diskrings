@@ -86,4 +86,5 @@ jobs:
           if otool -L "$APP/Contents/MacOS/DiskRings" | grep -qi sparkle; then echo "::error::Store-Binary gegen Sparkle gelinkt"; exit 1; fi
           if strings -a "$APP/Contents/MacOS/DiskRings" | grep -qE 'SUFeedURL|SUPublicEDKey|SUEnable|SPU[A-Z][A-Za-z]+|[Ss]parkle'; then echo "::error::Sparkle-Zeichenketten im Store-Binary"; exit 1; fi
           if grep -q '<key>SU' "$APP/Contents/Info.plist"; then echo "::error::Sparkle-Schlüssel in der Store-Info.plist"; exit 1; fi
+          if strings -a "$APP/Contents/MacOS/DiskRings" | grep -qE -e '--permission-mode|--approval-mode|--ask-for-approval|cursor-agent|__DISKRINGS_AI__|com\.apple\.Terminal'; then echo "::error::KI-CLI-Sitzungen im Store-Binary"; exit 1; fi
           if pkgutil --payload-files "$PKG" | grep -qi sparkle; then echo "::error::Sparkle im Store-Paket"; exit 1; fi

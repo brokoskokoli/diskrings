@@ -258,6 +258,17 @@ mkdir -p "$WORK/n4"; cp dev/release-notes/TEMPLATE.en.txt "$WORK/n4/1.2.3.en.txt
 check "unveränderte Vorlage wird abgelehnt" bash -c "! ASC_NOTES_DIR='$WORK/n4' bash scripts/asc-submit.sh check-notes 1.2.3 > '$WORK/n4.out' 2>&1"
 check "  … wegen Platzhaltern" has "$WORK/n4.out" "Platzhalter"
 
+mkdir -p "$WORK/n5"; printf 'GitHub: all.\n' > "$WORK/n5/1.2.3.en.txt"; printf 'GitHub: alles.\n' > "$WORK/n5/1.2.3.de.txt"
+printf 'Store: web only.\n' > "$WORK/n5/1.2.3.appstore.en.txt"
+check "Store-eigene Datei (nur en) und gemeinsame (de) werden angenommen" notes_check "$WORK/n5"
+check "  … und genannt" has "$WORK/notes.out" "1.2.3.appstore.en.txt 1.2.3.de.txt"
+printf ' \n' > "$WORK/n5/1.2.3.appstore.de.txt"
+check "leere Store-Datei wird gemeldet, obwohl die gemeinsame gültig ist" bash -c "! ASC_NOTES_DIR='$WORK/n5' bash scripts/asc-submit.sh check-notes 1.2.3 > '$WORK/n5.out' 2>&1"
+check "  … mit Dateinamen" has "$WORK/n5.out" "1.2.3.appstore.de.txt ist leer"
+python3 -I -c 'import sys; open(sys.argv[1],"w").write("a"*4001)' "$WORK/n5/1.2.3.appstore.de.txt"
+check "zu lange Store-Datei wird abgelehnt" bash -c "! ASC_NOTES_DIR='$WORK/n5' bash scripts/asc-submit.sh check-notes 1.2.3 > '$WORK/n5.out' 2>&1"
+rm "$WORK/n5/1.2.3.appstore.de.txt"
+
 echo "== Neue Version: Build abwarten, Version und Lokalisierung anlegen, einreichen"
 f=$FAIL
 run_scenario fresh
@@ -280,6 +291,16 @@ check "Zusammenfassung nennt manuelle Veröffentlichung" has "$WORK/fresh.summar
 check "Token nicht in der Ausgabe" hasnt "$WORK/fresh.out" "test.token.value"
 check "Arbeitsverzeichnis ohne Auth-Header danach" test ! -e "$WORK/fresh.state/auth-header"
 show_on_fail "$f" fresh
+
+echo "== Store-eigene Release Notes haben Vorrang"
+f=$FAIL
+run_scenario storenotes ASC_NOTES_DIR="$WORK/n5"
+L="$WORK/storenotes.log"
+check "Erfolg" test "$(rc_of storenotes)" = 0
+whats_new_for() { jq -r --arg l "$1" 'select(.m == "POST" and .p == "/v1/appStoreVersionLocalizations" and .b.data.attributes.locale == $l) | .b.data.attributes.whatsNew' "$L"; }
+check "en-US aus 1.2.3.appstore.en.txt" test "$(whats_new_for en-US)" = "Store: web only."
+check "de-DE aus 1.2.3.de.txt (keine Store-Datei)" test "$(whats_new_for de-DE)" = "GitHub: alles."
+show_on_fail "$f" storenotes
 
 echo "== Vorhandene Version und Einreichung wiederverwenden"
 f=$FAIL

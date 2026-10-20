@@ -131,6 +131,9 @@ final class AppState {
     var showSearchResults = false
     @ObservationIgnored private var searchGeneration = 0
 
+    // MARK: Mit KI analysieren (siehe App/AIAssistant.swift)
+    let ai = AIAssistant()
+
     // MARK: Snapshots und Vergleich (SPEC 3.9, siehe Snapshots/ und Compare/)
     var snapshots = SnapshotLibrary()
     var compare: CompareSession? {

@@ -66,11 +66,11 @@
 
   <main>
     <h1>Privacy Policy</h1>
-    <p class="meta">Applies to all versions of DiskRings (Mac App Store and direct download). Last updated: October 11, 2026.</p>
+    <p class="meta">Applies to all versions of DiskRings (Mac App Store and direct download). Last updated: October 20, 2026.</p>
 
     <div class="card">
       <h2>In short</h2>
-      <p>DiskRings does not collect, store or share any personal data. Everything it reads and saves stays on your Mac.</p>
+      <p>DiskRings does not collect, store or share any personal data. Everything it reads and saves stays on your Mac. Facts about a folder leave your Mac only if you explicitly click “Analyze with AI”, and then through your browser or the AI tool you chose, never through DiskRings itself.</p>
     </div>
 
     <div class="card">
@@ -80,10 +80,22 @@
 
     <div class="card">
       <h2>Network connections</h2>
-      <p>File names, sizes and scan results are never sent anywhere.</p>
+      <p>DiskRings itself never sends file names, sizes or scan results anywhere (see “Analyze with AI” below for what happens when you ask an AI assistant).</p>
       <ul>
         <li><strong>Mac App Store version:</strong> DiskRings never connects to the internet. Updates come from the App Store.</li>
         <li><strong>Download from GitHub:</strong> To keep itself up to date, DiskRings asks GitHub whether a new version is available. It downloads a small file (<code>appcast.xml</code>) from github.com when you choose “Check for Updates…” and, if you allow automatic checks, about once a day. The request only identifies the app and its version; no information about you, your Mac or your files is sent, and no system profile is collected. As with any web request, GitHub sees your IP address (see the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy Statement</a>). Updates are downloaded from GitHub and installed only if their signature matches. DiskRings asks before checking automatically; you can turn it off at any time in Settings → General → “Automatically check for updates”.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Analyze with AI (only when you click it)</h2>
+      <p>Right-clicking an item and choosing an entry under “Analyze with AI” hands a prompt about that item to an AI assistant of your choice. Nothing is sent before you click, and DiskRings makes no network connection for this.</p>
+      <ul>
+        <li><strong>What the prompt contains:</strong> the item’s path, kind, size, number of files and folders, last modification date, the names and sizes of the largest items inside, a rough breakdown by file type, the app it probably belongs to (its bundle ID and whether that app is installed), in a comparison the change since the snapshot, and your macOS version. Your user name, full name and computer name are replaced by placeholders such as <code>&lt;user&gt;</code>, and your home folder by <code>~</code>. All other folder and file names are passed on unchanged. File contents are never included.</li>
+        <li><strong>AI on the web:</strong> DiskRings opens your default browser. For some services the prompt is part of the link; for others it is copied to the clipboard and you paste it yourself. The service you chose receives the prompt, and its own privacy policy applies.</li>
+        <li><strong>Copy Prompt:</strong> only copies the prompt to your clipboard.</li>
+        <li><strong>Interactive session (download from GitHub only):</strong> DiskRings opens Terminal in the folder and starts the AI command-line tool you chose and installed yourself (Claude Code, Codex CLI or GitHub Copilot CLI), in plan or read-only mode or with approval for every change, never with automatic approval, and where the tool allows it without MCP servers and settings from the folder. The tool receives the prompt and can read files in that folder; its own privacy policy applies. Configuration files and instructions in the folder (for example from downloaded projects) can influence how the AI behaves, so use sessions only for folders whose contents you trust. The script that starts it is stored only briefly in a temporary folder that only you can read, and deletes itself.</li>
+        <li>Before the first send, DiskRings explains what is passed on, separately for web services and sessions; “Show the Privacy Notice Again” in Settings → AI brings both explanations back. There you also choose which assistants appear in the menu.</li>
       </ul>
     </div>
 

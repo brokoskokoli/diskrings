@@ -1,0 +1,3 @@
+• New: Analyze with AI. Right-click a folder or file and choose "Analyze with AI" to have an AI assistant in your browser explain what it is and whether it is safe to delete. For assistants without a direct link, DiskRings copies the prompt so you can paste it, and "Copy Prompt" works with any assistant.
+• Privacy: The prompt contains the path, sizes and the names of the largest items. Your user name, full name and computer name are replaced by placeholders, your home folder by "~". DiskRings asks before the first send and makes no network connection itself.
+• New: Settings → AI chooses which assistants appear in the menu.

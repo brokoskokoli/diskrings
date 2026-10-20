@@ -5,7 +5,7 @@ import SwiftUI
 /// Reiter des Einstellungsfensters. „Ordnerzugriff“ gibt es nur in der
 /// App-Store-Variante (Sandbox).
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case general, chart, scan, snapshots, access
+    case general, chart, scan, snapshots, ai, access
 
     var id: String { rawValue }
 
@@ -15,6 +15,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .chart: L("settings.section.chart")
         case .scan: L("settings.section.scan")
         case .snapshots: L("settings.section.snapshots")
+        case .ai: L("settings.tab.ai")
         case .access: L("settings.section.access")
         }
     }
@@ -25,6 +26,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .chart: "chart.pie"
         case .scan: "internaldrive"
         case .snapshots: "clock.arrow.circlepath"
+        case .ai: "wand.and.stars"
         case .access: "lock.shield"
         }
     }
@@ -73,9 +75,17 @@ struct SettingsPage: View {
     /// Höhe des Reiters „Ordnerzugriff“: Die Liste der Freigaben kann beliebig
     /// lang werden und scrollt deshalb in fester Höhe.
     static let accessHeight: CGFloat = 380
+    /// Höhe des Reiters „KI“: Kataloge können wachsen, die Liste scrollt.
+    static let aiHeight: CGFloat = 440
 
     var body: some View {
         switch tab {
+        case .ai:
+            Form {
+                AISettingsSections(prefs: prefs, state: state)
+            }
+            .formStyle(.grouped)
+            .frame(width: Self.width, height: Self.aiHeight)
         case .access:
             Form {
                 if let state { FolderAccessSection(state: state) }
@@ -167,7 +177,7 @@ struct SettingsPage: View {
             }
         case .snapshots:
             SnapshotSettingsSection(prefs: prefs.snapshots)
-        case .access:
+        case .ai, .access:
             EmptyView()
         }
     }

@@ -26,6 +26,9 @@ let testSwiftSettings: [SwiftSetting] =
 // Die Mac-App-Store-Variante baut mit `--disable-default-traits`: Dann ist
 // Sparkle weder gelinkt noch eingebettet, und der Code unter `#if Updates`
 // fehlt (siehe dev/DECISIONS.md, „Automatische Updates mit Sparkle“).
+// Ebenso nur in der GitHub-Variante: der Trait `AISessions` (Erkennung und Start
+// lokaler KI-CLIs im Terminal, Code unter `#if AISessions`, auch in Core und Tests;
+// dev/DECISIONS.md, „Mit KI analysieren“).
 // Sparkle exakt gepinnt: 2.10.0 (13.09.2026, Commit eef1a539a373c1f1a320624b1130fc5de7b2e100;
 // Binärziel mit SHA-256 17e28312b8e18ab7cdbbe09a6fb28cc55a5479ec6c371dbc07cdecd2a14fd959
 // im Manifest von Sparkle, Revision in Package.resolved).
@@ -40,7 +43,9 @@ let package = Package(
     ],
     traits: [
         .trait(name: "Updates", description: "Automatische Updates per Sparkle (nur GitHub-Variante)"),
-        .default(enabledTraits: ["Updates"]),
+        .trait(name: "AISessions",
+               description: "Interaktive KI-Sitzungen mit lokalen CLIs im Terminal (nur GitHub-Variante)"),
+        .default(enabledTraits: ["Updates", "AISessions"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),

@@ -79,6 +79,8 @@ UPDATE_FEED_URL=https://github.com/brokoskokoli/diskrings/releases/latest/downlo
 UPDATE_KEY_FILE=${DISKRINGS_UPDATE_KEY_FILE:-Resources/sparkle-public-ed-key.txt}
 # Zeichenketten, die im Store-Binary nicht vorkommen dürfen (strings | grep -E).
 SPARKLE_STRINGS='SUFeedURL|SUPublicEDKey|SUEnable[A-Za-z]*|SUScheduled[A-Za-z]*|SPU[A-Z][A-Za-z]+|[Ss]parkle'
+# Ebenso nichts vom Start lokaler KI-CLIs (Package Trait `AISessions`, nur GitHub-Variante).
+AI_SESSION_STRINGS='--permission-mode|--approval-mode|--ask-for-approval|--prompt-interactive|cursor-agent|__DISKRINGS_AI__|DiskRings AI Session|com\.apple\.Terminal'
 BUNDLE_ID=de.stefanrichter.DiskRings
 IDENTITY=${DISKRINGS_IDENTITY:-"Developer ID Application: Stefan Richter (AGRWTKQZ8C)"}
 KEYCHAIN=${DISKRINGS_KEYCHAIN:-}
@@ -152,6 +154,12 @@ assert_no_sparkle() {
     hits=$(strings -a "$APP/Contents/MacOS/DiskRings" | grep -E "$SPARKLE_STRINGS" | sort -u | head -5 || true)
     if [ -n "$hits" ]; then
         echo "error: Store-Binary enthält Sparkle-Zeichenketten:" >&2
+        echo "$hits" >&2
+        exit 1
+    fi
+    hits=$(strings -a "$APP/Contents/MacOS/DiskRings" | grep -E -e "$AI_SESSION_STRINGS" | sort -u | head -5 || true)
+    if [ -n "$hits" ]; then
+        echo "error: Store-Binary enthält Code für KI-CLI-Sitzungen (Trait AISessions):" >&2
         echo "$hits" >&2
         exit 1
     fi

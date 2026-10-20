@@ -14,7 +14,9 @@
 #      RELEASE_AFTER_APPROVAL=true AFTER_APPROVAL. Ist sie schon eingereicht, in Prüfung
 #      oder freigegeben: Hinweis, Ende ohne Fehler.
 #   4. "Neu in dieser Version" (whatsNew) für en-US und de-DE aus
-#      dev/release-notes/<VERSION>.en.txt bzw. .de.txt setzen (PATCH oder POST).
+#      dev/release-notes/<VERSION>.appstore.en.txt bzw. .appstore.de.txt setzen, falls
+#      vorhanden (Store-eigener Text, je Sprache), sonst aus <VERSION>.en.txt bzw. .de.txt
+#      (gemeinsam mit dem Sparkle-Appcast der GitHub-Variante); PATCH oder POST.
 #   5. Build an die Version hängen (PATCH …/relationships/build).
 #   6. reviewSubmission anlegen oder eine offene (READY_FOR_REVIEW) wiederverwenden,
 #      Version als Item hinzufügen, mit submitted: true einreichen.
@@ -87,12 +89,25 @@ asc_version() {
 # -Rs: jq 1.7 zerlegt bei -R Umlaute an Puffergrenzen (aus Tests).
 asc_note_json() { jq -n --rawfile t "$1" '$t | sub("\\s+$"; "")'; }
 
-# Prüft dev/release-notes/<VERSION>.<en|de>.txt (vorhanden, nicht leer, ≤ 4000 Zeichen,
-# keine Platzhalter <…> der Vorlage); meldet alle Probleme auf einmal.
+# Datei mit dem Store-Text je Sprache: <VERSION>.appstore.<sprache>.txt, wenn vorhanden
+# (die GitHub-Variante kann mehr Funktionen haben als die Store-Variante), sonst
+# die gemeinsame <VERSION>.<sprache>.txt.
+asc_note_file() {
+    local version=$1 suffix=$2
+    if [ -e "$ASC_NOTES_DIR/$version.appstore.$suffix.txt" ]; then
+        echo "$ASC_NOTES_DIR/$version.appstore.$suffix.txt"
+    else
+        echo "$ASC_NOTES_DIR/$version.$suffix.txt"
+    fi
+}
+
+# Prüft die Release Notes je Sprache (asc_note_file: vorhanden, nicht leer, ≤ 4000
+# Zeichen, keine Platzhalter <…> der Vorlage); meldet alle Probleme auf einmal.
 asc_check_notes() {
-    local version=$1 suffix file len problems=()
+    local version=$1 suffix file len problems=() used=()
     for suffix in "${ASC_NOTE_SUFFIXES[@]}"; do
-        file="$ASC_NOTES_DIR/$version.$suffix.txt"
+        file=$(asc_note_file "$version" "$suffix")
+        used+=("$(basename "$file")")
         if [ ! -f "$file" ]; then
             problems+=("$file fehlt")
             continue
@@ -113,7 +128,7 @@ asc_check_notes() {
         asc_err "Für submit_for_review braucht es $ASC_NOTES_DIR/$version.en.txt und $version.de.txt (Vorlage: $ASC_NOTES_DIR/TEMPLATE.*.txt, siehe $ASC_NOTES_DIR/README.md)."
         return 1
     fi
-    echo "Release Notes für $version: ok (${ASC_NOTE_SUFFIXES[*]})"
+    echo "Release Notes für $version: ok (${used[*]})"
 }
 
 # --- Token ---------------------------------------------------------------------------
@@ -363,7 +378,7 @@ asc_set_whats_new() {
     locs=$(cat "$ASC_RESPONSE")
     for suffix in "${ASC_NOTE_SUFFIXES[@]}"; do
         locale=$(asc_locale_for "$suffix")
-        text=$(asc_note_json "$ASC_NOTES_DIR/$version.$suffix.txt")
+        text=$(asc_note_json "$(asc_note_file "$version" "$suffix")")
         loc_id=$(jq -r --arg l "$locale" '[.data[] | select(.attributes.locale == $l)][0].id // empty' <<<"$locs")
         if [ -n "$loc_id" ]; then
             body=$(jq -nc --arg id "$loc_id" --argjson t "$text" \
