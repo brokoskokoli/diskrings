@@ -64,47 +64,29 @@ public enum AIWebLink {
         s.addingPercentEncoding(withAllowedCharacters: unreserved) ?? ""
     }
 
-    /// Stufen, die den kompakten Prompt nacheinander verkürzen.
-    static var reductionSteps: [AIPromptBuilder.Limits] {
-        var steps: [AIPromptBuilder.Limits] = []
-        for n in stride(from: 10, through: 0, by: -1) {
-            steps.append(.init(largest: n, includeTypes: false))
-        }
-        steps.append(.init(largest: 5, includeTypes: false, includeOptional: false, nameLimit: 60))
-        steps.append(.init(largest: 0, includeTypes: false, includeOptional: false, nameLimit: 60))
-        steps.append(.init(largest: 0, includeTypes: false, includeOptional: false, nameLimit: 24))
-        return steps
+    /// Was beim Klick auf eine Web-KI passiert.
+    public enum Opening: Sendable, Equatable {
+        /// Prompt im Link.
+        case prefill(URL)
+        /// Prompt in die Zwischenablage, Startseite öffnen (Dienst ohne
+        /// Parameter oder Prompt zu lang für den Link).
+        case copyAndOpen(prompt: String, url: URL)
     }
 
-    /// URL für einen Dienst mit Prompt-Parameter; `nil` bei `copyAndOpen`.
-    /// Die Liste der größten Elemente wird gekürzt, bis die URL höchstens
-    /// `maxLength` Zeichen hat; reicht das nicht, wird der Prompt hart
-    /// abgeschnitten (an Zeichengrenzen).
-    public static func prefillURL(for service: AIWebService, facts: AIPromptFacts,
-                                  maxLength: Int = maxURLLength) -> URL? {
-        guard case .prefill(let prefix) = service.handoff else { return nil }
-        let budget = maxLength - prefix.count
-        guard budget > 0 else { return nil }
-        var prompt = ""
-        for step in reductionSteps {
-            prompt = AIPromptBuilder.prompt(facts, style: .compact, limits: step)
-            if encode(prompt).count <= budget { return URL(string: prefix + encode(prompt)) }
+    /// Der gesendete Prompt ist immer genau der von „Prompt kopieren“: Passt
+    /// er kodiert nicht in `maxLength` Zeichen, wird er nicht gekürzt,
+    /// sondern kopiert und die Startseite des Dienstes geöffnet.
+    public static func open(for service: AIWebService, facts: AIPromptFacts,
+                            maxLength: Int = maxURLLength) -> Opening? {
+        let prompt = AIPromptBuilder.prompt(facts, style: .chat)
+        guard let home = URL(string: service.homeURL) else { return nil }
+        if case .prefill(let prefix) = service.handoff {
+            let encoded = encode(prompt)
+            if prefix.count + encoded.count <= maxLength, let url = URL(string: prefix + encoded) {
+                return .prefill(url)
+            }
         }
-        return URL(string: prefix + fit(prompt, budget: budget))
-    }
-
-    /// Kodierter Prompt, der höchstens `budget` Zeichen lang ist.
-    static func fit(_ prompt: String, budget: Int) -> String {
-        var chars = Array(prompt)
-        var encoded = encode(prompt)
-        // Grob kürzen (Verhältnis), dann zeichenweise.
-        while encoded.count > budget, !chars.isEmpty {
-            let ratio = Double(budget) / Double(encoded.count)
-            let target = max(0, min(chars.count - 1, Int(Double(chars.count) * ratio) - 1))
-            chars = Array(chars.prefix(target))
-            encoded = encode(String(chars) + "…")
-        }
-        return encoded
+        return .copyAndOpen(prompt: prompt, url: home)
     }
 }
 
@@ -179,4 +161,53 @@ public struct AIConsentState: Sendable, Equatable {
 
     /// Ob überhaupt etwas zurückzusetzen ist (Schalter in den Einstellungen).
     public var asksAlways: Bool { !web && !session }
+}
+
+/// Ein Eintrag im Untermenü „Mit KI analysieren“ (die App macht daraus
+/// Menüpunkte).
+public enum AIMenuEntry: Sendable, Equatable {
+    case web(AIWebService)
+    /// Derselbe Prompt wie für die Web-KIs.
+    case copyPrompt
+    /// Überschrift „Interaktive Sitzung im Terminal“ (nicht wählbar).
+    case sessionHeader
+    /// Info-Zeilen (nicht wählbar): Suche läuft bzw. nichts gefunden.
+    case sessionSearching
+    case sessionNone
+    /// Gefundene, ausgewählte CLI (ID aus dem CLI-Katalog).
+    case sessionTool(id: String)
+    case settings
+}
+
+/// Aufbau des Untermenüs: oben die ausgewählten Web-KIs und immer „Prompt
+/// kopieren“, dann die CLI-Gruppe (nur GitHub-Variante außerhalb der
+/// Sandbox), ganz unten „KI-Einstellungen …“. „Erneut suchen“ gibt es nur in
+/// den Einstellungen.
+public enum AIMenuPlan {
+    /// Stand der CLI-Suche.
+    public enum Sessions: Sendable, Equatable {
+        case searching
+        /// IDs der gefundenen CLIs in Katalogreihenfolge.
+        case found([String])
+    }
+
+    /// `sessions == nil`: keine Sitzungen (App-Store-Variante, Sandbox).
+    public static func groups(selection: AIMenuSelection, sessions: Sessions?,
+                              webCatalog: [AIWebService] = AIWebCatalog.all) -> [[AIMenuEntry]] {
+        var groups: [[AIMenuEntry]] = [selection.enabledWebServices(webCatalog).map { .web($0) } + [.copyPrompt]]
+        switch sessions {
+        case nil:
+            break
+        case .searching:
+            groups.append([.sessionHeader, .sessionSearching])
+        case .found(let ids) where ids.isEmpty:
+            groups.append([.sessionHeader, .sessionNone])
+        case .found(let ids):
+            // Sind alle gefundenen abgewählt, fehlt die Gruppe ganz.
+            let shown = ids.filter { selection.isEnabled($0) }
+            if !shown.isEmpty { groups.append([.sessionHeader] + shown.map { .sessionTool(id: $0) }) }
+        }
+        groups.append([.settings])
+        return groups
+    }
 }

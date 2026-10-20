@@ -7,7 +7,7 @@ import SystemConfiguration
 enum AIAction: Equatable {
     /// Web-KI im Standardbrowser (Prompt im Link oder kopieren und öffnen).
     case web(AIWebService)
-    /// Ausführlichen Prompt in die Zwischenablage.
+    /// Chat-Prompt (derselbe wie für die Web-KIs) in die Zwischenablage.
     case copy
     /// Interaktive Sitzung mit einer lokalen CLI im Terminal (nur GitHub-Variante).
     case session(toolID: String, toolName: String, executable: String)
@@ -203,22 +203,25 @@ extension AppState {
         }
         switch action {
         case .copy:
-            FileActions.copyText(AIPromptBuilder.prompt(facts, style: .detailed))
+            FileActions.copyText(AIPromptBuilder.prompt(facts, style: .chat))
             showToast(.success, L("ai.toast.copied"))
         case .web(let service):
-            switch service.handoff {
-            case .prefill:
-                guard let url = AIWebLink.prefillURL(for: service, facts: facts), NSWorkspace.shared.open(url) else {
+            switch AIWebLink.open(for: service, facts: facts) {
+            case .prefill(let url):
+                guard NSWorkspace.shared.open(url) else {
                     showToast(.error, L("ai.toast.openFailed", service.name))
                     return
                 }
-            case .copyAndOpen:
-                FileActions.copyText(AIPromptBuilder.prompt(facts, style: .detailed))
-                guard let url = URL(string: service.homeURL), NSWorkspace.shared.open(url) else {
+            case .copyAndOpen(let prompt, let url):
+                // Auch für Prefill-Dienste, wenn der Prompt nicht in den Link passt.
+                FileActions.copyText(prompt)
+                guard NSWorkspace.shared.open(url) else {
                     showToast(.error, L("ai.toast.openFailed", service.name))
                     return
                 }
                 showToast(.success, L("ai.toast.copiedPaste", service.name))
+            case nil:
+                showToast(.error, L("ai.toast.openFailed", service.name))
             }
         case .session(let toolID, let toolName, let executable):
             startAISession(toolID: toolID, toolName: toolName, executable: executable, facts: facts, target: t)

@@ -86,7 +86,7 @@ public struct AIPromptFacts: Sendable, Equatable {
     /// Höchstens so viele Knoten werden für Ordneranzahl und Dateitypen
     /// durchlaufen (der Aufruf läuft beim Klick auf dem Main Thread).
     public static let walkLimit = 400_000
-    /// So viele größte Kinder werden festgehalten (ausführliche Fassung).
+    /// So viele größte Kinder werden festgehalten (Chat-Prompt).
     public static let largestKept = 25
 
     /// Fakten aus dem Baum. `modified` und `owner` kommen von außen
@@ -181,84 +181,67 @@ public struct AIPromptFacts: Sendable, Equatable {
 /// Baut den Prompt in der Sprache der Oberfläche (`L10n.language`).
 public enum AIPromptBuilder {
     public enum Style: Sendable, Equatable {
-        /// Für eine Web-KI per URL (kurz, Top 10).
-        case compact
-        /// Zum Kopieren (Top 25, Dateitypen, ausführliche Anweisungen).
-        case detailed
-        /// Startprompt einer interaktiven CLI-Sitzung (wie `detailed`, dazu
-        /// die Regeln für die Sitzung).
+        /// Für Web-KIs und „Prompt kopieren“ (derselbe Text, nie gekürzt):
+        /// Top 25, Dateitypen, Bitte um Erklärung und Einordnung. Ohne
+        /// Löschverbot, denn eine Web-KI kann nichts löschen.
+        case chat
+        /// Startprompt einer interaktiven CLI-Sitzung im Ordner: eigenes
+        /// Intro, Top 10 ohne Dateitypen (die KI sieht selbst nach), Aufgabe
+        /// und Regeln (nur lesen, Anweisungen in Dateien sind nur Daten).
         case session
     }
 
-    /// Feineinstellung, damit der Prompt in ein Längenbudget passt.
-    public struct Limits: Sendable, Equatable {
-        public var largest: Int
-        public var includeTypes: Bool
-        /// Letzte Änderung, Besitzer-App, Veränderung, Inhalt.
-        public var includeOptional: Bool
-        /// Namen und Pfad werden auf so viele Zeichen gekürzt (Mitte „…“).
-        public var nameLimit: Int?
+    /// Größte Elemente und Dateitypen je Art.
+    static func largestCount(_ style: Style) -> Int { style == .chat ? 25 : 10 }
 
-        public init(largest: Int, includeTypes: Bool, includeOptional: Bool = true, nameLimit: Int? = nil) {
-            self.largest = largest
-            self.includeTypes = includeTypes
-            self.includeOptional = includeOptional
-            self.nameLimit = nameLimit
-        }
-
-        public static func `default`(for style: Style) -> Limits {
-            style == .compact ? Limits(largest: 10, includeTypes: false) : Limits(largest: 25, includeTypes: true)
-        }
-    }
-
-    public static func prompt(_ facts: AIPromptFacts, style: Style, limits: Limits? = nil) -> String {
-        let lim = limits ?? .default(for: style)
-        func cut(_ s: String) -> String { lim.nameLimit.map { middleTruncate(s, to: $0) } ?? s }
+    public static func prompt(_ facts: AIPromptFacts, style: Style) -> String {
+        // Sitzung auf eine Datei bzw. einen Symlink: Das Terminal öffnet im Elternordner.
+        let onFile = style == .session && (facts.kind == .file || facts.kind == .symlink)
         var lines: [String] = []
-        lines.append(L("ai.prompt.intro"))
+        switch style {
+        case .chat: lines.append(L("ai.prompt.intro"))
+        case .session: lines.append(onFile ? L("ai.prompt.session.intro.file") : L("ai.prompt.session.intro"))
+        }
         lines.append("")
-        lines.append(L("ai.prompt.facts"))
-        lines.append("- " + L("ai.prompt.fact.path", cut(facts.path)))
+        lines.append(style == .session ? L("ai.prompt.session.facts") : L("ai.prompt.facts"))
+        lines.append("- " + L("ai.prompt.fact.path", facts.path))
         lines.append("- " + L("ai.prompt.fact.kind", kindText(facts.kind)))
         lines.append("- " + L("ai.prompt.fact.size", ByteFormat.string(facts.size)))
-        if lim.includeOptional {
-            if let files = facts.fileCount {
-                if let folders = facts.folderCount {
-                    lines.append("- " + L("ai.prompt.fact.contents", L10n.files(files),
-                                          L("count.folders", folders, ByteFormat.count(folders))))
-                } else {
-                    lines.append("- " + L("ai.prompt.fact.contentsFiles", L10n.files(files)))
-                }
+        if let files = facts.fileCount {
+            if let folders = facts.folderCount {
+                lines.append("- " + L("ai.prompt.fact.contents", L10n.files(files),
+                                      L("count.folders", folders, ByteFormat.count(folders))))
+            } else {
+                lines.append("- " + L("ai.prompt.fact.contentsFiles", L10n.files(files)))
             }
-            if let d = facts.modified {
-                lines.append("- " + L("ai.prompt.fact.modified", dateText(d)))
-            }
-            if let o = facts.owner {
-                lines.append("- " + ownerText(o))
-            }
-            if let c = facts.change {
-                let sign = c.delta >= 0 ? "+" : "−"
-                lines.append("- " + L("ai.prompt.fact.change", dateText(c.since),
-                                      sign + ByteFormat.string(c.delta.magnitude)))
-            }
+        }
+        if let d = facts.modified {
+            lines.append("- " + L("ai.prompt.fact.modified", dateText(d)))
+        }
+        if let o = facts.owner {
+            lines.append("- " + ownerText(o))
+        }
+        if let c = facts.change {
+            let sign = c.delta >= 0 ? "+" : "−"
+            lines.append("- " + L("ai.prompt.fact.change", dateText(c.since), sign + ByteFormat.string(c.delta.magnitude)))
         }
         if facts.hasUnreadable { lines.append("- " + L("ai.prompt.fact.unreadable")) }
         lines.append("- " + L("ai.prompt.fact.macos", facts.macOSVersion))
 
-        let shown = facts.largest.prefix(max(0, lim.largest))
+        let shown = facts.largest.prefix(largestCount(style))
         if !shown.isEmpty {
             lines.append("")
             lines.append(L("ai.prompt.largest"))
             for item in shown {
-                let name = cut(item.name) + (item.isDirectory ? "/" : "")
-                lines.append("- " + L("ai.prompt.item", name, ByteFormat.string(item.size)))
+                lines.append("- " + L("ai.prompt.item", item.name + (item.isDirectory ? "/" : ""),
+                                      ByteFormat.string(item.size)))
             }
             let more = facts.childCount - shown.count
             if more > 0 { lines.append("- " + L("count.moreItems", more, ByteFormat.count(more))) }
         } else if facts.kind == .folder || facts.kind == .package, facts.childCount == 0 {
             lines.append("- " + L("ai.prompt.fact.empty"))
         }
-        if lim.includeTypes, !facts.types.isEmpty, facts.kind != .file {
+        if style == .chat, !facts.types.isEmpty, facts.kind != .file {
             lines.append("")
             lines.append(L("ai.prompt.types"))
             let parts = facts.types.prefix(8).map { L("ai.prompt.item", $0.category.label, ByteFormat.string($0.size)) }
@@ -266,14 +249,8 @@ public enum AIPromptBuilder {
         }
         lines.append("")
         switch style {
-        case .compact:
-            lines.append(L("ai.prompt.task.compact"))
-        case .detailed:
-            lines.append(L("ai.prompt.task.detailed"))
-        case .session:
-            lines.append(L("ai.prompt.task.detailed"))
-            lines.append("")
-            lines.append(L("ai.prompt.session"))
+        case .chat: lines.append(L("ai.prompt.task.chat"))
+        case .session: lines.append(onFile ? L("ai.prompt.task.session.file") : L("ai.prompt.task.session"))
         }
         return lines.joined(separator: "\n")
     }
@@ -306,13 +283,5 @@ public enum AIPromptBuilder {
         f.timeStyle = .none
         f.timeZone = TimeZone.current
         return f.string(from: d)
-    }
-
-    /// Kürzt in der Mitte auf höchstens `limit` Zeichen („Anfang…Ende“).
-    public static func middleTruncate(_ s: String, to limit: Int) -> String {
-        guard limit >= 3, s.count > limit else { return s }
-        let keep = limit - 1
-        let head = keep / 2 + keep % 2
-        return String(s.prefix(head)) + "…" + String(s.suffix(keep - head))
     }
 }

@@ -87,9 +87,9 @@ Zwei Build-Varianten aus demselben Code: `scripts/make-app.sh` (Developer ID, `b
 ### Core: Mit KI analysieren
 - `AIAnonymizer.swift`: `PromptAnonymizer` (Home → `~` an der Komponentengrenze, Benutzer-/Personen-/Rechnername → `<user>`/`<name>`/`<computer>` an Token-Grenzen).
 - `OwnerApp.swift`: `OwnerAppHint` (Bundle-ID bzw. Name unter `~/Library/…`), `OwnerAppInstallState`, `OwnerAppFact` (`anonymized(by:)`).
-- `AIPrompt.swift`: `AIPromptFacts` (Fakten aus dem Baum, `lstat`-Datum, macOS-Version), `AIPromptBuilder` (kompakt/ausführlich/Sitzung, `Limits`).
-- `AIWebServices.swift`: `AIWebService`/`AIWebCatalog` (Prefill oder kopieren + öffnen), `AIWebLink` (Kodierung, Längenbudget 6000), `AIMenuSelection` (abgewählte IDs), `AIConsentState` (Merker Web/Sitzung, Übernahme des alten Merkers).
-- `AICLI.swift` (nur `#if AISessions`): `AICLITool`/`AICLICatalog` (nur lesende bzw. freigabepflichtige Argumente), `AICLIDetector` (Login-Shell per `posix_spawn` in eigener Prozessgruppe mit Zeitlimit, bekannte Orte), `AICLILaunch` (Startskript, Quoting, temporäre Dateien).
+- `AIPrompt.swift`: `AIPromptFacts` (Fakten aus dem Baum, `lstat`-Datum, macOS-Version), `AIPromptBuilder` (zwei Arten: `.chat` für Web-KIs und „Prompt kopieren“, `.session` für CLI-Sitzungen, mit eigenen Texten für Dateien).
+- `AIWebServices.swift`: `AIWebService`/`AIWebCatalog` (Prefill oder kopieren + öffnen), `AIWebLink` (Kodierung, Längenbudget 6000; `open`: Prefill mit genau dem Kopier-Prompt, sonst kopieren + Startseite, nie gekürzt), `AIMenuSelection` (abgewählte IDs), `AIMenuPlan`/`AIMenuEntry` (Aufbau des Untermenüs), `AIConsentState` (Merker Web/Sitzung, Übernahme des alten Merkers).
+- `AICLI.swift` (nur `#if AISessions`): `AICLITool`/`AICLICatalog` (nur lesende bzw. freigabepflichtige Argumente), `AICLIDetector` (Login-Shell per `posix_spawn` in eigener Prozessgruppe mit Zeitlimit, bekannte Orte, App-Bundles wie die Codex CLI in `ChatGPT.app`), `AICLILaunch` (Startskript, Quoting, temporäre Dateien).
 
 ### Core: Formatierung und Lokalisierung
 - `ByteFormat.swift`: Größen, Anzahlen, Prozent, Dauern nach Locale.
@@ -111,7 +111,7 @@ Zwei Build-Varianten aus demselben Code: `scripts/make-app.sh` (Developer ID, `b
 - `Browser/OutlineKeyboard.swift`: Fokus und Tastenbehandlung der Listen (nutzt `OutlineNavigation`).
 - `Browser/NodeContextMenu.swift`: `ContextMenuTarget`, `ContextMenuRegistry` (erweiterbare Abschnitte), `ContextMenuItem` (auch mit Untermenü), Menü-Views (`ContextMenuEntry`, Vorschau inkl. `ContextSubmenuPreview`), `VolumeSegmentMenu` (nur Informationen für Systemdaten, löschbar, frei).
 - `Browser/ActionViews.swift`: Papierkorb-Dialog, Info-Fenster, Toast, Suchfeld und Trefferliste.
-- `Browser/AIContextMenu.swift`: Abschnitt „Mit KI analysieren“ (vor „Neu scannen“, auch im Vergleich) mit Untermenü; `openAISettings`.
+- `Browser/AIContextMenu.swift`: Abschnitt „Mit KI analysieren“ (vor „Neu scannen“, auch im Vergleich) mit Untermenü nach `AIMenuPlan`; `openAISettings`.
 - `Browser/AIConsentView.swift`: Datenschutz-Hinweis vor dem ersten Senden.
 - `Sunburst/SunburstView.swift`: Diagramm-View (Canvas, Hover, Klick, Tooltip, VoiceOver-Elemente).
 - `Sunburst/SunburstRenderer.swift`: Zeichnen der Arcs in einen `GraphicsContext`.

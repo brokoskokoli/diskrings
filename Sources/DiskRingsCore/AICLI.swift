@@ -30,9 +30,14 @@ public struct AICLITool: Sendable, Equatable, Identifiable {
     public let excludedPathFragments: [String]
     /// Zusätzliche bekannte Orte relativ zum Home-Ordner.
     public let extraHomeDirectories: [String]
+    /// Programme in App-Bundles, relativ zu den App-Ordnern (`/Applications`,
+    /// `~/Applications`), z. B. die Codex CLI in der ChatGPT-App. Werden erst
+    /// nach Shell-`PATH` und bekannten Orten geprüft.
+    public let appBundleExecutables: [String]
 
     public init(id: String, name: String, executables: [String], arguments: [String], promptPassing: PromptPassing,
-                excludedPathFragments: [String] = [], extraHomeDirectories: [String] = []) {
+                excludedPathFragments: [String] = [], extraHomeDirectories: [String] = [],
+                appBundleExecutables: [String] = []) {
         self.id = id
         self.name = name
         self.executables = executables
@@ -40,6 +45,7 @@ public struct AICLITool: Sendable, Equatable, Identifiable {
         self.promptPassing = promptPassing
         self.excludedPathFragments = excludedPathFragments
         self.extraHomeDirectories = extraHomeDirectories
+        self.appBundleExecutables = appBundleExecutables
     }
 
     /// Argumente samt Prompt (für die Prüfung in Tests; das Skript setzt den
@@ -64,8 +70,13 @@ public enum AICLICatalog {
                   arguments: ["--permission-mode", "plan", "--setting-sources", "user", "--strict-mcp-config"],
                   promptPassing: .positional, extraHomeDirectories: [".claude/local"]),
         // Vertrauensabfrage; `.codex/` des Projekts gilt erst nach Zustimmung.
+        // Die ChatGPT-Desktop-App (und eine eigenständige Codex-App) bringt die
+        // CLI im Bundle mit, ohne sie in den `PATH` zu legen.
         AICLITool(id: "cli.codex", name: "Codex CLI", executables: ["codex"],
-                  arguments: ["--sandbox", "read-only", "--ask-for-approval", "on-request"], promptPassing: .positional),
+                  arguments: ["--sandbox", "read-only", "--ask-for-approval", "on-request"], promptPassing: .positional,
+                  appBundleExecutables: ["ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
+                                         "Codex.app/Contents/Resources/codex-cli/bin/codex",
+                                         "Codex.app/Contents/Resources/codex"]),
         // Vertrauensabfrage für den Ordner; Werkzeuge mit Änderungen fragen nach.
         AICLITool(id: "cli.copilot", name: "GitHub Copilot CLI", executables: ["copilot"],
                   arguments: ["--plan"], promptPassing: .option("-i"),
@@ -116,6 +127,11 @@ public enum AICLIDetector {
         for t in AICLICatalog.all { dirs += t.extraHomeDirectories.map { home + "/" + $0 } }
         var seen = Set<String>()
         return dirs.filter { seen.insert($0).inserted }
+    }
+
+    /// Ordner, in denen App-Bundles gesucht werden.
+    public static func applicationDirectories(home: String) -> [String] {
+        ["/Applications", home + "/Applications"]
     }
 
     /// Nur ausführbare reguläre Dateien (direkt oder als Symlink darauf).
@@ -253,26 +269,30 @@ public enum AICLIDetector {
     }
 
     /// Findet die installierten CLIs. In der Sandbox: keine Suche, kein
-    /// Prozessstart (leeres Ergebnis).
+    /// Prozessstart (leeres Ergebnis). `applicationDirectories`: Standard
+    /// `/Applications` und `~/Applications`.
     public static func detect(environment: AppEnvironment, home: String, shell: String?,
                               catalog: [AICLITool] = AICLICatalog.all, timeout: TimeInterval = defaultTimeout,
-                              useLoginShell: Bool = true) -> [AICLIInstallation] {
+                              useLoginShell: Bool = true, applicationDirectories apps: [String]? = nil)
+        -> [AICLIInstallation] {
         guard !environment.isSandboxed else { return [] }
         let names = catalog.flatMap(\.executables)
         let fromShell = useLoginShell
             ? loginShellLookup(shell: lookupShell(shell), names: names, timeout: timeout) : [:]
         let dirs = knownDirectories(home: home)
-        return resolve(catalog: catalog, shellPaths: fromShell, directories: dirs)
+        return resolve(catalog: catalog, shellPaths: fromShell, directories: dirs,
+                       applicationDirectories: apps ?? applicationDirectories(home: home))
     }
 
     /// Wählt je CLI den ersten brauchbaren Pfad: zuerst aus der Shell, dann
-    /// aus den bekannten Orten.
+    /// aus den bekannten Orten, zuletzt aus App-Bundles.
     public static func resolve(catalog: [AICLITool], shellPaths: [String: String],
-                               directories: [String]) -> [AICLIInstallation] {
+                               directories: [String], applicationDirectories: [String] = []) -> [AICLIInstallation] {
         var out: [AICLIInstallation] = []
         for tool in catalog {
             var candidates: [String] = tool.executables.compactMap { shellPaths[$0] }
             for d in directories { candidates += tool.executables.map { d + "/" + $0 } }
+            for a in applicationDirectories { candidates += tool.appBundleExecutables.map { a + "/" + $0 } }
             if let hit = candidates.first(where: { c in
                 isUsableExecutable(c) && !tool.excludedPathFragments.contains { c.contains($0) }
             }) {

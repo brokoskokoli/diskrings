@@ -49,6 +49,20 @@ struct AICLICatalogTests {
         #expect(!claude.contains("--mcp-config"))
     }
 
+    @Test("Bekannte Orte in App-Bundles: relativ, ohne „..“, Codex aus ChatGPT- und Codex-App")
+    func appBundles() throws {
+        for t in AICLICatalog.all {
+            for rel in t.appBundleExecutables {
+                #expect(!rel.hasPrefix("/") && !rel.contains("..") && rel.contains(".app/Contents/"), "\(t.id): \(rel)")
+            }
+        }
+        #expect(try #require(AICLICatalog.tool(id: "cli.codex")).appBundleExecutables == [
+            "ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
+            "Codex.app/Contents/Resources/codex-cli/bin/codex",
+            "Codex.app/Contents/Resources/codex",
+        ])
+    }
+
     @Test("Web- und CLI-IDs kollidieren nicht")
     func noCollision() {
         #expect(Set(AICLICatalog.all.map(\.id)).isDisjoint(with: AIWebCatalog.all.map(\.id)))
@@ -98,6 +112,81 @@ struct AICLIDetectorTests {
         #expect(found.first { $0.id == "cli.copilot" }?.path == real)
         let onlyShim = AICLIDetector.resolve(catalog: AICLICatalog.all, shellPaths: ["copilot": shim], directories: [])
         #expect(onlyShim.isEmpty)
+    }
+
+    /// Fake-Bundle wie in ChatGPT.app: `/bin/sh`-Wrapper in `codex-cli/bin`,
+    /// der `../CodexCLI.app/Contents/MacOS/codex` startet.
+    static func fakeCodexBundle(_ fx: Fixture, appsDir: String, app: String = "ChatGPT.app",
+                                mode: mode_t = 0o755) throws -> String {
+        let res = "\(appsDir)/\(app)/Contents/Resources/codex-cli"
+        let real = try fx.file("\(res)/CodexCLI.app/Contents/MacOS/codex", size: 1)
+        chmod(real, 0o755)
+        let wrapper = fx.path("\(res)/bin/codex")
+        try fx.dir("\(res)/bin")
+        try "#!/bin/sh\nbin_dir=$(CDPATH= cd -P -- \"$(dirname -- \"$0\")\" && pwd)\nexec \"$bin_dir/../CodexCLI.app/Contents/MacOS/codex\" \"$@\"\n"
+            .write(toFile: wrapper, atomically: true, encoding: .utf8)
+        chmod(wrapper, mode)
+        return wrapper
+    }
+
+    @Test("Codex aus der ChatGPT-App (Bundle), auch unter ~/Applications und aus einer Codex-App")
+    func codexInAppBundle() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        let wrapper = try Self.fakeCodexBundle(fx, appsDir: "Applications")
+        let apps = [fx.path("System Applications"), fx.path("Applications")]
+        let found = AICLIDetector.resolve(catalog: AICLICatalog.all, shellPaths: [:], directories: [fx.path("bin")],
+                                          applicationDirectories: apps)
+        #expect(found.map(\.id) == ["cli.codex"])
+        #expect(found.first?.path == wrapper)
+
+        // Eigenständige Codex-App, beide bekannten Orte im Bundle.
+        let fx2 = try Fixture()
+        defer { fx2.remove() }
+        let standalone = try Self.fakeCodexBundle(fx2, appsDir: "Apps", app: "Codex.app")
+        #expect(AICLIDetector.resolve(catalog: AICLICatalog.all, shellPaths: [:], directories: [],
+                                      applicationDirectories: [fx2.path("Apps")]).first?.path == standalone)
+        let flat = try fx2.file("Apps2/Codex.app/Contents/Resources/codex", size: 1)
+        chmod(flat, 0o755)
+        #expect(AICLIDetector.resolve(catalog: AICLICatalog.all, shellPaths: [:], directories: [],
+                                      applicationDirectories: [fx2.path("Apps2")]).first?.path == flat)
+    }
+
+    @Test("Reihenfolge: Shell-PATH vor bekannten Orten vor App-Bundles; nicht ausführbar im Bundle zählt nicht")
+    func appBundlePrecedence() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        let bundled = try Self.fakeCodexBundle(fx, appsDir: "Applications")
+        let shell = try fx.file("shell/codex", size: 1)
+        let known = try fx.file("known/codex", size: 1)
+        for p in [shell, known] { chmod(p, 0o755) }
+        let apps = [fx.path("Applications")]
+        func pick(_ shellPaths: [String: String], _ dirs: [String]) -> String? {
+            AICLIDetector.resolve(catalog: AICLICatalog.all, shellPaths: shellPaths, directories: dirs,
+                                  applicationDirectories: apps).first { $0.id == "cli.codex" }?.path
+        }
+        #expect(pick(["codex": shell], [fx.path("known")]) == shell)
+        #expect(pick([:], [fx.path("known")]) == known)
+        #expect(pick([:], []) == bundled)
+        chmod(bundled, 0o644)
+        #expect(pick([:], []) == nil)
+        // Ohne App-Ordner (Standard des Parameters) kein Fund im Bundle.
+        chmod(bundled, 0o755)
+        #expect(AICLIDetector.resolve(catalog: AICLICatalog.all, shellPaths: [:], directories: []).isEmpty)
+    }
+
+    @Test("App-Ordner: /Applications und ~/Applications; detect sucht dort (ohne Login-Shell)")
+    func applicationDirectories() throws {
+        #expect(AICLIDetector.applicationDirectories(home: "/Users/x") == ["/Applications", "/Users/x/Applications"])
+        let fx = try Fixture()
+        defer { fx.remove() }
+        let wrapper = try Self.fakeCodexBundle(fx, appsDir: "Applications")
+        let found = AICLIDetector.detect(environment: AppEnvironment(isSandboxed: false), home: fx.root, shell: nil,
+                                         catalog: AICLICatalog.all.filter { $0.id == "cli.codex" },
+                                         useLoginShell: false, applicationDirectories: [fx.path("Applications")])
+        #expect(found.first?.path == wrapper)
+        #expect(AICLIDetector.detect(environment: AppEnvironment(isSandboxed: true), home: fx.root, shell: nil,
+                                     useLoginShell: false, applicationDirectories: [fx.path("Applications")]).isEmpty)
     }
 
     @Test("Ausgabe der Login-Shell: nur markierte Zeilen mit absolutem Pfad")
@@ -316,6 +405,40 @@ struct AICLILaunchTests {
                 #expect(!FileManager.default.fileExists(atPath: scriptURL.deletingLastPathComponent().path))
             }
         }
+    }
+
+    @Test("Start eines Wrappers in einem App-Bundle mit Leerzeichen im Pfad (Codex aus ChatGPT.app)")
+    func launchFromAppBundle() throws {
+        let fx = try Fixture()
+        defer { fx.remove() }
+        let tool = try #require(AICLICatalog.tool(id: "cli.codex"))
+        let res = "My Apps/Chat GPT.app/Contents/Resources/codex-cli"
+        let out = fx.path("out.txt")
+        let real = try fx.file("\(res)/CodexCLI.app/Contents/MacOS/codex", size: 1)
+        try "#!/bin/sh\nprintf '%s\\0' \"$(pwd -P)\" \"$@\" > \(AICLILaunch.shellQuote(out))\n"
+            .write(toFile: real, atomically: true, encoding: .utf8)
+        chmod(real, 0o755)
+        try fx.dir("\(res)/bin")
+        let wrapper = fx.path("\(res)/bin/codex")
+        try "#!/bin/sh\nset -eu\nbin_dir=$(CDPATH= cd -P -- \"$(dirname -- \"$0\")\" && pwd)\nexec \"$bin_dir/../CodexCLI.app/Contents/MacOS/codex\" \"$@\"\n"
+            .write(toFile: wrapper, atomically: true, encoding: .utf8)
+        chmod(wrapper, 0o755)
+        #expect(AICLIDetector.isUsableExecutable(wrapper))
+        let work = try fx.dir("work dir")
+        let script = AICLILaunch.script(tool: tool, executable: wrapper, workingDirectory: work, promptFile: "/p",
+                                        scriptFile: "/s/x.command", banner: "B")
+        #expect(script.contains("PATH='\(fx.path("\(res)/bin"))':\"$PATH\""))
+        let scriptURL = try AICLILaunch.prepare(tool: tool, executable: wrapper, workingDirectory: work, prompt: "Hallo",
+                                                banner: "B", base: URL(fileURLWithPath: fx.path("launch")))
+        let p = Process()
+        p.executableURL = scriptURL
+        p.standardOutput = FileHandle.nullDevice
+        try p.run()
+        p.waitUntilExit()
+        #expect(p.terminationStatus == 0)
+        let args = try Data(contentsOf: URL(fileURLWithPath: out)).split(separator: 0).map { String(decoding: $0, as: UTF8.self) }
+        #expect(args.first == String(cString: realpath(work, nil)))
+        #expect(Array(args.dropFirst()) == tool.argv(prompt: "Hallo"))
     }
 
     @Test("Arbeitsordner: Ordner selbst, sonst Elternordner")
