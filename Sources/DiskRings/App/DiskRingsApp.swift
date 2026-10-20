@@ -157,7 +157,12 @@ struct RootView: View {
     }
 
     private var title: String {
-        guard let tree = state.tree else { return "DiskRings" }
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        return WindowTitle.make(location: location, version: version)
+    }
+
+    private var location: String? {
+        guard let tree = state.tree else { return nil }
         if state.isVolumeRoot, let v = state.volume { return v.name }
         return (tree.rootPath as NSString).lastPathComponent
     }

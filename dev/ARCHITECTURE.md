@@ -70,6 +70,7 @@ Zwei Build-Varianten aus demselben Code: `scripts/make-app.sh` (Developer ID, `b
 - `TrashService.swift`: `FileTrashing` (Protokoll, `FileManager` erfüllt es), `FileIdentity`, `TrashPlan`/`TrashPlanError`, `TrashConfirmation`, `TrashService` (`trash`, `restore`; in der Sandbox eigene Meldungen für Rechtefehler und `accessCheck` für ⌘Z), Ergebnis-Typen.
 - `ProtectedPaths.swift`: Schutzliste, Normalisierung, Volume-Wurzeln, laufende App.
 - `WindowLifecycle.swift`: Entscheidungen beim Schließen von Fenstern und beim Dock-Klick; Syntax von `--selftest-close`.
+- `WindowTitle.swift`: Titel des Hauptfensters mit Versionsnummer („Library – DiskRings 0.4.0“).
 
 ### Core: Snapshots und Vergleich
 - `Snapshot.swift`: `SnapshotMetadata`, `SnapshotScanOptions`, `VolumeMetrics`, `Snapshot`, `SnapshotError`, `SnapshotFile` (Format `.drsnap`: JSON-Kopf + LZFSE-Nutzdaten, Prüfungen beim Laden).
